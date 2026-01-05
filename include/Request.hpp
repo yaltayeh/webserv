@@ -13,10 +13,24 @@ namespace libhttp {
 		Request(const Request& other);
 		Request& operator=(const Request& other);
 		~Request();
+
+		// Setters
+		void setMethod(Method method);
+		void setUri(const std::string& uri);
+		void setHeader(const std::string& key, const std::string& value);
+		void setBody(const std::string& body);
+
+		// Getters
+		Method getMethod() const;
+		std::string getUri() const;
+		std::string getHeader(const std::string& key) const;
+		std::string getBody() const;
+		std::multimap<std::string, std::string> getHeaders() const;
+
 	private:
 		Method _method;
 		std::string _uri;
-		std::map<std::string, std::string> _headers;
+		std::multimap<std::string, std::string> _headers;
 		std::string _body;
 	};
 
