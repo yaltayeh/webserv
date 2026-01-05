@@ -2,8 +2,6 @@
 #define PARSER_HPP
 
 #include <string>
-#include <map>
-#include "Constants.hpp"
 #include "Request.hpp"
 
 namespace libhttp {
@@ -18,7 +16,7 @@ namespace libhttp {
 		bool isError() const;
 
 		// parsing function
-		bool parse(const char* data, size_t size);
+		int parse(const char* data, size_t size);
 
 		// get the parsed request
 		Request getRequest() const;
@@ -37,9 +35,9 @@ namespace libhttp {
 		std::string _buffer;
         Request _request;
 
-        void processRequestLine();
-        void processHeaders();
-        void processBody();
+        int processRequestLine();
+        int processHeaders();
+        int processBody();
 	};
 
 }

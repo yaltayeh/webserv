@@ -10,7 +10,8 @@ OBJ_DIR = $(BUILD_PATH)/obj
 SRCS = $(SRC_DIR)/Request.cpp \
 		$(SRC_DIR)/Response.cpp \
 		$(SRC_DIR)/Constants.cpp \
-		$(SRC_DIR)/Utils.cpp
+		$(SRC_DIR)/Utils.cpp \
+		$(SRC_DIR)/Parser.cpp
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 all: $(LIB_NAME)
