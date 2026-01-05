@@ -27,3 +27,10 @@
 // chdir, stat, open, close, read, write
 // opendir, readdir, closedir,
 // fcntl, dup, dup2
+
+
+
+
+int main() {
+	
+}

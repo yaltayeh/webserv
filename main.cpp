@@ -1,6 +1,8 @@
 #include "Response.hpp"
-#include <sys/socket.h>
+#include "Request.hpp"
 
+
+#include <sys/socket.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,8 +15,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
-
-#include "Request.hpp"
 
 #define BUFFER_SIZE 1024
 #define MAX_CLIENTS 100
@@ -103,10 +103,6 @@ void start_listen(int server_sockfd)
 int start_recive(int server_sockfd)
 {
 	socklen_t client_len;
-	ssize_t nbytes_read;
-	int i;
-	char buffer[BUFSIZ];
-	int client_sockfd;
 	struct sockaddr_in client_address;
 
 	struct pollfd fds[MAX_CLIENTS + 1];
@@ -145,6 +141,7 @@ int start_recive(int server_sockfd)
 				}
 			}
 		}
+		
 		for (int i = 1; i <= MAX_CLIENTS; i++)
 		{
 			if (fds[i].fd != -1 && (fds[i].revents & POLLIN))
@@ -191,5 +188,4 @@ POST http/1.1\
 
 	Request req = Request::parseRequest(request);
 
-	std::cout << "Request.getMethod: " << (req.getMethod() == POST) << std::endl;
 }
