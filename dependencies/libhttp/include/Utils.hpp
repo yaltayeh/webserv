@@ -9,6 +9,7 @@ namespace libhttp {
 	std::string getMimeType(const std::string& path);
 	std::string getStatusMessage(int statusCode);
 	Method stringToMethod(const std::string& methodStr);
+	std::string methodToString(Method method);
 }
 
 #endif

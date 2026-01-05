@@ -10,7 +10,8 @@ namespace libhttp {
 	enum Method {
 		GET,
 		POST,
-		DELETE
+		DELETE,
+		INVALID
 	};
 
 	// Status Codes

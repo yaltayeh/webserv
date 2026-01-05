@@ -35,7 +35,15 @@ namespace libhttp {
 		if (methodStr == "GET") return GET;
 		if (methodStr == "POST") return POST;
 		if (methodStr == "DELETE") return DELETE;
-		throw std::invalid_argument("Invalid HTTP method: " + methodStr);
+		return INVALID; // Default to INVALID for unknown methods
 	}
 
+	std::string methodToString(Method method) {
+		switch (method) {
+			case GET: return "GET";
+			case POST: return "POST";
+			case DELETE: return "DELETE";
+			default: return "INVALID";
+		}
+	}
 }
