@@ -100,10 +100,6 @@ namespace libhttp {
 		{".tgz",  "application/gzip"}
 	};
 
-
-	// Helper functions for later
-	// std::string getMimeType(const std::string& path);
-
 }
 
 #endif
