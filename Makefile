@@ -7,7 +7,7 @@ DEPENDENCIES	    	= libhttp
 DEPENDENCIES_DIR		= ./dependencies
 DEPENDENCIES_FLAGS      = $(foreach lib,$(DEPENDENCIES),-L$(BUILD_PATH)/$(lib)) \
 							$(foreach lib,$(patsubst lib%,%, $(DEPENDENCIES)),-l$(lib))
-INCLUDE_FLAGS	   		= -Iinclude $(foreach lib,$(DEPENDENCIES),-Iinclude/$(lib))
+INCLUDE_FLAGS	   		= -Iinclude $(foreach lib,$(DEPENDENCIES),-I$(DEPENDENCIES_DIR)/$(lib)/include)
 
 SRCS		    		=       src/main.cpp
 OBJS		   			 = $(SRCS:src/%.cpp=$(BUILD_PATH)/obj/%.o)
