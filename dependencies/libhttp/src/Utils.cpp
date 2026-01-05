@@ -1,14 +1,15 @@
+#include "../include/Utils.hpp"
 #include "../include/Constants.hpp"
 #include <string>
 #include <stdexcept>
 
 namespace libhttp {
 
-	static std::string getMimeType(const std::string& path) {
+	std::string getMimeType(const std::string& path) {
 		size_t dotPos = path.rfind('.');
 		if (dotPos != std::string::npos) {
 			std::string extension = path.substr(dotPos);
-			auto it = MIME_TYPES.find(extension);
+			std::map<std::string, std::string>::const_iterator it = MIME_TYPES.find(extension);
 			if (it != MIME_TYPES.end()) {
 				return it->second;
 			}
@@ -16,7 +17,7 @@ namespace libhttp {
 		return "application/octet-stream"; // Default MIME type
 	}
 	
-	static std::string getStatusMessage(int statusCode) {
+	std::string getStatusMessage(int statusCode) {
 		switch (statusCode) {
 			case OK: return "OK";
 			case CREATED: return "Created";
@@ -30,7 +31,7 @@ namespace libhttp {
 		}
 	}
 
-	static Method stringToMethod(const std::string& methodStr) {
+	Method stringToMethod(const std::string& methodStr) {
 		if (methodStr == "GET") return GET;
 		if (methodStr == "POST") return POST;
 		if (methodStr == "DELETE") return DELETE;
