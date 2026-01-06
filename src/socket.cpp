@@ -5,66 +5,157 @@
 #include <unistd.h>       // close()
 #include <cstring>        // memset()
 #include <cerrno>         // errno
-#include <poll.h>		 // poll()
+#include <poll.h>         // poll()
 #include <vector>         // std::vector
 
-int createListeningSocket(int port) {
-    // 1. Create a TCP socket
-    // AF_INET = IPv4, SOCK_STREAM = TCP
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) 
-        return -1; // failed to create socket
+// ============================================================================
+// Constants
+// ============================================================================
+static const int LISTEN_BACKLOG = 128;  // Max queued connections
+static const int SOCKET_ENABLE = 1;      // Enable socket option
 
-    // 2. Allow address reuse (avoids "address already in use" errors)
-    int opt = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        close(sockfd); // clean up
-        return -1;
-    }
-
-    // 3. Prepare the address structure
-    sockaddr_in addr;          // IPv4 address struct
-    std::memset(&addr, 0, sizeof(addr)); // zero out memory
-    addr.sin_family = AF_INET;            // IPv4
-    addr.sin_port = htons(port);          // convert port to network byte order
-    addr.sin_addr.s_addr = INADDR_ANY;    // listen on all network interfaces
-
-    // 4. Bind the socket to our address and port
-    if (bind(sockfd, (sockaddr*)&addr, sizeof(addr)) < 0) {
-        close(sockfd); // clean up on error
-        return -1;
-    }
-
-    // 5. Start listening for incoming connections
-    // 128 = maximum number of waiting connections
-    if (listen(sockfd, 128) < 0) {
-        close(sockfd);
-        return -1;
-    }
-
-    // 6. Make the socket non-blocking
-    // Non-blocking means socket calls won't wait forever
-    int flags = fcntl(sockfd, F_GETFL, 0); // get current flags
-    if (flags < 0 || fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-        close(sockfd);
-        return -1;
-    }
-
-    // 7. Return the socket file descriptor
-    // This is what you'll use for accept() and other operations
-    return sockfd;
+// ============================================================================
+// Make a socket non-blocking
+// ============================================================================
+// WHY THIS IS CRITICAL:
+// - Non-blocking sockets never freeze the program
+// - read() returns immediately even if no data available
+// - write() returns immediately even if buffer is full
+// - accept() returns immediately even if no connection waiting
+//
+// RETURNS:
+// - 0 on success
+// - -1 on failure
+static int setNonBlocking(int fd) {
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags < 0)
+		return -1;
+	
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+		return -1;
+	
+	return 0;
 }
 
-// Read: "Beej's Guide to Network Programming" - Socket section
+// ============================================================================
+// Configure socket options (reuse address)
+// ============================================================================
+// WHY WE NEED SO_REUSEADDR:
+// - Without it, restarting server gives "Address already in use" error
+// - Allows immediate rebinding after server crash/restart
+// - Standard practice for development servers
+//
+// RETURNS:
+// - 0 on success
+// - -1 on failure
+static int configureSocketOptions(int sockfd) {
+	int opt = SOCKET_ENABLE;
+	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+		return -1;
+	return 0;
+}
 
+// ============================================================================
+// Prepare and bind socket address
+// ============================================================================
+// WHAT THIS DOES:
+// - Creates the address structure (IP + port)
+// - Binds socket to the address so it can receive connections
+//
+// PARAMETERS:
+// - sockfd: Socket to bind
+// - port: Port number to listen on
+//
+// RETURNS:
+// - 0 on success
+// - -1 on failure
+static int bindSocket(int sockfd, int port) {
+	sockaddr_in addr;
+	std::memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port);
+	addr.sin_addr.s_addr = INADDR_ANY;
+	
+	if (bind(sockfd, (sockaddr*)&addr, sizeof(addr)) < 0)
+		return -1;
+	
+	return 0;
+}
 
+int createListeningSocket(int port) {
+	// ========================================================================
+	// STEP 1: Create a TCP socket
+	// ========================================================================
+	// AF_INET = IPv4, SOCK_STREAM = TCP
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0)
+		return -1;
+	
+	// ========================================================================
+	// STEP 2: Configure socket options (SO_REUSEADDR)
+	// ========================================================================
+	if (configureSocketOptions(sockfd) < 0) {
+		close(sockfd);
+		return -1;
+	}
+	
+	// ========================================================================
+	// STEP 3: Bind socket to address and port
+	// ========================================================================
+	if (bindSocket(sockfd, port) < 0) {
+		close(sockfd);
+		return -1;
+	}
+	
+	// ========================================================================
+	// STEP 4: Start listening for connections
+	// ========================================================================
+	if (listen(sockfd, LISTEN_BACKLOG) < 0) {
+		close(sockfd);
+		return -1;
+	}
+	
+	// ========================================================================
+	// STEP 5: Make socket non-blocking
+	// ========================================================================
+	if (setNonBlocking(sockfd) < 0) {
+		close(sockfd);
+		return -1;
+	}
+	
+	return sockfd;
+}
+
+// ============================================================================
+// Accept a new client connection
+// ============================================================================
+// WHAT THIS DOES:
+// - Takes a waiting connection from the listening socket's queue
+// - Creates a new socket for this specific client
+// - Makes the new socket non-blocking
+//
+// PARAMETERS:
+// - listen_fd: The listening socket
+//
+// RETURNS:
+// - New socket fd on success
+// - -1 on failure
 int acceptConnection(int listen_fd) {
-    sockaddr_in client_addr;
-    socklen_t addr_len = sizeof(client_addr);
-    int client_fd = accept(listen_fd, (sockaddr*)&client_addr, &addr_len);
-    if (client_fd < 0) return -1;
-    fcntl(client_fd, F_SETFL, O_NONBLOCK); // CRITICAL: Make it non-blocking
-    return client_fd;
+	sockaddr_in client_addr;
+	socklen_t addr_len = sizeof(client_addr);
+	
+	// Accept creates a NEW socket for this client
+	int client_fd = accept(listen_fd, (sockaddr*)&client_addr, &addr_len);
+	if (client_fd < 0)
+		return -1;
+	
+	// CRITICAL: Make new socket non-blocking
+	if (setNonBlocking(client_fd) < 0) {
+		close(client_fd);
+		return -1;
+	}
+	
+	return client_fd;
 }
 
 // ============================================================================
@@ -87,8 +178,11 @@ int acceptConnection(int listen_fd) {
 // 5. Adds it to our vector so poll() sees it next iteration
 void addSocketToPoll(int fd, std::vector<pollfd>& poll_fds, short events) {
 	pollfd new_pollfd;
+	std::memset(&new_pollfd, 0, sizeof(new_pollfd));
+	
 	new_pollfd.fd = fd;           // Which socket to watch
 	new_pollfd.events = events;   // What events to watch for
 	new_pollfd.revents = 0;       // Will be filled by poll()
+	
 	poll_fds.push_back(new_pollfd);
 }

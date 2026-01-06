@@ -1,5 +1,9 @@
 #include "../include/webserv.hpp"
 
+// ============================================================================
+// Constants
+// ============================================================================
+static const size_t READ_BUFFER_SIZE = 4096;  // Common page size
 
 // ============================================================================
 // Handle accepting a new client connection
@@ -22,7 +26,7 @@
 // - poll_fds: Vector where we store all pollfd structures for poll()
 //
 // RETURNS: Nothing (void function)
-void handleNewConnection(int listen_fd, 
+void handleNewConnection(int listen_fd,
                         std::vector<Connection>& connections,
                         std::vector<pollfd>& poll_fds) {
 	
@@ -38,18 +42,12 @@ void handleNewConnection(int listen_fd,
 	// IMPORTANT: The listening socket stays open and keeps listening!
 	// It's like a factory that creates new sockets for each client.
 	int client_fd = acceptConnection(listen_fd);
-	
-	// Check if accept() failed
-	// Common reasons for failure:
-	// - Client disconnected before we could accept
-	// - System ran out of file descriptors (too many open files)
-	// - System error (rare)
 	if (client_fd < 0) {
 		std::cerr << "Failed to accept connection" << std::endl;
-		return; // Give up on this connection, but keep server running
+		return;
 	}
 	
-	std::cout << "New client connected! Socket fd: " << client_fd << std::endl;
+	std::cout << "New client connected on fd " << client_fd << std::endl;
 	
 	// ========================================================================
 	// STEP 2: Create a Connection object for this client
@@ -60,11 +58,6 @@ void handleNewConnection(int listen_fd,
 	// - write_buffer: Response data waiting to be sent
 	Connection new_conn;
 	new_conn.fd = client_fd;
-	// Note: parser and write_buffer are automatically initialized
-	// - parser starts in REQUEST_LINE state
-	// - write_buffer starts as empty string
-	
-	// Add to our list of active connections
 	connections.push_back(new_conn);
 	
 	// ========================================================================
@@ -75,7 +68,7 @@ void handleNewConnection(int listen_fd,
 	// We'll add POLLOUT later when we have data to send back
 	addSocketToPoll(client_fd, poll_fds, POLLIN);
 	
-	std::cout << "Now monitoring " << connections.size() 
+	std::cout << "Now monitoring " << connections.size()
 	          << " client connection(s)" << std::endl;
 }
 
@@ -107,105 +100,62 @@ void handleNewConnection(int listen_fd,
 bool handleClientRead(Connection* conn, pollfd* poll_fd) {
 	
 	// ========================================================================
-	// STEP 1: Prepare buffer for reading
+	// STEP 1: Read data from socket into buffer
 	// ========================================================================
-	// We need a temporary buffer to hold data from read()
-	// Why 4096 bytes? It's a common page size, good balance of:
-	// - Not too small (fewer system calls needed)
-	// - Not too large (less wasted memory)
-	const size_t BUFFER_SIZE = 4096;
-	char buffer[BUFFER_SIZE];
+	char buffer[READ_BUFFER_SIZE];
+	std::memset(buffer, 0, READ_BUFFER_SIZE);
 	
-	// Zero out the buffer for safety
-	// memset(pointer, value, size) sets every byte to 0
-	std::memset(buffer, 0, BUFFER_SIZE);
+	ssize_t bytes_read = read(conn->fd, buffer, READ_BUFFER_SIZE);
 	
 	// ========================================================================
-	// STEP 2: Read data from socket
-	// ========================================================================
-	// read() attempts to read up to BUFFER_SIZE bytes
-	// It returns:
-	// - Positive number: How many bytes were actually read
-	// - 0: Client closed the connection gracefully (EOF)
-	// - -1: Error occurred (check errno for details)
-	//
-	// IMPORTANT: read() might return LESS than BUFFER_SIZE
-	// - This is normal! TCP sends data in chunks
-	// - Might get 500 bytes even though we asked for 4096
-	// - We must handle partial reads
-	ssize_t bytes_read = read(conn->fd, buffer, BUFFER_SIZE);
-	
-	// ========================================================================
-	// STEP 3: Handle read() results
+	// STEP 2: Handle read() results
 	// ========================================================================
 	if (bytes_read == 0) {
-		// Client closed the connection gracefully
-		// This is normal - client is done talking to us
-		std::cout << "Client fd " << conn->fd << " closed connection" << std::endl;
-		return false; // Tell caller to remove this connection
+		std::cout << "Client fd " << conn->fd
+		          << " closed connection" << std::endl;
+		return false;
 	}
 	
 	if (bytes_read < 0) {
-		// Error occurred during read
-		// In non-blocking mode, EAGAIN/EWOULDBLOCK means "no data right now"
-		// But we only call this function when poll() says POLLIN!
-		// So this is a real error
 		std::cerr << "Error reading from client fd " << conn->fd << std::endl;
-		return false; // Tell caller to remove this connection
+		return false;
 	}
 	
-	std::cout << "Read " << bytes_read << " bytes from client fd " << conn->fd << std::endl;
+	std::cout << "Read " << bytes_read << " bytes from client fd "
+	          << conn->fd << std::endl;
 	
 	// ========================================================================
-	// STEP 4: Feed data to HTTP parser
+	// STEP 3: Feed data to HTTP parser
 	// ========================================================================
-	// The parser accumulates data across multiple calls
-	// It processes the data and advances its internal state:
-	// REQUEST_LINE → HEADERS → BODY → COMPLETE (or ERROR)
-	//
-	// parse() returns:
-	// - 0: Request is complete! Ready to generate response
-	// - 1: Need more data, keep reading
-	// - -1: Parse error (malformed HTTP request)
 	int parse_result = conn->parser.parse(buffer, bytes_read);
 	
 	if (parse_result == -1) {
-		// Malformed HTTP request
-		// Client sent invalid data, reject it
 		std::cerr << "Parse error for client fd " << conn->fd << std::endl;
 		// TODO: Send 400 Bad Request response
-		return false; // Remove this connection
+		return false;
 	}
 	
+	// ========================================================================
+	// STEP 4: Generate response if request is complete
+	// ========================================================================
 	if (parse_result == 0) {
-		// ====================================================================
-		// Request is COMPLETE! Time to generate response
-		// ====================================================================
 		std::cout << "Request complete for client fd " << conn->fd << std::endl;
 		
 		// TODO: Generate proper HTTP response based on request
-		// For now: Send a simple HTTP/1.0 response
-		conn->write_buffer = 
+		conn->write_buffer =
 			"HTTP/1.0 200 OK\r\n"
 			"Content-Type: text/html\r\n"
 			"Content-Length: 13\r\n"
 			"\r\n"
 			"Hello, World!";
 		
-		// ====================================================================
-		// Tell poll() we want to WRITE to this socket
-		// ====================================================================
-		// We add POLLOUT flag to tell poll():
-		// "Notify me when this socket is ready to accept data"
-		// We keep POLLIN in case client sends more requests (HTTP pipelining)
+		// Switch to write mode
 		poll_fd->events = POLLIN | POLLOUT;
-		
 		std::cout << "Response ready, waiting for socket to be writable" << std::endl;
 	}
 	
-	// If parse_result == 1, we need more data
-	// Just return true and wait for next POLLIN event
-	return true; // Keep connection alive
+	// parse_result == 1 means need more data, keep waiting
+	return true;
 }
 
 
@@ -237,78 +187,49 @@ bool handleClientWrite(Connection* conn, pollfd* poll_fd) {
 	// ========================================================================
 	// STEP 1: Check if we have data to send
 	// ========================================================================
-	// The write_buffer might be empty if:
-	// - We already sent everything
-	// - We got POLLOUT but have nothing to send (shouldn't happen)
 	if (conn->write_buffer.empty()) {
-		// Nothing to send, stop watching for POLLOUT
-		// Only watch for POLLIN (client might send another request)
 		poll_fd->events = POLLIN;
-		return true; // Keep connection alive
+		return true;
 	}
 	
 	// ========================================================================
-	// STEP 2: Try to write data to socket
+	// STEP 2: Write data to socket
 	// ========================================================================
-	// write() attempts to send data from write_buffer
-	// It returns:
-	// - Positive number: How many bytes were actually sent
-	// - 0: Nothing sent (shouldn't happen with POLLOUT)
-	// - -1: Error occurred
-	//
-	// CRITICAL: write() might send LESS than we asked for!
-	// Example: write_buffer has 10000 bytes, write() only sends 3000
-	// This is called a "partial write" and is NORMAL
-	// We must:
-	// 1. Remove the 3000 bytes we sent from write_buffer
-	// 2. Keep the remaining 7000 bytes for next write
-	// 3. Wait for next POLLOUT event
-	ssize_t bytes_sent = write(conn->fd, 
-	                           conn->write_buffer.c_str(), 
+	ssize_t bytes_sent = write(conn->fd,
+	                           conn->write_buffer.c_str(),
 	                           conn->write_buffer.size());
 	
 	// ========================================================================
 	// STEP 3: Handle write() results
 	// ========================================================================
 	if (bytes_sent < 0) {
-		// Error during write - connection probably broken
 		std::cerr << "Error writing to client fd " << conn->fd << std::endl;
-		return false; // Remove connection
+		return false;
 	}
 	
 	if (bytes_sent == 0) {
-		// Nothing sent - this is weird, but not fatal
-		// Just try again on next POLLOUT
-		return true; // Keep connection alive
+		// Nothing sent - retry on next POLLOUT
+		return true;
 	}
 	
-	std::cout << "Sent " << bytes_sent << " bytes to client fd " << conn->fd << std::endl;
+	std::cout << "Sent " << bytes_sent << " bytes to client fd "
+	          << conn->fd << std::endl;
 	
 	// ========================================================================
 	// STEP 4: Remove sent data from buffer
 	// ========================================================================
-	// erase(start, count) removes characters from the string
-	// We remove from position 0 (start) for bytes_sent characters
-	// If we sent everything, buffer becomes empty
-	// If we sent partial data, buffer keeps the unsent portion
 	conn->write_buffer.erase(0, bytes_sent);
 	
 	// ========================================================================
-	// STEP 5: Check if we're done sending
+	// STEP 5: Check if all data sent
 	// ========================================================================
 	if (conn->write_buffer.empty()) {
-		// All data sent! No longer need POLLOUT notifications
 		std::cout << "All data sent to client fd " << conn->fd << std::endl;
-		
-		// Stop watching for POLLOUT, only watch for POLLIN
-		// This saves CPU - poll() won't wake us up for POLLOUT anymore
 		poll_fd->events = POLLIN;
-		
-		// TODO: For HTTP/1.0, we should close the connection now
-		// For HTTP/1.1, we'd keep it alive for pipelining
+		// TODO: For HTTP/1.0, close connection here
 	}
 	
-	return true; // Keep connection alive
+	return true;
 }
 
 
@@ -320,14 +241,6 @@ bool handleClientWrite(Connection* conn, pollfd* poll_fd) {
 // - POLLERR: Socket has an error condition (rare, usually system issue)
 // - POLLHUP: Client closed the connection (common, normal)
 //
-// This function just logs what happened and returns false so the
-// connection gets cleaned up.
-//
-// WHY THIS MATTERS:
-// - We need to detect when clients disconnect
-// - We must close() the socket to free system resources
-// - We must remove the connection from our vectors
-//
 // PARAMETERS:
 // - fd: The socket file descriptor that had an error
 // - revents: The events that poll() detected (POLLERR, POLLHUP, etc.)
@@ -335,26 +248,15 @@ bool handleClientWrite(Connection* conn, pollfd* poll_fd) {
 // RETURNS:
 // - Always returns false (connection should be removed)
 bool handleSocketError(int fd, short revents) {
-	// Check what type of event occurred
-	// We use & (bitwise AND) because revents is a bitmask
-	// Multiple flags can be set at once
-	
-	if (revents & POLLERR) {
-		// Socket has an error condition
-		// This is rare - usually means system problem
+	if (revents & POLLERR)
 		std::cerr << "POLLERR on socket fd " << fd << std::endl;
-	}
 	
-	if (revents & POLLHUP) {
-		// Client closed the connection
-		// This is normal - client is done talking to us
-		std::cout << "POLLHUP on socket fd " << fd << " (client closed connection)" << std::endl;
-	}
+	if (revents & POLLHUP)
+		std::cout << "POLLHUP on socket fd " << fd
+		          << " (client closed connection)" << std::endl;
 	
-	// Tell caller to remove this connection
 	return false;
 }
-
 
 // ============================================================================
 // Remove a connection and clean up resources
@@ -364,11 +266,6 @@ bool handleSocketError(int fd, short revents) {
 // 1. Closes the socket to free system resources
 // 2. Removes the pollfd from poll_fds vector
 // 3. Removes the Connection from connections vector
-//
-// WHY THIS IS A SEPARATE FUNCTION:
-// - This cleanup pattern is repeated 3 times in main event loop
-// - Centralizing it makes the code cleaner and easier to maintain
-// - Ensures we always close the socket before removing from vectors
 //
 // PARAMETERS:
 // - index: Index in poll_fds where this connection is (passed by reference)
@@ -381,19 +278,16 @@ bool handleSocketError(int fd, short revents) {
 //
 // SIDE EFFECTS:
 // - Decrements index after removal to account for shifted elements
-void removeConnection(size_t& index, 
+void removeConnection(size_t& index,
                      std::vector<Connection>& connections,
                      std::vector<pollfd>& poll_fds) {
-	// Close the socket first to free system resources
+	// Close socket first to free system resources
 	close(poll_fds[index].fd);
 	
-	// Remove from poll_fds (at the given index)
+	// Remove from vectors (poll_fds[0] is listening socket)
 	poll_fds.erase(poll_fds.begin() + index);
-	
-	// Remove from connections (at index-1 because poll_fds[0] is listening socket)
 	connections.erase(connections.begin() + (index - 1));
 	
-	// Decrement index because we removed an item and shifted everything down
-	// This ensures the caller's loop checks the correct next element
+	// Decrement index to check correct next element after shift
 	index--;
 }

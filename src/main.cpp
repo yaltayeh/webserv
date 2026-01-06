@@ -1,6 +1,12 @@
 #include "../include/webserv.hpp"
 
 // ============================================================================
+// Constants
+// ============================================================================
+static const int DEFAULT_PORT = 8080;
+static const int POLL_TIMEOUT_INFINITE = -1;
+
+// ============================================================================
 // LEARNING ROADMAP - Implement in this order:
 // ============================================================================
 // PHASE 1: Basic Socket Server ✓ DONE
@@ -32,40 +38,100 @@
 //   - Capture output and send back to client
 // ============================================================================
 
+// ============================================================================
+// Initialize server listening socket
+// ============================================================================
+// RETURNS:
+// - Socket fd on success
+// - -1 on failure (program should exit)
+static int initializeServer() {
+	int listen_fd = createListeningSocket(DEFAULT_PORT);
+	if (listen_fd < 0) {
+		std::cerr << "Failed to create listening socket" << std::endl;
+		return -1;
+	}
+	
+	std::cout << "Listening on port " << DEFAULT_PORT << std::endl;
+	return listen_fd;
+}
+
+// ============================================================================
+// Handle listening socket activity (new connections)
+// ============================================================================
+// PARAMETERS:
+// - listen_fd: The listening socket
+// - connections: Vector of active connections
+// - poll_fds: Vector of poll file descriptors
+static void handleListeningSocket(int listen_fd,
+                                  std::vector<Connection>& connections,
+                                  std::vector<pollfd>& poll_fds,
+                                  short revents) {
+	if (revents & POLLIN)
+		handleNewConnection(listen_fd, connections, poll_fds);
+}
+
+// ============================================================================
+// Handle client socket activity (read/write/error)
+// ============================================================================
+// PARAMETERS:
+// - index: Index in poll_fds array
+// - connections: Vector of active connections
+// - poll_fds: Vector of poll file descriptors
+//
+// RETURNS:
+// - true if connection should be kept
+// - false if connection should be removed
+static bool handleClientSocket(size_t index,
+                              std::vector<Connection>& connections,
+                              std::vector<pollfd>& poll_fds) {
+	Connection* conn = &connections[index - 1];  // -1: poll_fds[0] is listening socket
+	pollfd* poll_fd = &poll_fds[index];
+	
+	// ========================================================================
+	// Check for errors or connection closure first
+	// ========================================================================
+	if (poll_fd->revents & (POLLERR | POLLHUP))
+		return handleSocketError(poll_fd->fd, poll_fd->revents);
+	
+	// ========================================================================
+	// Handle incoming data (POLLIN)
+	// ========================================================================
+	if (poll_fd->revents & POLLIN) {
+		if (!handleClientRead(conn, poll_fd))
+			return false;
+	}
+	
+	// ========================================================================
+	// Handle outgoing data (POLLOUT)
+	// ========================================================================
+	if (poll_fd->revents & POLLOUT) {
+		if (!handleClientWrite(conn, poll_fd))
+			return false;
+	}
+	
+	return true;
+}
 
 int main() {
 	// ========================================================================
 	// SETUP: Create the listening socket
 	// ========================================================================
-	// This socket is special - it only accepts NEW connections
-	// It never sends or receives HTTP data
-	// Each accepted connection gets its own NEW socket
-	int listen_fd = createListeningSocket(8080);
-	if (listen_fd < 0) {
-		std::cerr << "Failed to create listening socket" << std::endl;
-	    return 1;
-	}
-	std::cout << "Listening on port 8080" << std::endl;
-
+	int listen_fd = initializeServer();
+	if (listen_fd < 0)
+		return 1;
+	
 	// ========================================================================
 	// SETUP: Initialize data structures
 	// ========================================================================
 	// connections[]: Stores Connection objects (one per client)
-	//                Each has: socket fd, HTTP parser, write buffer
-	//
 	// poll_fds[]:    Stores pollfd structures for poll() monitoring
-	//                Each has: socket fd, events to watch, events that happened
 	//
 	// IMPORTANT: These arrays stay in sync!
 	// - poll_fds[0] = listening socket (NOT in connections[])
-	// - poll_fds[1] = connections[0].fd
-	// - poll_fds[2] = connections[1].fd
-	// - etc.
+	// - poll_fds[i] = connections[i-1].fd for i > 0
 	std::vector<Connection> connections;
 	std::vector<pollfd> poll_fds;
 	
-	// Add listening socket to poll monitoring
-	// POLLIN means "notify me when someone tries to connect"
 	addSocketToPoll(listen_fd, poll_fds, POLLIN);
 
 	// ========================================================================
@@ -80,160 +146,53 @@ int main() {
 		// ====================================================================
 		// STEP 1: Wait for activity on any socket
 		// ====================================================================
-		// poll() monitors ALL sockets at once and BLOCKS until one has activity
-		// 
-		// WHAT poll() IS WATCHING:
-		// - First iteration: ONLY the listening socket (poll_fds has 1 item)
-		// - After clients connect: listening socket + all client sockets
-		// - poll_fds grows as we accept connections (we push new pollfd structs)
+		// poll() monitors ALL sockets and blocks until one has activity
 		//
-		// HOW poll() WORKS:
-		// - We give it an array of pollfd structures
-		// - Each pollfd says: "watch this fd for these events"
-		// - poll() sleeps until at least one event happens
-		// - poll() fills in the revents field for each fd
-		// - We loop through and check revents to see what happened
-		//
-		// PARAMETERS EXPLAINED:
-		// - &poll_fds[0]: Pointer to first element of vector (array start)
+		// PARAMETERS:
+		// - &poll_fds[0]: Pointer to first element (array start)
 		// - poll_fds.size(): Number of file descriptors to monitor
-		// - -1: Timeout in milliseconds (-1 = wait forever, no timeout)
+		// - POLL_TIMEOUT_INFINITE (-1): Wait forever, no timeout
 		//
-		// RETURN VALUE:
-		// - Positive number: How many sockets have activity
+		// RETURNS:
+		// - Positive: Number of sockets with activity
 		// - 0: Timeout expired (won't happen with -1)
 		// - -1: Error occurred
-		int ready = poll(&poll_fds[0], poll_fds.size(), -1);
+		int ready = poll(&poll_fds[0], poll_fds.size(), POLL_TIMEOUT_INFINITE);
 		if (ready < 0) {
-		    std::cerr << "poll() error" << std::endl;
-		    break;
+			std::cerr << "poll() error" << std::endl;
+			break;
 		}
 		
 		// ====================================================================
-		// STEP 2: Loop through ALL file descriptors to see which ones are ready
+		// STEP 2: Process all file descriptors with activity
 		// ====================================================================
-		// poll() told us SOMETHING happened, but we don't know what.
-		// We must check each fd's revents field to see if it has activity.
-		// 
-		// ABOUT THE LOOP DIRECTION AND REMOVAL:
-		// - This loop goes FORWARD (i++), which normally causes problems when removing
-		// - Problem: If we remove items during iteration, indices shift
-		// - Solution: After removing an item with erase(), we decrement i (i--)
-		// - This makes i point to the same logical position after the shift
-		// - Example: Removing item at i=2 shifts everything down, so i-- makes us check the new item at position 2
-		//
-		// WHAT WE'RE CHECKING:
-		// - poll_fds[i].revents: Events that actually happened (filled by poll)
-		// - If revents == 0: Nothing happened on this fd, skip it
-		// - If revents != 0: Something happened, figure out what
+		// We loop through and check each fd's revents
+		// If revents == 0, nothing happened on that socket
 		for (size_t i = 0; i < poll_fds.size(); i++) {
+			if (poll_fds[i].revents == 0)
+				continue;
 			
-			// ================================================================
-			// STEP 2.1: Skip file descriptors with no activity
-			// ================================================================
-			// poll() sets revents to 0 if nothing happened on this socket
-			// We only care about sockets that have activity, so skip the rest
-			if (poll_fds[i].revents == 0) { continue; }
-			
-			// ================================================================
-			// STEP 2.2: Handle the LISTENING socket
-			// ================================================================
-			// The listening socket is special - it's the only socket that:
-			// - Accepts NEW connections (creates new sockets)
-			// - Never sends or receives HTTP data
-			// - Is always at poll_fds[0] (first item)
-			//
-			// HOW WE KNOW IT'S THE LISTENING SOCKET:
-			// - Compare fd number: poll_fds[i].fd == listen_fd
-			// - If they match, this is the listening socket
+			// Handle listening socket (accept new connections)
 			if (poll_fds[i].fd == listen_fd) {
-				// ============================================================
-				// Check if there's an incoming connection waiting
-				// ============================================================
-				// POLLIN on a listening socket means: "client trying to connect"
-				// The & operator checks if the POLLIN bit is set in revents
-				// (revents is a bitmask - multiple flags can be set at once)
-				if (poll_fds[i].revents & POLLIN) {
-					// Call our helper function to accept the connection
-					// This will create a new socket, add Connection object,
-					// and add to poll monitoring
-					handleNewConnection(listen_fd, connections, poll_fds);
-				}
-				// Done handling listening socket, check next fd
+				handleListeningSocket(listen_fd, connections, poll_fds,
+				                     poll_fds[i].revents);
 				continue;
 			}
 			
-			// ================================================================
-			// STEP 2.3: Handle CLIENT sockets (not the listening socket)
-			// ================================================================
-			// If we reach here, this is a regular client connection
-			// It can have several types of activity:
-			// - POLLIN: Client sent us data (HTTP request)
-			// - POLLOUT: Socket is ready for us to send data (HTTP response)
-			// - POLLERR: Socket has an error
-			// - POLLHUP: Client closed the connection
-			
-			// Find the Connection object for this socket
-			// We need this to access the parser and write_buffer
-			Connection* conn = &connections[i - 1]; // -1 because poll_fds[0] is listening socket
-			
-			// ============================================================
-			// Check for errors or connection closure
-			// ============================================================
-			// POLLERR: Socket error (rare, usually system issue)
-			// POLLHUP: Client closed connection (common, normal)
-			// We check these FIRST before trying to read/write
-			if (poll_fds[i].revents & (POLLERR | POLLHUP)) {
-				// Handle the error/closure and check if we should remove connection
-				if (!handleSocketError(poll_fds[i].fd, poll_fds[i].revents))
-					removeConnection(i, connections, poll_fds);
-				continue;
-			}
-			
-			// ============================================================
-			// Handle incoming data from client (POLLIN)
-			// ============================================================
-			// POLLIN means: "socket has data ready to read"
-			// - read() will not block
-			// - Data might be incomplete (need to accumulate)
-			// - Feed to HTTP parser incrementally
-			if (poll_fds[i].revents & POLLIN) {
-				// Read data, parse HTTP request, generate response if complete
-				if (!handleClientRead(conn, &poll_fds[i])) {
-					// Connection closed or error during read
-					removeConnection(i, connections, poll_fds);
-					continue;
-				}
-			}
-			
-			// ============================================================
-			// Handle sending data to client (POLLOUT)
-			// ============================================================
-			// POLLOUT means: "socket is ready to accept data"
-			// - write() will not block
-			// - Might only send part of our buffer (partial write)
-			// - Keep writing until buffer is empty
-			if (poll_fds[i].revents & POLLOUT) {
-				// Send data from write_buffer to socket
-				if (!handleClientWrite(conn, &poll_fds[i])) {
-					// Connection closed or error during write
-					removeConnection(i, connections, poll_fds);
-					continue;
-				}
-			}
+			// Handle client socket (read/write/error)
+			if (!handleClientSocket(i, connections, poll_fds))
+				removeConnection(i, connections, poll_fds);
 		}
 	}
 	
 	// ========================================================================
 	// CLEANUP: Server is shutting down
 	// ========================================================================
-	// Close all sockets to free system resources
-	// This only happens if we break out of the main loop (error)
 	std::cout << "Server shutting down..." << std::endl;
+	
 	close(listen_fd);
-	for (size_t i = 0; i < connections.size(); i++) {
+	for (size_t i = 0; i < connections.size(); i++)
 		close(connections[i].fd);
-	}
 	
 	return 0;
 }
