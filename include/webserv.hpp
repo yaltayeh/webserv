@@ -37,5 +37,8 @@ void handleNewConnection(int listen_fd,
 bool handleClientRead(Connection* conn, pollfd* poll_fd);
 bool handleClientWrite(Connection* conn, pollfd* poll_fd);
 bool handleSocketError(int fd, short revents);
+void removeConnection(size_t& index, 
+                     std::vector<Connection>& connections,
+                     std::vector<pollfd>& poll_fds);
 
 #endif // WEBSERV_HPP

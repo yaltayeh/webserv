@@ -185,17 +185,8 @@ int main() {
 			// We check these FIRST before trying to read/write
 			if (poll_fds[i].revents & (POLLERR | POLLHUP)) {
 				// Handle the error/closure and check if we should remove connection
-				if (!handleSocketError(poll_fds[i].fd, poll_fds[i].revents)) {
-					// Connection should be removed
-					// Close the socket first
-					close(poll_fds[i].fd);
-					// Remove from poll_fds (at index i)
-					poll_fds.erase(poll_fds.begin() + i);
-					// Remove from connections (at index i-1 because poll_fds[0] is listening socket)
-					connections.erase(connections.begin() + (i - 1));
-					// Decrement i because we removed an item and shifted everything down
-					i--;
-				}
+				if (!handleSocketError(poll_fds[i].fd, poll_fds[i].revents))
+					removeConnection(i, connections, poll_fds);
 				continue;
 			}
 			
@@ -210,10 +201,7 @@ int main() {
 				// Read data, parse HTTP request, generate response if complete
 				if (!handleClientRead(conn, &poll_fds[i])) {
 					// Connection closed or error during read
-					close(poll_fds[i].fd);
-					poll_fds.erase(poll_fds.begin() + i);
-					connections.erase(connections.begin() + (i - 1));
-					i--;
+					removeConnection(i, connections, poll_fds);
 					continue;
 				}
 			}
@@ -229,10 +217,7 @@ int main() {
 				// Send data from write_buffer to socket
 				if (!handleClientWrite(conn, &poll_fds[i])) {
 					// Connection closed or error during write
-					close(poll_fds[i].fd);
-					poll_fds.erase(poll_fds.begin() + i);
-					connections.erase(connections.begin() + (i - 1));
-					i--;
+					removeConnection(i, connections, poll_fds);
 					continue;
 				}
 			}

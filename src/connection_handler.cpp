@@ -354,3 +354,46 @@ bool handleSocketError(int fd, short revents) {
 	// Tell caller to remove this connection
 	return false;
 }
+
+
+// ============================================================================
+// Remove a connection and clean up resources
+// ============================================================================
+// WHAT THIS DOES:
+// Handles the cleanup when a connection needs to be removed:
+// 1. Closes the socket to free system resources
+// 2. Removes the pollfd from poll_fds vector
+// 3. Removes the Connection from connections vector
+//
+// WHY THIS IS A SEPARATE FUNCTION:
+// - This cleanup pattern is repeated 3 times in main event loop
+// - Centralizing it makes the code cleaner and easier to maintain
+// - Ensures we always close the socket before removing from vectors
+//
+// PARAMETERS:
+// - index: Index in poll_fds where this connection is (passed by reference)
+// - connections: Vector of Connection objects
+// - poll_fds: Vector of pollfd structures for poll()
+//
+// IMPORTANT: Index mapping
+// - poll_fds[0] is the listening socket (NOT in connections)
+// - poll_fds[i] maps to connections[i-1] for client connections
+//
+// SIDE EFFECTS:
+// - Decrements index after removal to account for shifted elements
+void removeConnection(size_t& index, 
+                     std::vector<Connection>& connections,
+                     std::vector<pollfd>& poll_fds) {
+	// Close the socket first to free system resources
+	close(poll_fds[index].fd);
+	
+	// Remove from poll_fds (at the given index)
+	poll_fds.erase(poll_fds.begin() + index);
+	
+	// Remove from connections (at index-1 because poll_fds[0] is listening socket)
+	connections.erase(connections.begin() + (index - 1));
+	
+	// Decrement index because we removed an item and shifted everything down
+	// This ensures the caller's loop checks the correct next element
+	index--;
+}
