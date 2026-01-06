@@ -2,6 +2,8 @@
 #include "../include/Constants.hpp"
 #include <string>
 #include <stdexcept>
+#include <sstream>
+#include <vector>
 
 namespace libhttp {
 
@@ -46,4 +48,22 @@ namespace libhttp {
 			default: return "INVALID";
 		}
 	}
+
+	std::vector<std::string> split(const std::string& str, char delimiter) {
+		std::vector<std::string> v;
+		std::string item;
+		std::stringstream ss(str);
+		while (std::getline(ss, item, delimiter))
+			v.push_back(item);
+		return v;
+	}
+
+	std::string trim(const std::string& str) {
+		size_t first = str.find_first_not_of(" \t\n\r");
+		if (first == std::string::npos)
+			return "";
+		size_t last = str.find_last_not_of(" \t\n\r");
+		return str.substr(first, (last - first + 1));
+	}
+
 }

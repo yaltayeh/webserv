@@ -1,4 +1,6 @@
 #include "../include/Request.hpp"
+#include "../include/Utils.hpp"
+#include <sstream>
 
 namespace libhttp {
 
@@ -47,4 +49,23 @@ namespace libhttp {
 	}
 	std::string Request::getBody() const { return _body; }
 	std::multimap<std::string, std::string> Request::getHeaders() const { return _headers; }
+
+	// Helper to convert request to string
+	std::string Request::toString() const {
+		std::string response;
+		response += methodToString(_method) + " " + _uri + " " + HTTP_1_0 + "\r\n";
+		for (std::multimap<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
+			response += it->first + ": " + it->second + "\r\n";
+		}
+		response += "\r\n" + _body;
+		return response;
+	}
+
+}
+
+// Stream insertion operator
+std::ostream &operator<<(std::ostream &os, const libhttp::Request &request)
+{
+	os << request.toString();
+	return os;
 }

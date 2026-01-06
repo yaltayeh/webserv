@@ -27,6 +27,9 @@ namespace libhttp {
 		std::string getBody() const;
 		std::multimap<std::string, std::string> getHeaders() const;
 
+		// Helper to convert request to string
+		std::string toString() const;
+
 	private:
 		Method _method;
 		std::string _uri;
@@ -35,5 +38,8 @@ namespace libhttp {
 	};
 
 }
+
+// Stream insertion operator
+std::ostream &operator<<(std::ostream &os, const libhttp::Request &request);
 
 #endif

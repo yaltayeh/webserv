@@ -33,9 +33,12 @@ namespace libhttp {
 
 		State _state;
 		std::string _buffer;
+		size_t _expectedBodyLength;
+        size_t _receivedBodyLength;
+		
         Request _request;
-
-        int processRequestLine();
+        
+		int processRequestLine();
         int processHeaders();
         int processBody();
 	};
