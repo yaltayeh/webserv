@@ -8,7 +8,7 @@
 namespace libhttp {
 
 	Parser::Parser() : 	_state(REQUEST_LINE),
-						_buffer(""), _request(),
+						_buffer(""),
 						_expectedBodyLength(0),
 						_receivedBodyLength(0) {}
 	Parser::~Parser() {}
@@ -128,4 +128,5 @@ namespace libhttp {
 
 	// get the parsed request
 	Request Parser::getRequest() const { return _request; }
+
 }
