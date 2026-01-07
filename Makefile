@@ -1,14 +1,16 @@
 NAME = webserve
 
-FILES = src/Request.cpp 	\
-	src/HttpHeaders.cpp		\
-	src/Response.cpp		\
-	src/Http.cpp			\
-	src/main.cpp			\
+FILES = src/main.cpp 							\
+	    src/Parser.cpp 							\
+		src/IDirective.cpp						\
+		src/Directives/RootDirective.cpp		\
+		src/Directives/LocationDirective.cpp	\
+		src/Directives/ServerDirective.cpp		\
+		src/Directives/HttpDirective.cpp		\
 
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -MMD -std=c++98
-CPPFLAGS = -I./include
+CFLAGS = -Wall -Wextra -Werror -MMD -g -std=c++98
+CPPFLAGS = -I./include -I./include/Directives
 
 OFILES = ${FILES:src/%.cpp=build/%.o}
 DFILES = ${OFILES:build/%.o=build/%.d}
@@ -22,6 +24,7 @@ build:
 	mkdir -p build
 
 build/%.o: src/%.cpp | build
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 clean:

@@ -28,9 +28,3 @@
 // opendir, readdir, closedir,
 // fcntl, dup, dup2
 
-
-
-
-int main() {
-	
-}
