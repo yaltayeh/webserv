@@ -54,6 +54,10 @@ std::string toLower(const std::string& str) {
 std::string getDirectory(const std::string& path) {
     size_t lastSlash = path.rfind('/');
     if (lastSlash != std::string::npos) {
+        // Special case: file in root directory (e.g., "/file.txt")
+        if (lastSlash == 0) {
+            return "/";
+        }
         return path.substr(0, lastSlash);
     }
     return ".";

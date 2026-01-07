@@ -172,7 +172,8 @@ TEST(utils_toUpper) {
 TEST(utils_getDirectory) {
     ASSERT_EQ(std::string("/path/to"), utils::getDirectory("/path/to/file.txt"));
     ASSERT_EQ(std::string("."), utils::getDirectory("file.txt"));
-    ASSERT_EQ(std::string(""), utils::getDirectory("/file.txt"));
+    ASSERT_EQ(std::string("/"), utils::getDirectory("/file.txt"));  // Root directory case
+    ASSERT_EQ(std::string("/"), utils::getDirectory("/etc"));        // Root directory case
 }
 
 TEST(utils_getExtension) {
