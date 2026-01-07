@@ -621,7 +621,9 @@ TEST(execute_post_with_body) {
     pid_t pid = cgi.execute(readFd, writeFd);
     ASSERT_NE(-1, pid);
     
-    write(writeFd, postBody.c_str(), postBody.length());
+    // Write POST body to CGI script, checking for errors
+    ssize_t bytesWritten = write(writeFd, postBody.c_str(), postBody.length());
+    ASSERT_EQ(static_cast<ssize_t>(postBody.length()), bytesWritten);
     close(writeFd);
     
     std::string output = readFromFd(readFd);

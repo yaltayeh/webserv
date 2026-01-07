@@ -108,6 +108,11 @@ bool isPrintableAscii(const std::string& str);
 std::string intToString(int value);
 
 /**
+ * @brief Convert a size_t to a string
+ */
+std::string sizeToString(size_t value);
+
+/**
  * @brief Convert a string to an integer
  * @param str String to convert
  * @param defaultValue Value to return if conversion fails

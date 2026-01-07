@@ -2,6 +2,7 @@
 #include <cctype>
 #include <sstream>
 #include <cstdlib>
+#include <climits>
 
 namespace utils {
 
@@ -115,11 +116,9 @@ bool containsPathTraversal(const std::string& path) {
             return true;
         }
     }
-    // Check for embedded null bytes by iterating through the string
-    for (size_t i = 0; i < path.length(); ++i) {
-        if (path[i] == '\0') {
-            return true;
-        }
+    // Check for embedded null bytes using find() which checks the entire buffer
+    if (path.find('\0') != std::string::npos) {
+        return true;
     }
     return false;
 }
@@ -157,6 +156,12 @@ std::string intToString(int value) {
     return ss.str();
 }
 
+std::string sizeToString(size_t value) {
+    std::ostringstream ss;
+    ss << value;
+    return ss.str();
+}
+
 int stringToInt(const std::string& str, int defaultValue) {
     if (str.empty()) {
         return defaultValue;
@@ -167,6 +172,11 @@ int stringToInt(const std::string& str, int defaultValue) {
     
     // Check if conversion was successful
     if (*endPtr != '\0') {
+        return defaultValue;
+    }
+    
+    // Check for overflow before casting to int
+    if (result > INT_MAX || result < INT_MIN) {
         return defaultValue;
     }
     

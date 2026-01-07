@@ -93,8 +93,13 @@ pid_t CGI::execute(int &readPipeFd, int &writePipeFd) {
     close(pipeFromChild[1]); // Close write end of output pipe
 
     // Set both pipes to non-blocking mode for non-blocking I/O
-    fcntl(pipeFromChild[0], F_SETFL, O_NONBLOCK);
-    fcntl(pipeToChild[1], F_SETFL, O_NONBLOCK);
+    // Note: fcntl errors are not critical here, we continue even if it fails
+    if (fcntl(pipeFromChild[0], F_SETFL, O_NONBLOCK) == -1) {
+        // Non-blocking mode failed, but we can continue
+    }
+    if (fcntl(pipeToChild[1], F_SETFL, O_NONBLOCK) == -1) {
+        // Non-blocking mode failed, but we can continue
+    }
 
     writePipeFd = pipeToChild[1];
     readPipeFd = pipeFromChild[0];
@@ -258,8 +263,15 @@ void CGI::buildEnvironment(const libhttp::Request &request,
     
     std::string pathInfo = extractPathInfo(request.getUri(), scriptName);
     addEnvironmentVariable("PATH_INFO", pathInfo);
+    
+    // Document root
+    std::string documentRoot = utils::getDirectory(_scriptPath);
+    addEnvironmentVariable("DOCUMENT_ROOT", documentRoot);
+    
+    // PATH_TRANSLATED per RFC 3875 section 4.1.6: DOCUMENT_ROOT + PATH_INFO
     if (!pathInfo.empty()) {
-        addEnvironmentVariable("PATH_TRANSLATED", pathInfo);
+        std::string pathTranslated = documentRoot + pathInfo;
+        addEnvironmentVariable("PATH_TRANSLATED", pathTranslated);
     }
 
     // Server information
@@ -268,9 +280,6 @@ void CGI::buildEnvironment(const libhttp::Request &request,
     addEnvironmentVariable("SERVER_PROTOCOL", "HTTP/1.0");
     addEnvironmentVariable("SERVER_SOFTWARE", "QuantumBytes/1.0");
     addEnvironmentVariable("GATEWAY_INTERFACE", "CGI/1.1");
-
-    // Document root
-    addEnvironmentVariable("DOCUMENT_ROOT", utils::getDirectory(_scriptPath));
 
     // Content headers (special handling per CGI spec)
     std::string contentType = request.getHeader("Content-Type");
@@ -282,7 +291,7 @@ void CGI::buildEnvironment(const libhttp::Request &request,
     if (!contentLength.empty()) {
         addEnvironmentVariable("CONTENT_LENGTH", contentLength);
     } else if (!_requestBody.empty()) {
-        addEnvironmentVariable("CONTENT_LENGTH", utils::intToString(static_cast<int>(_requestBody.length())));
+        addEnvironmentVariable("CONTENT_LENGTH", utils::sizeToString(_requestBody.length()));
     }
 
     // PHP compatibility
@@ -336,7 +345,8 @@ void CGI::prepareEnvp() {
 }
 
 void CGI::cleanupEnvp() {
-    for (size_t i = 0; i < _envp.size(); ++i) {
+    // Skip the last element which is NULL terminator
+    for (size_t i = 0; i < _envp.size() && _envp[i] != NULL; ++i) {
         delete[] _envp[i];
     }
     _envp.clear();
@@ -434,8 +444,9 @@ void CGI::setupChildProcess(int pipeToChild[2], int pipeFromChild[2]) {
     close(pipeFromChild[1]);
 
     // Change to script directory; exit if this fails
+    // Skip chdir for root directory to avoid security issues
     std::string scriptDir = utils::getDirectory(_scriptPath);
-    if (!scriptDir.empty()) {
+    if (!scriptDir.empty() && scriptDir != "/") {
         if (chdir(scriptDir.c_str()) == -1) {
             _exit(1);
         }
@@ -445,13 +456,17 @@ void CGI::setupChildProcess(int pipeToChild[2], int pipeFromChild[2]) {
     char *argv[3];
     if (!_interpreterPath.empty()) {
         argv[0] = const_cast<char *>(_interpreterPath.c_str());
-        argv[1] = const_cast<char *>(_scriptPath.c_str());
+        // Use just the filename after chdir for better portability
+        std::string scriptName = utils::getFilename(_scriptPath);
+        argv[1] = const_cast<char *>(scriptName.c_str());
         argv[2] = NULL;
         execve(_interpreterPath.c_str(), argv, _envp.data());
     } else {
-        argv[0] = const_cast<char *>(_scriptPath.c_str());
+        // Use just the filename after chdir
+        std::string scriptName = utils::getFilename(_scriptPath);
+        argv[0] = const_cast<char *>(scriptName.c_str());
         argv[1] = NULL;
-        execve(_scriptPath.c_str(), argv, _envp.data());
+        execve(scriptName.c_str(), argv, _envp.data());
     }
 
     // execve only returns on failure
