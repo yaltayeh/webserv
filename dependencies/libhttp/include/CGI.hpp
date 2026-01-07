@@ -19,7 +19,7 @@
  * 
  * Design Principles:
  * - SRP: Each method has a single responsibility
- * - DRY: Reuses utilities from libhttp::Utils
+ * - DRY: Reuses utilities from utils:: namespace (libutils)
  * - KISS: Simple, focused interface
  */
 class CGI
@@ -56,10 +56,20 @@ public:
                       int serverPort);
 
     /**
-     * @brief Execute the CGI script
+     * @brief Execute the CGI script (fork and exec)
+     * 
+     * Must be called after successful setup().
+     * Creates pipes for bidirectional communication with CGI script.
+     * 
      * @param readPipeFd Output: pipe fd to read CGI output from
      * @param writePipeFd Output: pipe fd to write request body to (if POST)
      * @return PID of child process, or -1 on error
+     * 
+     * @note CRITICAL: The caller MUST close writePipeFd after writing the
+     *       request body to signal EOF to the CGI script. Failing to close
+     *       writePipeFd will cause the CGI script to hang waiting for more
+     *       input. For POST requests, write the body then immediately close
+     *       writePipeFd. For GET requests, close writePipeFd immediately.
      */
     pid_t execute(int &readPipeFd, int &writePipeFd);
 

@@ -20,7 +20,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD_PATH)
+	rm -rf $(OBJ_DIR)
 
 fclean: clean
 	rm -f $(LIB_NAME)
