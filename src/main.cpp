@@ -1,198 +1,293 @@
-#include "../include/webserv.hpp"
+/**
+ * ============================================================================
+ * main.cpp - HTTP Server Entry Point
+ * ============================================================================
+ * 
+ * This is the main entry point for the webserv HTTP server. It demonstrates
+ * the multi-server architecture where multiple server instances (different
+ * host:port pairs) run simultaneously in a single event loop with one unified
+ * poll() call.
+ * 
+ * ARCHITECTURE OVERVIEW:
+ * - EventLoop: Owns all servers and manages the unified poll() call
+ * - Server: Represents one listening endpoint (host:port) with configuration
+ * - ConnectionManager: Manages all client connections across all servers
+ * - Connection: Represents one client socket with parser and write buffer
+ * 
+ * EXECUTION FLOW:
+ * 1. Create EventLoop instance
+ * 2. Create Server instances with different configurations (ports)
+ * 3. Initialize each Server (creates listening sockets)
+ * 4. Add each Server to EventLoop
+ * 5. Start EventLoop (never returns - runs until killed)
+ * 
+ * ============================================================================
+ */
 
-// ============================================================================
-// Constants
-// ============================================================================
-static const int DEFAULT_PORT = 8080;
-static const int POLL_TIMEOUT_INFINITE = -1;
+#include "../include/EventLoop.hpp"
+#include "../include/Server.hpp"
+#include "../include/config.hpp"
+#include <iostream>
 
-// ============================================================================
-// LEARNING ROADMAP - Implement in this order:
-// ============================================================================
-// PHASE 1: Basic Socket Server ✓ DONE
-//   - Created listening socket that waits for connections
-//   - Used socket(), bind(), listen() to set up TCP server
-//
-// PHASE 2: Non-Blocking I/O ✓ DONE
-//   - All sockets set to O_NONBLOCK with fcntl()
-//   - Sockets won't freeze our program waiting for data
-//
-// PHASE 3: I/O Multiplexing with poll() ✓ IN PROGRESS
-//   - Using poll() to monitor multiple sockets at once
-//   - Can accept new connections while serving existing clients
-//   - Next: Implement reading/writing HTTP data
-//
-// PHASE 4: HTTP Protocol Integration - TODO
-//   - Parse HTTP requests using libhttp::Parser
-//   - Generate HTTP responses
-//   - Handle different request methods (GET, POST, DELETE)
-//
-// PHASE 5: Configuration File Parser - TODO
-//   - Parse NGINX-like config files
-//   - Support multiple server blocks on different ports
-//   - Handle routes, error pages, file uploads
-//
-// PHASE 6: CGI Execution - TODO
-//   - Execute PHP/Python scripts with fork() and execve()
-//   - Pass environment variables and request data
-//   - Capture output and send back to client
-// ============================================================================
+/**
+ * ============================================================================
+ * LEARNING ROADMAP - Implementation Progress
+ * ============================================================================
+ * 
+ * PHASE 1: Basic Socket Server ✓ COMPLETE
+ *   - Created listening socket infrastructure
+ *   - Implemented in Server class with socket(), bind(), listen()
+ * 
+ * PHASE 2: Non-Blocking I/O ✓ COMPLETE
+ *   - All sockets set to O_NONBLOCK with fcntl()
+ *   - Server and ConnectionManager enforce non-blocking mode
+ * 
+ * PHASE 3: I/O Multiplexing with poll() ✓ COMPLETE
+ *   - Single poll() call monitors ALL sockets (listening + clients)
+ *   - EventLoop coordinates dispatch to Server and ConnectionManager
+ *   - Multiple servers supported with unified poll() array
+ * 
+ * PHASE 4: Multi-Server Architecture ✓ COMPLETE
+ *   - Server class encapsulates per-server state and configuration
+ *   - EventLoop manages multiple Server instances
+ *   - Connections associated with originating Server via owner_server pointer
+ * 
+ * PHASE 5: HTTP Protocol Integration ⚙ IN PROGRESS
+ *   - libhttp::Parser integrated for incremental request parsing
+ *   - Basic response generation works
+ *   - TODO: Implement request routing based on ServerConfig
+ * 
+ * PHASE 6: Configuration File Parser - TODO
+ *   - Parse NGINX-like config files
+ *   - Populate ServerConfig and RouteConfig structures
+ *   - Support multiple server blocks, routes, error pages
+ * 
+ * PHASE 7: Request Routing and File Serving - TODO
+ *   - Match request URI against routes in ServerConfig
+ *   - Serve static files from configured root directories
+ *   - Handle directory listing and index files
+ *   - Generate proper error responses (404, 403, 500)
+ * 
+ * PHASE 8: CGI Execution - TODO
+ *   - Fork and execute CGI scripts (php-cgi, python, etc.)
+ *   - Pass request data via environment variables and stdin
+ *   - Capture CGI output and send to client
+ *   - Handle chunked request un-chunking for CGI
+ * 
+ * PHASE 9: File Uploads - TODO
+ *   - Parse multipart/form-data POST requests
+ *   - Write uploaded files to configured directories
+ *   - Enforce client_max_body_size limits
+ * 
+ * ============================================================================
+ */
 
-// ============================================================================
-// Initialize server listening socket
-// ============================================================================
-// RETURNS:
-// - Socket fd on success
-// - -1 on failure (program should exit)
-static int initializeServer() {
-	int listen_fd = createListeningSocket(DEFAULT_PORT);
-	if (listen_fd < 0) {
-		std::cerr << "Failed to create listening socket" << std::endl;
-		return -1;
-	}
-	
-	std::cout << "Listening on port " << DEFAULT_PORT << std::endl;
-	return listen_fd;
+/**
+ * ============================================================================
+ * createDefaultServerConfig() - Creates a basic server configuration
+ * ============================================================================
+ * 
+ * WHAT THIS DOES:
+ * Creates a temporary ServerConfig for testing/development. In production,
+ * this would be replaced by configuration file parsing.
+ * 
+ * PARAMETERS:
+ * - host: IP address to bind to (e.g., "0.0.0.0", "127.0.0.1")
+ * - port: Port number to listen on (e.g., 8080, 8081)
+ * 
+ * RETURNS:
+ * ServerConfig object with basic settings
+ */
+static ServerConfig createDefaultServerConfig(const std::string& host, int port)
+{
+    ServerConfig config;
+    
+    /**
+     * Basic server settings
+     */
+    config.host = host;
+    config.port = port;
+    config.server_name = "localhost";
+    
+    /**
+     * Error pages (using default pages for now)
+     * 
+     * TODO: Load custom error pages from disk
+     */
+    config.error_pages[404] = "/errors/404.html";
+    config.error_pages[500] = "/errors/500.html";
+    
+    /**
+     * Body size limit: 10 MB
+     */
+    config.client_max_body_size = 10485760;
+    
+    /**
+     * Create a default catch-all route
+     * 
+     * This route matches all URIs (path = "/") and serves as the
+     * fallback for requests that don't match more specific routes.
+     */
+    RouteConfig default_route;
+    default_route.path = "/";
+    default_route.root = "./www";  /** Serve files from ./www directory */
+    default_route.directory_listing = false;
+    default_route.index_files.push_back("index.html");
+    
+    /**
+     * Add the default route to server config
+     */
+    config.routes.push_back(default_route);
+    
+    return config;
 }
 
-// ============================================================================
-// Handle listening socket activity (new connections)
-// ============================================================================
-// PARAMETERS:
-// - listen_fd: The listening socket
-// - connections: Vector of active connections
-// - poll_fds: Vector of poll file descriptors
-static void handleListeningSocket(int listen_fd,
-                                  std::vector<Connection>& connections,
-                                  std::vector<pollfd>& poll_fds,
-                                  short revents) {
-	if (revents & POLLIN)
-		handleNewConnection(listen_fd, connections, poll_fds);
-}
-
-// ============================================================================
-// Handle client socket activity (read/write/error)
-// ============================================================================
-// PARAMETERS:
-// - index: Index in poll_fds array
-// - connections: Vector of active connections
-// - poll_fds: Vector of poll file descriptors
-//
-// RETURNS:
-// - true if connection should be kept
-// - false if connection should be removed
-static bool handleClientSocket(size_t index,
-                              std::vector<Connection>& connections,
-                              std::vector<pollfd>& poll_fds) {
-	Connection* conn = &connections[index - 1];  // -1: poll_fds[0] is listening socket
-	pollfd* poll_fd = &poll_fds[index];
-	
-	// ========================================================================
-	// Check for errors or connection closure first
-	// ========================================================================
-	if (poll_fd->revents & (POLLERR | POLLHUP))
-		return handleSocketError(poll_fd->fd, poll_fd->revents);
-	
-	// ========================================================================
-	// Handle incoming data (POLLIN)
-	// ========================================================================
-	if (poll_fd->revents & POLLIN) {
-		if (!handleClientRead(conn, poll_fd))
-			return false;
-	}
-	
-	// ========================================================================
-	// Handle outgoing data (POLLOUT)
-	// ========================================================================
-	if (poll_fd->revents & POLLOUT) {
-		if (!handleClientWrite(conn, poll_fd))
-			return false;
-	}
-	
-	return true;
-}
-
-int main() {
-	// ========================================================================
-	// SETUP: Create the listening socket
-	// ========================================================================
-	int listen_fd = initializeServer();
-	if (listen_fd < 0)
-		return 1;
-	
-	// ========================================================================
-	// SETUP: Initialize data structures
-	// ========================================================================
-	// connections[]: Stores Connection objects (one per client)
-	// poll_fds[]:    Stores pollfd structures for poll() monitoring
-	//
-	// IMPORTANT: These arrays stay in sync!
-	// - poll_fds[0] = listening socket (NOT in connections[])
-	// - poll_fds[i] = connections[i-1].fd for i > 0
-	std::vector<Connection> connections;
-	std::vector<pollfd> poll_fds;
-	
-	addSocketToPoll(listen_fd, poll_fds, POLLIN);
-
-	// ========================================================================
-	// MAIN EVENT LOOP - The heart of the server
-	// ========================================================================
-	// This loop never ends (until error or shutdown signal)
-	// Each iteration:
-	// 1. poll() waits for activity on any socket
-	// 2. We check which sockets have activity
-	// 3. We handle each active socket appropriately
-	while (true) {
-		// ====================================================================
-		// STEP 1: Wait for activity on any socket
-		// ====================================================================
-		// poll() monitors ALL sockets and blocks until one has activity
-		//
-		// PARAMETERS:
-		// - &poll_fds[0]: Pointer to first element (array start)
-		// - poll_fds.size(): Number of file descriptors to monitor
-		// - POLL_TIMEOUT_INFINITE (-1): Wait forever, no timeout
-		//
-		// RETURNS:
-		// - Positive: Number of sockets with activity
-		// - 0: Timeout expired (won't happen with -1)
-		// - -1: Error occurred
-		int ready = poll(&poll_fds[0], poll_fds.size(), POLL_TIMEOUT_INFINITE);
-		if (ready < 0) {
-			std::cerr << "poll() error" << std::endl;
-			break;
-		}
-		
-		// ====================================================================
-		// STEP 2: Process all file descriptors with activity
-		// ====================================================================
-		// We loop through and check each fd's revents
-		// If revents == 0, nothing happened on that socket
-		for (size_t i = 0; i < poll_fds.size(); i++) {
-			if (poll_fds[i].revents == 0)
-				continue;
-			
-			// Handle listening socket (accept new connections)
-			if (poll_fds[i].fd == listen_fd) {
-				handleListeningSocket(listen_fd, connections, poll_fds,
-				                     poll_fds[i].revents);
-				continue;
-			}
-			
-			// Handle client socket (read/write/error)
-			if (!handleClientSocket(i, connections, poll_fds))
-				removeConnection(i, connections, poll_fds);
-		}
-	}
-	
-	// ========================================================================
-	// CLEANUP: Server is shutting down
-	// ========================================================================
-	std::cout << "Server shutting down..." << std::endl;
-	
-	close(listen_fd);
-	for (size_t i = 0; i < connections.size(); i++)
-		close(connections[i].fd);
-	
-	return 0;
+/**
+ * ============================================================================
+ * main() - Program entry point
+ * ============================================================================
+ * 
+ * WHAT THIS DOES:
+ * 1. Creates an EventLoop instance
+ * 2. Creates multiple Server instances (different ports for testing)
+ * 3. Initializes each Server (creates listening sockets)
+ * 4. Registers servers with EventLoop
+ * 5. Starts the event loop (runs forever)
+ * 
+ * RETURNS:
+ * - 0 on success (never reached - event loop is infinite)
+ * - 1 on initialization failure
+ */
+int main()
+{
+    /**
+     * ========================================================================
+     * STEP 1: Create EventLoop
+     * ========================================================================
+     * 
+     * The EventLoop will own all Server instances and coordinate their
+     * I/O operations through a single poll() call.
+     */
+    EventLoop eventLoop;
+    
+    /**
+     * ========================================================================
+     * STEP 2: Create and configure Server instances
+     * ========================================================================
+     * 
+     * For demonstration, we create multiple servers on different ports.
+     * In production, these would be loaded from a configuration file.
+     * 
+     * MULTI-SERVER EXAMPLE:
+     * - Server 1: Port 8080 (main server)
+     * - Server 2: Port 8081 (admin interface)
+     * - Server 3: Port 8082 (API endpoint)
+     * 
+     * Each server can have different routes, error pages, and settings.
+     */
+    
+    /**
+     * ------------------------------------------------------------------------
+     * Server 1: Port 8080
+     * ------------------------------------------------------------------------
+     */
+    Server* server1 = new Server(
+		createDefaultServerConfig("0.0.0.0", 8080)
+	);
+    
+    if (server1->initialize() == -1) {
+        std::cerr << "Failed to initialize server on port 8080" << std::endl;
+        delete server1;
+        return 1;
+    }
+    
+    eventLoop.addServer(server1);
+    
+    /**
+     * ------------------------------------------------------------------------
+     * Server 2: Port 8081 (optional - comment out if you want only one server)
+     * ------------------------------------------------------------------------
+     * 
+     * This demonstrates the multi-server capability. Uncomment to run
+     * multiple servers simultaneously.
+     */
+    /*
+    std::cout << "Creating server on port 8081..." << std::endl;
+    
+    ServerConfig config2 = createDefaultServerConfig("0.0.0.0", 8081);
+    Server* server2 = new Server(config2);
+    
+    if (server2->initialize() == -1) {
+        std::cerr << "Failed to initialize server on port 8081" << std::endl;
+        delete server2;
+        // Continue with server1 only
+    } else {
+        eventLoop.addServer(server2);
+    }
+    */
+    
+    /**
+     * ------------------------------------------------------------------------
+     * Server 3: Port 8082 (optional - another example)
+     * ------------------------------------------------------------------------
+     */
+    /*
+    std::cout << "Creating server on port 8082..." << std::endl;
+    
+    ServerConfig config3 = createDefaultServerConfig("0.0.0.0", 8082);
+    Server* server3 = new Server(config3);
+    
+    if (server3->initialize() == -1) {
+        std::cerr << "Failed to initialize server on port 8082" << std::endl;
+        delete server3;
+        // Continue with existing servers
+    } else {
+        eventLoop.addServer(server3);
+    }
+    */
+    
+    /**
+     * ========================================================================
+     * STEP 3: Verify we have at least one server
+     * ========================================================================
+     */
+    if (eventLoop.getServerCount() == 0) {
+        std::cerr << "Error: No servers initialized successfully" << std::endl;
+        return 1;
+    }
+    
+    std::cout << "\nSuccessfully initialized " << eventLoop.getServerCount()
+              << " server(s)" << std::endl;
+    
+    /**
+     * ========================================================================
+     * STEP 4: Start the event loop
+     * ========================================================================
+     * 
+     * This call NEVER RETURNS. The event loop runs indefinitely, processing
+     * network events until the process is killed (Ctrl+C, SIGTERM, etc.).
+     * 
+     * WHAT HAPPENS INSIDE:
+     * 1. Rebuild poll_fds array with all listening + client sockets
+     * 2. Call poll() to wait for I/O activity
+     * 3. Dispatch events to Server or ConnectionManager
+     * 4. Repeat forever
+     * 
+     * TO STOP THE SERVER:
+     * - Press Ctrl+C (sends SIGINT)
+     * - Use kill command (sends SIGTERM)
+     * - Destructors will run automatically, closing all sockets
+     */
+    eventLoop.run();
+    
+    /**
+     * ========================================================================
+     * This code is never reached (event loop is infinite)
+     * ========================================================================
+     * 
+     * If we add graceful shutdown support in the future, cleanup would
+     * happen here. For now, destructors handle cleanup when process exits.
+     */
+    
+    return 0;
 }

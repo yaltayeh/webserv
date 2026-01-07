@@ -10,8 +10,9 @@ DEPENDENCIES_FLAGS      = $(foreach lib,$(DEPENDENCIES),-L$(BUILD_PATH)/$(lib)) 
 INCLUDE_FLAGS	   		= -Iinclude $(foreach lib,$(DEPENDENCIES),-I$(DEPENDENCIES_DIR)/$(lib)/include)
 
 SRCS		    		=   src/main.cpp \
-							src/connection_handler.cpp \
-							src/socket.cpp
+							src/Server.cpp \
+							src/ConnectionManager.cpp \
+							src/EventLoop.cpp
 OBJS		   			 = $(SRCS:src/%.cpp=$(BUILD_PATH)/obj/%.o)
 
 all: $(NAME)

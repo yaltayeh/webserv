@@ -16,6 +16,7 @@ namespace libhttp {
 		bool isError() const;
 
 		// parsing function
+		// returns: 0=complete, 1=incomplete, -1=error
 		int parse(const char* data, size_t size);
 
 		// get the parsed request
@@ -33,7 +34,7 @@ namespace libhttp {
 
 		State _state;
 		std::string _buffer;
-		size_t _expectedBodyLength;
+		size_t _expectedBodyLength; // from Content-Length header
         size_t _receivedBodyLength;
 		
         Request _request;

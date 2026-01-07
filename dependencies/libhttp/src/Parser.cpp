@@ -78,11 +78,20 @@ namespace libhttp {
 			std::string header_line = _buffer.substr(0, pos);
 			_buffer.erase(0, pos + 2); // remove processed line
 
-			std::vector<std::string> header_parts = split(header_line, ':');
-			if (header_parts.size() != 2) { _state = ERROR; return -1; }
+			/**
+			 * Split header on FIRST colon only
+			 * 
+			 * Headers can contain colons in the value (e.g., "Host: localhost:8080")
+			 * So we must split manually on the first colon, not use split()
+			 */
+			size_t colon_pos = header_line.find(':');
+			if (colon_pos == std::string::npos) {
+				_state = ERROR;
+				return -1;
+			}
 
-			std::string key = trim(header_parts[0]);
-			std::string value = trim(header_parts[1]);
+			std::string key = trim(header_line.substr(0, colon_pos));
+			std::string value = trim(header_line.substr(colon_pos + 1));
 
 			_request.setHeader(key, value);
 			
