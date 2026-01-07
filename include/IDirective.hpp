@@ -49,8 +49,8 @@ private:
 									const char *start,
 									const char *end);
 
-	static std::map<std::string, CreatorFunc> registry_name;
-	static std::map<const std::type_info *, CreatorFunc> registry_id;
+	static std::map<std::string, std::pair<CreatorFunc, const std::type_info *> > registry_name;
+	static std::map<const std::type_info *, std::pair<CreatorFunc, std::string> > registry_id;
 };
 
 #define TYPEID(x) &typeid(x)

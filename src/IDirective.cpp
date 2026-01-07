@@ -2,8 +2,14 @@
 #include <cstring>
 #include "Parser.hpp"
 
-std::map<std::string, IDirective::CreatorFunc> IDirective::registry_name;
-std::map<const std::type_info *, IDirective::CreatorFunc> IDirective::registry_id;
+std::map<
+	std::string,
+	std::pair<IDirective::CreatorFunc, const std::type_info *> >
+	IDirective::registry_name;
+std::map<
+	const std::type_info *,
+	std::pair<IDirective::CreatorFunc, std::string> >
+	IDirective::registry_id;
 
 IDirective::IDirective()
 {
@@ -41,7 +47,9 @@ void IDirective::addChild(IDirective *child)
 	{
 		child->setParent(this);
 
-		this->children.insert(std::make_pair(child->getName(), child));
+		std::string name = child->getName();
+
+		this->children.insert(std::make_pair(name, child));
 	}
 	catch (const std::exception &e)
 	{
@@ -51,7 +59,9 @@ void IDirective::addChild(IDirective *child)
 
 const std::string IDirective::getName() const
 {
-	return ("");
+	const std::type_info *id = &typeid(*this);
+	std::pair<CreatorFunc, std::string> data = registry_id.at(id);
+	return (data.second);
 }
 
 std::vector<std::string> IDirective::getArgs(const std::string &str,
@@ -112,7 +122,7 @@ const IDirective *IDirective::parseDirective(IDirective *parent,
 	{
 		const IDirective::CreatorFunc &initFunction = IDirective::getCreator(name);
 		IDirective *directive = initFunction(args);
-		
+
 		// change parent in directive and add child to parent
 		parent->addChild(directive);
 
@@ -187,18 +197,20 @@ const IDirective *IDirective::parseDirective(IDirective *parent, const std::stri
 
 void IDirective::addRegistry(std::string name, const std::type_info *id, const IDirective::CreatorFunc &creator)
 {
-	registry_name[name] = creator;
-	registry_id[id] = creator;
+	registry_name[name] = std::make_pair(creator, id);
+	registry_id[id] = std::make_pair(creator, name);
 }
 
 IDirective::CreatorFunc IDirective::getCreator(std::string name)
 {
-	return registry_name.at(name);
+	std::pair<CreatorFunc, const std::type_info *> data = registry_name.at(name);
+	return data.first;
 }
 
 IDirective::CreatorFunc IDirective::getCreator(const std::type_info *id)
 {
-	return registry_id.at(id);
+	std::pair<CreatorFunc, std::string> data = registry_id.at(id);
+	return data.first;
 }
 
 const std::type_info **IDirective::getAllowedInside() const
