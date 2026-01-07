@@ -10,4 +10,5 @@ public:
 	RootDirective();
 	RootDirective(const std::vector<std::string>& args);
 	~RootDirective();
+	DEFINE_ALLOWED_INSIDE();
 };

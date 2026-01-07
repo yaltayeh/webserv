@@ -7,56 +7,54 @@
 
 class IDirective
 {
+public:
+	IDirective();
+	IDirective(const std::vector<std::string> &args);
+	virtual ~IDirective() = 0;
+
+	void setParent(IDirective *parent);
+	void addChild(IDirective *parent);
+	const std::string getName() const;
+	virtual const std::type_info **getAllowedInside() const = 0;
+
+	static const IDirective *parseDirective(IDirective *parent, const std::string &str);
+
+	typedef IDirective *(*CreatorFunc)(const std::vector<std::string> &args);
+
+	// registry managment
+	static void addRegistry(std::string name, const std::type_info *id, const IDirective::CreatorFunc &creator);
+	static IDirective::CreatorFunc getCreator(std::string name);
+
+	// get id by &typeid(IDirective class)
+	static CreatorFunc getCreator(const std::type_info *id);
+
 private:
 	// all directive in block {...}
 	std::multimap<const std::string, IDirective *> children;
-	const IDirective	*parent;
+	const IDirective *parent;
 
 	static std::vector<std::string> getArgs(const std::string &str,
 											const char *start,
 											const char *end,
 											const char **block_start_ptr);
 
-	static const IDirective *parseDirective(const IDirective *parent,
+	static const IDirective *parseDirective(IDirective *parent,
 											const std::string &str,
 											const char *start,
 											const char *end);
 
-	static void parseBlockDirective(const IDirective *parent,
+	static void parseBlockDirective(IDirective *parent,
 									const std::string &str,
 									const char *start,
 									const char *end);
 
-public:
-	IDirective();
-	IDirective(const std::vector<std::string> &args);
-	virtual ~IDirective() = 0;
-
-	static const IDirective *parseDirective(const IDirective *parent, const std::string &str);
-
-	static const std::type_info *context[];
-
-	typedef IDirective *(*CreatorFunc)(const std::vector<std::string> &args);
-	static std::unordered_map<std::string, CreatorFunc> registry;
-	virtual const std::type_info **getAllowedInside();
+	static std::map<std::string, CreatorFunc> registry_name;
+	static std::map<const std::type_info *, CreatorFunc> registry_id;
 };
-
-#define DEFINE_DIRECTIVE(_class, _name)                                     \
-	static IDirective *create##_class(const std::vector<std::string> &args) \
-	{                                                                       \
-		return new _class(args);                                            \
-	}                                                                       \
-	struct _class##Registrar                                                \
-	{                                                                       \
-		_class##Registrar()                                                 \
-		{                                                                   \
-			IDirective::registry[_name] = &create##_class;                  \
-		}                                                                   \
-	} _##_class##Registrar;
 
 #define TYPEID(x) &typeid(x)
 
-#define FOREACH_1(x, ...) TYPEID(x)
+#define FOREACH_1(x, ...) TYPEID(x),
 #define FOREACH_2(x, ...) TYPEID(x), FOREACH_1(__VA_ARGS__)
 #define FOREACH_3(x, ...) TYPEID(x), FOREACH_2(__VA_ARGS__)
 #define FOREACH_4(x, ...) TYPEID(x), FOREACH_3(__VA_ARGS__)
@@ -76,14 +74,32 @@ public:
 			  FOREACH_4,             \
 			  FOREACH_3,             \
 			  FOREACH_2,             \
-			  FOREACH_1)(__VA_ARGS__)
+			  FOREACH_1             \
+			  )(__VA_ARGS__)
 
-#define ALLOWED_INSIDE(...)                              \
-	const std::type_info **getAllowedInside()            \
-	{                                                    \
-		static const std::type_info *allowedInside[] = { \
-			ALLOWED_INSIDE_ELEMENTS(__VA_ARGS__)         \
-                                                         \
-		};                                               \
-		return allowedInside;                            \
-	}\
+#define ALLOWED_INSIDE(_class, _allowedInsert, ...)                         \
+	const std::type_info **_class::getAllowedInside() const \
+	{                                                       \
+		static const std::type_info *allowedInside[] = {    \
+			ALLOWED_INSIDE_ELEMENTS(__VA_ARGS__)           \
+			NULL,                                           \
+                                                            \
+		};                                                  \
+		return allowedInside;                               \
+	}
+
+#define DEFINE_ALLOWED_INSIDE() const std::type_info **getAllowedInside() const
+
+#define DEFINE_DIRECTIVE(_class, _name, ...)                                  \
+	static IDirective *create##_class(const std::vector<std::string> &args)   \
+	{                                                                         \
+		return new _class(args);                                              \
+	}                                                                         \
+	struct _class##Registrar                                                  \
+	{                                                                         \
+		_class##Registrar()                                                   \
+		{                                                                     \
+			IDirective::addRegistry(_name, &typeid(_class), &create##_class); \
+		}                                                                     \
+	} _##_class##Registrar;                                                   \
+	ALLOWED_INSIDE(_class, _allowedInsert, __VA_ARGS__)

@@ -2,7 +2,8 @@
 #include <cstring>
 #include "Parser.hpp"
 
-std::unordered_map<std::string, IDirective::CreatorFunc> IDirective::registry;
+std::map<std::string, IDirective::CreatorFunc> IDirective::registry_name;
+std::map<const std::type_info *, IDirective::CreatorFunc> IDirective::registry_id;
 
 IDirective::IDirective()
 {
@@ -15,6 +16,42 @@ IDirective::IDirective(const std::vector<std::string> &args)
 
 IDirective::~IDirective()
 {
+}
+
+void IDirective::setParent(IDirective *parent)
+{
+	const std::type_info **allowedInside;
+	size_t i;
+
+	allowedInside = getAllowedInside();
+	i = 0;
+	for (i = 0; allowedInside[i]; i++)
+	{
+		if (*allowedInside[i] == typeid(*parent))
+			break;
+	}
+	if (allowedInside[i] == NULL)
+		throw std::runtime_error("you can't typeid(*this) inside (typeid(*parent).name()) block"); // you can't typeid(*this) inside (typeid(*parent).name()) block
+	this->parent = parent;
+}
+
+void IDirective::addChild(IDirective *child)
+{
+	try
+	{
+		child->setParent(this);
+
+		this->children.insert(std::make_pair(child->getName(), child));
+	}
+	catch (const std::exception &e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
+}
+
+const std::string IDirective::getName() const
+{
+	return ("");
 }
 
 std::vector<std::string> IDirective::getArgs(const std::string &str,
@@ -32,8 +69,6 @@ std::vector<std::string> IDirective::getArgs(const std::string &str,
 	if (p == nullptr)
 		return args;
 	start = p;
-
-	// std::cout << "name: " << name << std::endl;
 
 	// Add name to args
 	args.push_back(name);
@@ -56,7 +91,7 @@ std::vector<std::string> IDirective::getArgs(const std::string &str,
 	return (args);
 }
 
-const IDirective *IDirective::parseDirective(const IDirective *parent,
+const IDirective *IDirective::parseDirective(IDirective *parent,
 											 const std::string &str,
 											 const char *start,
 											 const char *end)
@@ -64,7 +99,6 @@ const IDirective *IDirective::parseDirective(const IDirective *parent,
 	std::vector<std::string> args;
 	const char *block_start = NULL;
 
-	(void)parent;
 	args = IDirective::getArgs(str, start, end, &block_start);
 	if (args.size() == 0)
 	{
@@ -76,11 +110,12 @@ const IDirective *IDirective::parseDirective(const IDirective *parent,
 	const std::string &name = args[0];
 	try
 	{
-		IDirective::CreatorFunc &initFunction = IDirective::registry.at(name);
+		const IDirective::CreatorFunc &initFunction = IDirective::getCreator(name);
 		IDirective *directive = initFunction(args);
+		
+		// change parent in directive and add child to parent
+		parent->addChild(directive);
 
-		// change parent in directive
-		directive->parent = parent;
 		if (block_start)
 			parseBlockDirective(directive, str, block_start, end);
 		return directive;
@@ -93,7 +128,7 @@ const IDirective *IDirective::parseDirective(const IDirective *parent,
 	}
 }
 
-void IDirective::parseBlockDirective(const IDirective *parent,
+void IDirective::parseBlockDirective(IDirective *parent,
 									 const std::string &str,
 									 const char *start,
 									 const char *end)
@@ -139,20 +174,33 @@ void IDirective::parseBlockDirective(const IDirective *parent,
 	while (parser.getNextDirectives())
 	{
 		std::string directive = parser.copyDirective();
-		// std::cout << directive << std::endl;
 		parseDirective(parent, directive);
-		(void)parent;
 	}
 }
 
-const IDirective *IDirective::parseDirective(const IDirective *parent, const std::string &str)
+const IDirective *IDirective::parseDirective(IDirective *parent, const std::string &str)
 {
 	return (parseDirective(parent, str, str.c_str(), str.c_str() + str.length()));
 }
 
-const std::type_info **IDirective::getAllowedInside()
+void IDirective::addRegistry(std::string name, const std::type_info *id, const IDirective::CreatorFunc &creator)
 {
-	static const std::type_info *allowedInside[] = {
-		NULL};
+	registry_name[name] = creator;
+	registry_id[id] = creator;
+}
+
+IDirective::CreatorFunc IDirective::getCreator(std::string name)
+{
+	return registry_name.at(name);
+}
+
+IDirective::CreatorFunc IDirective::getCreator(const std::type_info *id)
+{
+	return registry_id.at(id);
+}
+
+const std::type_info **IDirective::getAllowedInside() const
+{
+	static const std::type_info *allowedInside[] = {NULL};
 	return allowedInside;
 }

@@ -1,6 +1,8 @@
 #include "ServerDirective.hpp"
+#include "HttpDirective.hpp"
+#include "GlobalDirective.hpp"
 
-DEFINE_DIRECTIVE(ServerDirective, "server")
+DEFINE_DIRECTIVE(ServerDirective, "server", GlobalDirective, HttpDirective)
 
 
 ServerDirective::ServerDirective()

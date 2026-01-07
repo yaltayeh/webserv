@@ -1,10 +1,11 @@
 #include "RootDirective.hpp"
+#include "LocationDirective.hpp"
 
-DEFINE_DIRECTIVE(RootDirective, "root")
-
+DEFINE_DIRECTIVE(RootDirective, "root", LocationDirective)
 
 RootDirective::RootDirective()
 {
+	
 }
 
 RootDirective::RootDirective(const std::vector<std::string>& args)

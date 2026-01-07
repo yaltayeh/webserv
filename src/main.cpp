@@ -9,6 +9,7 @@
 #include "Directives/LocationDirective.hpp"
 #include "Directives/RootDirective.hpp"
 #include <typeinfo>
+#include "Config.hpp"
 
 int readConfigFile(const char *fileName, std::string &content)
 {
@@ -29,13 +30,13 @@ int readConfigFile(const char *fileName, std::string &content)
 int main()
 {
 	std::string conf;
-	if (readConfigFile("nginx.conf", conf) != 0)
+	if (readConfigFile("example.conf", conf) != 0)
 		return (1);
 
 	Config::Parser parser(conf);
 
 	parser.getNextDirectives();
 	std::string directive = parser.copyDirective();
-	IDirective::parseDirective(nullptr, directive);
+	IDirective::parseDirective(Config::global, directive);
 	return (0);
 }

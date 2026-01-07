@@ -10,4 +10,6 @@ public:
 	LocationDirective();
 	LocationDirective(const std::vector<std::string>& args);
 	~LocationDirective();
+
+	DEFINE_ALLOWED_INSIDE();
 };

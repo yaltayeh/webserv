@@ -3,10 +3,12 @@ NAME = webserve
 FILES = src/main.cpp 							\
 	    src/Parser.cpp 							\
 		src/IDirective.cpp						\
+		src/Config.cpp							\
+		src/Directives/GlobalDirective.cpp		\
 		src/Directives/RootDirective.cpp		\
+		src/Directives/HttpDirective.cpp		\
 		src/Directives/LocationDirective.cpp	\
 		src/Directives/ServerDirective.cpp		\
-		src/Directives/HttpDirective.cpp		\
 
 CC = c++
 CFLAGS = -Wall -Wextra -Werror -MMD -g -std=c++98

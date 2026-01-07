@@ -1,6 +1,8 @@
 #include "LocationDirective.hpp"
+#include "ServerDirective.hpp"
 
-DEFINE_DIRECTIVE(LocationDirective, "location")
+
+DEFINE_DIRECTIVE(LocationDirective, "location", ServerDirective)
 
 
 LocationDirective::LocationDirective()

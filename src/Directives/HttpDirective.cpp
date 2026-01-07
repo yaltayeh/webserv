@@ -1,7 +1,7 @@
 #include "HttpDirective.hpp"
+#include "GlobalDirective.hpp"
 
-DEFINE_DIRECTIVE(HttpDirective, "http")
-
+DEFINE_DIRECTIVE(HttpDirective, "http", GlobalDirective)
 
 HttpDirective::HttpDirective()
 {
@@ -16,3 +16,5 @@ HttpDirective::HttpDirective(const std::vector<std::string>& args)
 HttpDirective::~HttpDirective()
 {
 }
+
+
