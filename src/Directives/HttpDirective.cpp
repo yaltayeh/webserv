@@ -1,5 +1,5 @@
-#include "HttpDirective.hpp"
-#include "GlobalDirective.hpp"
+#include "Directives/HttpDirective.hpp"
+#include "Directives/GlobalDirective.hpp"
 
 DEFINE_DIRECTIVE(HttpDirective, "http", GlobalDirective)
 

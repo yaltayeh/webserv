@@ -1,4 +1,6 @@
 #include <map>
+#include <vector>
+#include <string>
 #include "Data.hpp"
 
 #pragma once

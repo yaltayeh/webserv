@@ -12,7 +12,7 @@ FILES = src/main.cpp 							\
 
 CC = c++
 CFLAGS = -Wall -Wextra -Werror -MMD -g -std=c++98
-CPPFLAGS = -I./include -I./include/Directives
+CPPFLAGS = -I./include
 
 OFILES = ${FILES:src/%.cpp=build/%.o}
 DFILES = ${OFILES:build/%.o=build/%.d}

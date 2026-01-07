@@ -132,7 +132,7 @@ namespace Config
 		{
 			if (*p == '{')
 				throw; // TODO: block directive without name
-			return nullptr;
+			return NULL;
 		}
 		return p;
 	}

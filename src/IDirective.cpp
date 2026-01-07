@@ -66,7 +66,7 @@ std::vector<std::string> IDirective::getArgs(const std::string &str,
 	std::vector<std::string> args;
 
 	p = Config::Parser::getName(start, end, name);
-	if (p == nullptr)
+	if (p == NULL)
 		return args;
 	start = p;
 
@@ -104,7 +104,7 @@ const IDirective *IDirective::parseDirective(IDirective *parent,
 	{
 		// std::cerr << "Error Directive args.size() <= 0" << std::endl;
 		// throw; // TODO
-		return nullptr;
+		return NULL;
 	}
 
 	const std::string &name = args[0];
@@ -124,7 +124,7 @@ const IDirective *IDirective::parseDirective(IDirective *parent,
 	{
 		std::cerr << "\033[31mError Directive '" << name << "' Doesn't exist \033[0m" << std::endl;
 		// throw; /* TODO: throw Directive not exist */
-		return nullptr;
+		return NULL;
 	}
 }
 

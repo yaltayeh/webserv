@@ -1,4 +1,4 @@
-#include "GlobalDirective.hpp"
+#include "Directives/GlobalDirective.hpp"
 
 #pragma once
 

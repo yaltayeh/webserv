@@ -1,5 +1,5 @@
-#include "LocationDirective.hpp"
-#include "ServerDirective.hpp"
+#include "Directives/LocationDirective.hpp"
+#include "Directives/ServerDirective.hpp"
 
 
 DEFINE_DIRECTIVE(LocationDirective, "location", ServerDirective)
