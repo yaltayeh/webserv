@@ -7,31 +7,33 @@
 namespace Config
 {
 
-	Parser::Parser(const std::string &configString) : _configString(configString)
+	Parser::Parser(std::string configString) : _configString(configString)
 	{
 		_start = _configString.c_str();
 		_end = _start + _configString.length();
 		_p = _start;
 	}
-	Parser::Parser(const std::string &configString,
-				   const char *start,
-				   const char *end) : _configString(configString)
+	Parser::Parser(std::string configString,
+				   size_t start,
+				   size_t len) : _configString(configString)
 	{
-		_start = start;
-		_end = end;
+		_start = _configString.c_str() + start;
+		_end = _start + len;
 		_p = _start;
 	}
 
 	Parser Parser::openConfigFile(const char *fileName)
 	{
 		std::ifstream file(fileName);
-		if (!file.is_open())
+		if (!file)
 			throw std::runtime_error("Cannot open config file");
 
 		std::stringstream ss;
 		ss << file.rdbuf();
 
-		return (Parser(ss.str()));
+		std::string str = ss.str();
+
+		return (Parser(str));
 	}
 
 	Parser::~Parser()

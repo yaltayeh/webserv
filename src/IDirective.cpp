@@ -169,7 +169,9 @@ void IDirective::parseBlockDirective(IDirective *parent,
 		throw; // if loop end without }
 	end = p - 1;
 
-	Config::Parser parser(str, start, end);
+	std::string block = str.substr(start - str.c_str(), end - start);
+
+	Config::Parser parser(block);
 
 	while (parser.getNextDirectives())
 	{

@@ -7,7 +7,7 @@ namespace Config
 	class Parser
 	{
 	private:
-		const std::string &_configString;
+		const std::string _configString;
 		const char *_start;
 		const char *_end;
 		const char *_p;
@@ -15,8 +15,8 @@ namespace Config
 		const char *_directiveEnd;
 
 	public:
-		Parser(const std::string &configString);
-		Parser(const std::string &configString, const char *start, const char *end);
+		Parser(std::string configString);
+		Parser(std::string configString, size_t start, size_t len);
 		static Parser openConfigFile(const char *fileName);
 		~Parser();
 
