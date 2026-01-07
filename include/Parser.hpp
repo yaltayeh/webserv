@@ -17,7 +17,9 @@ namespace Config
 	public:
 		Parser(const std::string &configString);
 		Parser(const std::string &configString, const char *start, const char *end);
+		static Parser openConfigFile(const char *fileName);
 		~Parser();
+
 		bool getNextDirectives();
 		std::string copyDirective() const;
 

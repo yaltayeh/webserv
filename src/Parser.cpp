@@ -1,5 +1,7 @@
 #include <string>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include "Parser.hpp"
 
 namespace Config
@@ -18,6 +20,18 @@ namespace Config
 		_start = start;
 		_end = end;
 		_p = _start;
+	}
+
+	Parser Parser::openConfigFile(const char *fileName)
+	{
+		std::ifstream file(fileName);
+		if (!file.is_open())
+			throw std::runtime_error("Cannot open config file");
+
+		std::stringstream ss;
+		ss << file.rdbuf();
+
+		return (Parser(ss.str()));
 	}
 
 	Parser::~Parser()

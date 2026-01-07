@@ -1,6 +1,5 @@
 // #include "Data.hpp"
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include "Tree.hpp"
 #include "Parser.hpp"
@@ -11,32 +10,22 @@
 #include <typeinfo>
 #include "Config.hpp"
 
-int readConfigFile(const char *fileName, std::string &content)
-{
-	std::ifstream file(fileName);
-	if (!file)
-	{
-		std::cerr << "Cannot open file.\n";
-		return 1;
-	}
-
-	std::stringstream ss;
-	ss << file.rdbuf();
-
-	content = ss.str();
-	return (0);
-}
-
 int main()
 {
-	std::string conf;
-	if (readConfigFile("example.conf", conf) != 0)
-		return (1);
 
-	Config::Parser parser(conf);
+	try
+	{
 
-	parser.getNextDirectives();
-	std::string directive = parser.copyDirective();
-	IDirective::parseDirective(Config::global, directive);
-	return (0);
+		Config::Parser parser = Config::Parser::openConfigFile("example.conf");
+		parser.getNextDirectives();
+		std::string directive = parser.copyDirective();
+		std::cout << "test" << std::endl;
+		std::cout << directive << std::endl;
+		IDirective::parseDirective(Config::global, directive);
+		return (0);
+	}
+	catch (const std::exception &e)
+	{
+		std::cerr << "Error: " << e.what() << std::endl;
+	}
 }
