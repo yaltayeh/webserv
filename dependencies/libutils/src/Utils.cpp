@@ -96,13 +96,26 @@ bool isValidPort(int port) {
 }
 
 bool containsPathTraversal(const std::string& path) {
-    // Check for ".." sequences
-    if (path.find("..") != std::string::npos) {
+    // Check for path traversal patterns: "../" or "/.." 
+    // Also check for ".." at the start or end of path
+    if (path.find("../") != std::string::npos) {
         return true;
     }
-    // Check for null bytes
-    if (path.find('\0') != std::string::npos) {
+    if (path.find("/..") != std::string::npos) {
         return true;
+    }
+    // Check if path starts with ".."
+    if (path.length() >= 2 && path[0] == '.' && path[1] == '.') {
+        // Allow if followed by something other than '/' or end of string
+        if (path.length() == 2 || path[2] == '/') {
+            return true;
+        }
+    }
+    // Check for embedded null bytes by iterating through the string
+    for (size_t i = 0; i < path.length(); ++i) {
+        if (path[i] == '\0') {
+            return true;
+        }
     }
     return false;
 }

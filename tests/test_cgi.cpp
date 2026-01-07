@@ -205,8 +205,10 @@ TEST(utils_containsPathTraversal) {
     ASSERT_TRUE(utils::containsPathTraversal("../etc/passwd"));
     ASSERT_TRUE(utils::containsPathTraversal("/path/../secret"));
     ASSERT_TRUE(utils::containsPathTraversal(".."));
+    ASSERT_TRUE(utils::containsPathTraversal("../"));
     ASSERT_FALSE(utils::containsPathTraversal("/path/to/script.py"));
     ASSERT_FALSE(utils::containsPathTraversal("script.py"));
+    ASSERT_FALSE(utils::containsPathTraversal("file..txt")); // Legitimate filename with ".."
 }
 
 TEST(utils_sanitizeForEnv) {
@@ -334,8 +336,8 @@ TEST(parseCGIOutput_header_with_spaces) {
     bool result = CGI::parseCGIOutput(output, headers, body);
     
     ASSERT_TRUE(result);
-    // Value should have leading spaces trimmed
-    ASSERT_EQ(std::string("text/html  "), headers["Content-Type"]);
+    // Value should have both leading and trailing spaces trimmed per HTTP standards
+    ASSERT_EQ(std::string("text/html"), headers["Content-Type"]);
 }
 
 TEST(parseCGIOutput_binary_body) {

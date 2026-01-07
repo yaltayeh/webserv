@@ -91,11 +91,9 @@ pid_t CGI::execute(int &readPipeFd, int &writePipeFd) {
     close(pipeToChild[0]);   // Close read end of input pipe
     close(pipeFromChild[1]); // Close write end of output pipe
 
-    // Set read pipe to non-blocking
-    int flags = fcntl(pipeFromChild[0], F_GETFL, 0);
-    if (flags != -1) {
-        fcntl(pipeFromChild[0], F_SETFL, flags | O_NONBLOCK);
-    }
+    // Set both pipes to non-blocking mode for non-blocking I/O
+    fcntl(pipeFromChild[0], F_SETFL, O_NONBLOCK);
+    fcntl(pipeToChild[1], F_SETFL, O_NONBLOCK);
 
     writePipeFd = pipeToChild[1];
     readPipeFd = pipeFromChild[0];
@@ -169,7 +167,7 @@ bool CGI::parseCGIOutput(const std::string &output,
         size_t colonPos = line.find(':');
         if (colonPos != std::string::npos && colonPos > 0) {
             std::string key = line.substr(0, colonPos);
-            std::string value = utils::trimLeft(line.substr(colonPos + 1));
+            std::string value = utils::trim(line.substr(colonPos + 1));
             headers[key] = value;
         }
 
@@ -266,7 +264,7 @@ void CGI::buildEnvironment(const libhttp::Request &request,
     // Server information
     addEnvironmentVariable("SERVER_NAME", serverName);
     addEnvironmentVariable("SERVER_PORT", utils::intToString(serverPort));
-    addEnvironmentVariable("SERVER_PROTOCOL", "HTTP/1.1");
+    addEnvironmentVariable("SERVER_PROTOCOL", "HTTP/1.0");
     addEnvironmentVariable("SERVER_SOFTWARE", "QuantumBytes/1.0");
     addEnvironmentVariable("GATEWAY_INTERFACE", "CGI/1.1");
 
@@ -434,10 +432,12 @@ void CGI::setupChildProcess(int pipeToChild[2], int pipeFromChild[2]) {
     }
     close(pipeFromChild[1]);
 
-    // Change to script directory
+    // Change to script directory; exit if this fails
     std::string scriptDir = utils::getDirectory(_scriptPath);
     if (!scriptDir.empty()) {
-        chdir(scriptDir.c_str()); // Ignore failure
+        if (chdir(scriptDir.c_str()) == -1) {
+            _exit(1);
+        }
     }
 
     // Execute
