@@ -17,11 +17,13 @@ int main()
 	{
 
 		Config::Parser parser = Config::Parser::openConfigFile("example.conf");
-		parser.getNextDirectives();
-		std::string directive = parser.copyDirective();
-		std::cout << "test" << std::endl;
-		std::cout << directive << std::endl;
-		IDirective::parseDirective(Config::global, directive);
+		while (parser.getNextDirectives())
+		{
+			std::string directive = parser.copyDirective();
+			IDirective::parseDirective(Config::global, directive);
+		}
+
+		std::cout << "global children count : " << Config::global->getChildren<ServerDirective>("server").size() << std::endl;
 		return (0);
 	}
 	catch (const std::exception &e)

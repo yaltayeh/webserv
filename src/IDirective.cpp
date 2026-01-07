@@ -57,6 +57,11 @@ void IDirective::addChild(IDirective *child)
 	}
 }
 
+const std::multimap<std::string, IDirective *> IDirective::getChildren() const
+{
+	return children;
+}
+
 const std::string IDirective::getName() const
 {
 	const std::type_info *id = &typeid(*this);
@@ -83,7 +88,7 @@ std::vector<std::string> IDirective::getArgs(const std::string &str,
 	// Add name to args
 	args.push_back(name);
 
-	// parse args
+	// split args
 	while (p < end)
 	{
 		p = Config::Parser::skipSpace(p, end);

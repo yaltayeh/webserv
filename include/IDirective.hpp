@@ -15,13 +15,21 @@ public:
 
 	void setParent(IDirective *parent);
 	void addChild(IDirective *parent);
+
+	/* get all children */
+	const std::multimap<std::string, IDirective *> getChildren() const;
+	/* get children by name */
+	
+	template <typename T>
+	const std::vector<T *> getChildren(const std::string &name) const;
 	const std::string getName() const;
 	virtual const std::type_info **getAllowedInside() const = 0;
 
-	static const IDirective *parseDirective(IDirective *parent, const std::string &str);
 
+	
 	typedef IDirective *(*CreatorFunc)(const std::vector<std::string> &args);
 
+	static const IDirective *parseDirective(IDirective *parent, const std::string &str);
 	// registry managment
 	static void addRegistry(std::string name, const std::type_info *id, const IDirective::CreatorFunc &creator);
 	static IDirective::CreatorFunc getCreator(std::string name);
@@ -31,7 +39,7 @@ public:
 
 private:
 	// all directive in block {...}
-	std::multimap<const std::string, IDirective *> children;
+	std::multimap<std::string, IDirective *> children;
 	const IDirective *parent;
 
 	static std::vector<std::string> getArgs(const std::string &str,
@@ -104,3 +112,6 @@ private:
 		}                                                                     \
 	} _##_class##Registrar;                                                   \
 	ALLOWED_INSIDE(_class, _allowedInsert, __VA_ARGS__)
+
+
+#include "IDirective.tpp"
