@@ -36,7 +36,7 @@ public:
 
 	std::string getName() const;
 	static std::string getName(const std::type_info *id);
-	const std::type_info *getID(const std::string &name) const;
+	static const std::type_info *getID(const std::string &name) const;
 	virtual const std::type_info **getAllowedInside() const = 0;
 
 	static const IDirective *parseDirective(IDirective *parent, const std::string &str);

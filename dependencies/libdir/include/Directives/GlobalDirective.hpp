@@ -9,5 +9,7 @@ public:
 	GlobalDirective();
 	~GlobalDirective();
 
+	std::string getName() const;
+
 	DEFINE_ALLOWED_INSIDE();
 };
