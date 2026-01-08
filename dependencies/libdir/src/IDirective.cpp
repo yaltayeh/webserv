@@ -72,7 +72,7 @@ std::string IDirective::getName(const std::type_info *id)
 	return (data.second);
 }
 
-const std::type_info *IDirective::getID(const std::string &name) const
+const std::type_info *IDirective::getID(const std::string &name)
 {
 	std::pair<CreatorFunc, const std::type_info *> data = registry_name.at(name);
 	return (data.second);
