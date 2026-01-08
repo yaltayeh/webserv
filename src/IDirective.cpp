@@ -1,5 +1,7 @@
-#include "IDirective.hpp"
+#include <cctype>
+#include <algorithm>
 #include <cstring>
+#include "IDirective.hpp"
 #include "Parser.hpp"
 
 std::map<
@@ -62,10 +64,21 @@ const std::multimap<std::string, IDirective *> IDirective::getChildren() const
 	return children;
 }
 
-const std::string IDirective::getName() const
+std::string IDirective::getName() const
 {
 	const std::type_info *id = &typeid(*this);
+	return getName(id);
+}
+
+std::string IDirective::getName(const std::type_info *id)
+{
 	std::pair<CreatorFunc, std::string> data = registry_id.at(id);
+	return (data.second);
+}
+
+const std::type_info *IDirective::getID(const std::string &name) const
+{
+	std::pair<CreatorFunc, const std::type_info *> data = registry_name.at(name);
 	return (data.second);
 }
 

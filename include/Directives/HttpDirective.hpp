@@ -1,4 +1,4 @@
-#include "IDirective.hpp"
+#include "Directives.hpp"
 
 #pragma once
 
@@ -10,5 +10,6 @@ public:
 	HttpDirective();
 	HttpDirective(const std::vector<std::string>& args);
 	~HttpDirective();
+	
 	DEFINE_ALLOWED_INSIDE();
 };

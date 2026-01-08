@@ -17,7 +17,7 @@
 ======================
 
  Syntax: alias path
- Default: — Context: location 
+ Default: — 
  Context: location
 
 ======================
@@ -279,7 +279,8 @@ listen
 
 ======================
 
- Syntax: location [ = | ~ | ~* | ^~ ] uri { ... }location @name { ... } 
+ Syntax:    location [ = | ~ | ~* | ^~ ] uri { ... }
+            location @name { ... } 
  Default: — 
  Context: server, location 
 

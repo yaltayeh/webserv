@@ -15,7 +15,6 @@ int main()
 
 	try
 	{
-
 		Config::Parser parser = Config::Parser::openConfigFile("example.conf");
 		while (parser.getNextDirectives())
 		{
@@ -23,7 +22,12 @@ int main()
 			IDirective::parseDirective(Config::global, directive);
 		}
 
-		std::cout << "global children count : " << Config::global->getChildren<ServerDirective>("server").size() << std::endl;
+		ListDirectives<ServerDirective> servers = Config::global->getMany<ServerDirective>();
+		ListDirectives<LocationDirective> locations = servers[0]->getMany<LocationDirective>();
+		locations[0]->getFirstChild<RootDirective>();
+		const RootDirective *root = locations[0]->getOne<RootDirective>();
+		std::cout << "Path: " << root->getPath() << std::endl;
+
 		return (0);
 	}
 	catch (const std::exception &e)

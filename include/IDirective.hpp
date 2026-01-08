@@ -3,12 +3,15 @@
 #include <iostream>
 #include <vector>
 #include <typeinfo>
+#include "ListDirectives.hpp"
 
 #pragma once
 
 class IDirective
 {
 public:
+	typedef IDirective *(*CreatorFunc)(const std::vector<std::string> &args);
+
 	IDirective();
 	IDirective(const std::vector<std::string> &args);
 	virtual ~IDirective() = 0;
@@ -19,15 +22,22 @@ public:
 	/* get all children */
 	const std::multimap<std::string, IDirective *> getChildren() const;
 	/* get children by name */
-	
+
 	template <typename T>
 	const std::vector<T *> getChildren(const std::string &name) const;
-	const std::string getName() const;
+	template <typename T>
+	const T * getFirstChild() const;
+	template <typename T>
+	const T * getLastChild() const;
+	template <typename T>
+	const ListDirectives<T> getMany() const;
+	template <typename T>
+	const T *getOne(bool first = true) const;
+
+	std::string getName() const;
+	static std::string getName(const std::type_info *id);
+	const std::type_info *getID(const std::string &name) const;
 	virtual const std::type_info **getAllowedInside() const = 0;
-
-
-	
-	typedef IDirective *(*CreatorFunc)(const std::vector<std::string> &args);
 
 	static const IDirective *parseDirective(IDirective *parent, const std::string &str);
 	// registry managment
@@ -57,8 +67,13 @@ private:
 									const char *start,
 									const char *end);
 
-	static std::map<std::string, std::pair<CreatorFunc, const std::type_info *> > registry_name;
-	static std::map<const std::type_info *, std::pair<CreatorFunc, std::string> > registry_id;
+	static std::map<std::string,
+					std::pair<CreatorFunc,
+							  const std::type_info *> >
+		registry_name;
+	static std::map<const std::type_info *, std::pair<CreatorFunc,
+													  std::string> >
+		registry_id;
 };
 
 #define TYPEID(x) &typeid(x)
@@ -83,15 +98,14 @@ private:
 			  FOREACH_4,             \
 			  FOREACH_3,             \
 			  FOREACH_2,             \
-			  FOREACH_1             \
-			  )(__VA_ARGS__)
+			  FOREACH_1)(__VA_ARGS__)
 
-#define ALLOWED_INSIDE(_class, _allowedInsert, ...)                         \
+#define ALLOWED_INSIDE(_class, _allowedInsert, ...)         \
 	const std::type_info **_class::getAllowedInside() const \
 	{                                                       \
 		static const std::type_info *allowedInside[] = {    \
-			ALLOWED_INSIDE_ELEMENTS(__VA_ARGS__)           \
-			NULL,                                           \
+			ALLOWED_INSIDE_ELEMENTS(__VA_ARGS__)            \
+				NULL,                                       \
                                                             \
 		};                                                  \
 		return allowedInside;                               \
@@ -113,5 +127,6 @@ private:
 	} _##_class##Registrar;                                                   \
 	ALLOWED_INSIDE(_class, _allowedInsert, __VA_ARGS__)
 
+#define DEFINE_QUERY_ONE(_class)
 
 #include "IDirective.tpp"
