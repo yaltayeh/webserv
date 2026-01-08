@@ -1,5 +1,4 @@
 #include "Directives/GlobalDirective.hpp"
-#include "GlobalDirective.hpp"
 
 GlobalDirective::GlobalDirective() {}
 
