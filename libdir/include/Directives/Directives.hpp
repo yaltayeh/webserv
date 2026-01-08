@@ -4,4 +4,3 @@
 
 class GlobalDirective;
 class ExampleDirective;
-class ListDirectives;
