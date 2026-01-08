@@ -3,7 +3,7 @@ CXX 					= c++
 CXXFLAGS 				= -Wall -Wextra -Werror -std=c++98 -Iinclude
 BUILD_PATH	      		?= ./build
 
-DEPENDENCIES	    	= libhttp
+DEPENDENCIES	    	= libhttp libdir
 DEPENDENCIES_DIR		= ./dependencies
 DEPENDENCIES_FLAGS      = $(foreach lib,$(DEPENDENCIES),-L$(BUILD_PATH)/$(lib)) \
 							$(foreach lib,$(patsubst lib%,%, $(DEPENDENCIES)),-l$(lib))

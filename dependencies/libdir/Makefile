@@ -1,6 +1,6 @@
 BUILD_PATH ?= ./build
 
-NAME = libdir.a
+NAME = $(BUILD_PATH)/libdir.a
 
 FILES = src/Parser.cpp 							\
 		src/IDirective.cpp						\
