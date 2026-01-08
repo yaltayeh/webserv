@@ -116,7 +116,8 @@ bool containsPathTraversal(const std::string& path) {
             return true;
         }
     }
-    // Check for embedded null bytes using find() which checks the entire buffer
+    // Check for embedded null bytes
+    // Note: std::string can contain null bytes if constructed with explicit length
     if (path.find('\0') != std::string::npos) {
         return true;
     }

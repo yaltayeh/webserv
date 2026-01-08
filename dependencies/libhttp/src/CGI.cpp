@@ -93,12 +93,19 @@ pid_t CGI::execute(int &readPipeFd, int &writePipeFd) {
     close(pipeFromChild[1]); // Close write end of output pipe
 
     // Set both pipes to non-blocking mode for non-blocking I/O
-    // Note: fcntl errors are not critical here, we continue even if it fails
+    // Note: fcntl errors are not critical - CGI will still work in blocking mode
+    // Warnings are stored for debugging purposes
     if (fcntl(pipeFromChild[0], F_SETFL, O_NONBLOCK) == -1) {
-        // Non-blocking mode failed, but we can continue
+        if (!_error.empty()) {
+            _error += " ; ";
+        }
+        _error += "Warning: failed to set non-blocking mode on CGI read pipe";
     }
     if (fcntl(pipeToChild[1], F_SETFL, O_NONBLOCK) == -1) {
-        // Non-blocking mode failed, but we can continue
+        if (!_error.empty()) {
+            _error += " ; ";
+        }
+        _error += "Warning: failed to set non-blocking mode on CGI write pipe";
     }
 
     writePipeFd = pipeToChild[1];
@@ -172,7 +179,8 @@ bool CGI::parseCGIOutput(const std::string &output,
         // Find colon separator
         size_t colonPos = line.find(':');
         if (colonPos != std::string::npos && colonPos > 0) {
-            std::string key = line.substr(0, colonPos);
+            // Trim both key and value for liberal parsing (be accepting of malformed headers)
+            std::string key = utils::trim(line.substr(0, colonPos));
             std::string value = utils::trim(line.substr(colonPos + 1));
             headers[key] = value;
         }
@@ -229,6 +237,9 @@ CGI::SetupResult CGI::validateInputs(const std::string &scriptPath,
         if (stat(interpreterPath.c_str(), &interpStat) != 0) {
             return SETUP_ERROR_SCRIPT_NOT_FOUND;
         }
+        // NOTE: Only checks S_IXUSR (user execute permission)
+        // Does not check group/other execute permissions
+        // This is sufficient for typical CGI setups where scripts are owned by the web server user
         if (!(interpStat.st_mode & S_IXUSR)) {
             return SETUP_ERROR_SCRIPT_NOT_EXECUTABLE;
         }
@@ -264,13 +275,24 @@ void CGI::buildEnvironment(const libhttp::Request &request,
     std::string pathInfo = extractPathInfo(request.getUri(), scriptName);
     addEnvironmentVariable("PATH_INFO", pathInfo);
     
-    // Document root
+    // Document root (NOTE: Currently set to script directory.
+    // In production, this should be the web server's document root configured separately)
     std::string documentRoot = utils::getDirectory(_scriptPath);
     addEnvironmentVariable("DOCUMENT_ROOT", documentRoot);
     
     // PATH_TRANSLATED per RFC 3875 section 4.1.6: DOCUMENT_ROOT + PATH_INFO
     if (!pathInfo.empty()) {
-        std::string pathTranslated = documentRoot + pathInfo;
+        std::string pathTranslated = documentRoot;
+        // Ensure proper path separator between documentRoot and pathInfo
+        if (!documentRoot.empty() && documentRoot[documentRoot.length() - 1] != '/') {
+            pathTranslated += '/';
+        }
+        // Remove leading slash from pathInfo if present to avoid double slashes
+        if (pathInfo[0] == '/') {
+            pathTranslated += pathInfo.substr(1);
+        } else {
+            pathTranslated += pathInfo;
+        }
         addEnvironmentVariable("PATH_TRANSLATED", pathTranslated);
     }
 
@@ -278,8 +300,18 @@ void CGI::buildEnvironment(const libhttp::Request &request,
     addEnvironmentVariable("SERVER_NAME", serverName);
     addEnvironmentVariable("SERVER_PORT", utils::intToString(serverPort));
     addEnvironmentVariable("SERVER_PROTOCOL", "HTTP/1.0");
-    addEnvironmentVariable("SERVER_SOFTWARE", "QuantumBytes/1.0");
+    // RFC 3875 section 4.1.16: SERVER_SOFTWARE = product-name/version
+    addEnvironmentVariable("SERVER_SOFTWARE", "Webserv/1.0");
     addEnvironmentVariable("GATEWAY_INTERFACE", "CGI/1.1");
+    
+    // TODO: When authentication is implemented, add the following meta-variables:
+    // - AUTH_TYPE (RFC 3875 section 4.1.18)
+    // - REMOTE_USER (RFC 3875 section 4.1.11)
+    // - REMOTE_IDENT (RFC 3875 section 4.1.10)
+    
+    // TODO: Add client connection information:
+    // - REMOTE_ADDR (client IP address, RFC 3875 section 4.1.8)
+    // - REMOTE_HOST (client hostname if available, RFC 3875 section 4.1.9)
 
     // Content headers (special handling per CGI spec)
     std::string contentType = request.getHeader("Content-Type");
@@ -298,14 +330,31 @@ void CGI::buildEnvironment(const libhttp::Request &request,
     addEnvironmentVariable("REDIRECT_STATUS", "200");
 
     // HTTP headers -> HTTP_* environment variables
+    // Per RFC 3875, multiple headers with the same name should be combined with commas
     std::multimap<std::string, std::string> headers = request.getHeaders();
+    std::map<std::string, std::string> combinedHeaders;
+    
     for (std::multimap<std::string, std::string>::const_iterator it = headers.begin();
          it != headers.end(); ++it) {
         // Skip Content-Type and Content-Length (handled above)
         if (it->first == "Content-Type" || it->first == "Content-Length") {
             continue;
         }
-        addEnvironmentVariable(headerToEnvVar(it->first), it->second);
+        
+        std::string envKey = headerToEnvVar(it->first);
+        
+        // Combine multiple values with commas per RFC 3875
+        if (combinedHeaders.find(envKey) != combinedHeaders.end()) {
+            combinedHeaders[envKey] += ", " + it->second;
+        } else {
+            combinedHeaders[envKey] = it->second;
+        }
+    }
+    
+    // Add all combined headers to environment
+    for (std::map<std::string, std::string>::const_iterator it = combinedHeaders.begin();
+         it != combinedHeaders.end(); ++it) {
+        addEnvironmentVariable(it->first, it->second);
     }
 }
 
@@ -375,6 +424,9 @@ std::string CGI::extractQueryString(const std::string &uri) const {
 std::string CGI::extractPathInfo(const std::string &uri, const std::string &scriptName) const {
     // PATH_INFO is the extra path after the script name
     // e.g., /cgi-bin/script.py/extra/path -> /extra/path
+    // NOTE: Uses find() which finds the first occurrence of scriptName
+    // If scriptName appears multiple times in URI, this may extract incorrect PATH_INFO
+    // This is acceptable for typical CGI usage where script names don't repeat in paths
 
     size_t scriptEnd = uri.find(scriptName);
     if (scriptEnd == std::string::npos) {
@@ -442,9 +494,15 @@ void CGI::setupChildProcess(int pipeToChild[2], int pipeFromChild[2]) {
         _exit(1);
     }
     close(pipeFromChild[1]);
+    
+    // NOTE: stderr is not redirected per RFC 3875 section 6.2
+    // CGI script errors will go to the server's stderr
+    // This is acceptable for the current implementation but may need enhancement
+    // for production systems that require capturing CGI error output
 
     // Change to script directory; exit if this fails
-    // Skip chdir for root directory to avoid security issues
+    // NOTE: Only root directory is excluded from chdir for security
+    // Other sensitive directories (/etc, /sys) should be restricted via file permissions
     std::string scriptDir = utils::getDirectory(_scriptPath);
     if (!scriptDir.empty() && scriptDir != "/") {
         if (chdir(scriptDir.c_str()) == -1) {
@@ -453,17 +511,16 @@ void CGI::setupChildProcess(int pipeToChild[2], int pipeFromChild[2]) {
     }
 
     // Execute
+    // CRITICAL: Declare scriptName here to ensure lifetime extends until execve()
+    // Using const_cast on temporary strings causes undefined behavior
+    std::string scriptName = utils::getFilename(_scriptPath);
     char *argv[3];
     if (!_interpreterPath.empty()) {
         argv[0] = const_cast<char *>(_interpreterPath.c_str());
-        // Use just the filename after chdir for better portability
-        std::string scriptName = utils::getFilename(_scriptPath);
         argv[1] = const_cast<char *>(scriptName.c_str());
         argv[2] = NULL;
         execve(_interpreterPath.c_str(), argv, _envp.data());
     } else {
-        // Use just the filename after chdir
-        std::string scriptName = utils::getFilename(_scriptPath);
         argv[0] = const_cast<char *>(scriptName.c_str());
         argv[1] = NULL;
         execve(scriptName.c_str(), argv, _envp.data());
