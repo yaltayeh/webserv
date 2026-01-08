@@ -54,7 +54,8 @@ inline const T *IDirective::getLastChild() const
 	if (range.first == range.second)
 		throw std::runtime_error("getLastChild: not exist"); // TODO
 
-	iteratorType last_it = std::prev(range.second);
+	iteratorType last_it = range.second;
+	last_it--;
 
 	T *casted = dynamic_cast<T *>(last_it->second);
 	if (!casted)

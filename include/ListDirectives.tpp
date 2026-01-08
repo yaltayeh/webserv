@@ -1,20 +1,13 @@
 #include "ListDirectives.hpp"
 
 template <typename T>
-inline ListDirectives<T>::ListDirectives()
-{
-	
-}
+inline ListDirectives<T>::ListDirectives() {}
 
 template <typename T>
-inline ListDirectives<T>::ListDirectives(std::vector<T *> directives) : directives(directives)
-{
-}
+inline ListDirectives<T>::ListDirectives(std::vector<T *> directives) : directives(directives) {}
 
 template <typename T>
-inline ListDirectives<T>::~ListDirectives()
-{
-}
+inline ListDirectives<T>::~ListDirectives() {}
 
 template <typename T>
 inline const T *ListDirectives<T>::operator[](size_t index)

@@ -4,13 +4,15 @@
 
 GlobalDirective *Config::global;
 
-struct GlobalDirectiveInit {
-	GlobalDirectiveInit() {
+struct GlobalDirectiveInit
+{
+	GlobalDirectiveInit()
+	{
 		Config::global = new GlobalDirective();
 	}
 
-	~GlobalDirectiveInit() {
+	~GlobalDirectiveInit()
+	{
 		delete Config::global;
 	}
 } globalDirectiveInit;
-

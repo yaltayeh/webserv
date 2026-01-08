@@ -4,6 +4,7 @@
 
 namespace Config
 {
+
 	class Parser
 	{
 	private:
@@ -17,6 +18,15 @@ namespace Config
 	public:
 		Parser(std::string configString);
 		Parser(std::string configString, size_t start, size_t len);
+
+		/*
+			Config::Parser parser = Config::Parser::openConfigFile("example.conf");
+			while (parser.getNextDirectives())
+			{
+				std::string directive = parser.copyDirective();
+				IDirective::parseDirective(Config::global, directive);
+			}
+		*/
 		static Parser openConfigFile(const char *fileName);
 		~Parser();
 

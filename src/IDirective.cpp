@@ -13,18 +13,14 @@ std::map<
 	std::pair<IDirective::CreatorFunc, std::string> >
 	IDirective::registry_id;
 
-IDirective::IDirective()
-{
-}
+IDirective::IDirective() {}
 
 IDirective::IDirective(const std::vector<std::string> &args)
 {
 	(void)args;
 }
 
-IDirective::~IDirective()
-{
-}
+IDirective::~IDirective() {}
 
 void IDirective::setParent(IDirective *parent)
 {

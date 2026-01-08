@@ -21,8 +21,8 @@ public:
 
 	/* get all children */
 	const std::multimap<std::string, IDirective *> getChildren() const;
-	/* get children by name */
 
+	/* get children by name */
 	template <typename T>
 	const std::vector<T *> getChildren(const std::string &name) const;
 	template <typename T>
