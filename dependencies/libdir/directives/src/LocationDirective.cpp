@@ -31,8 +31,7 @@ namespace Config
 			std::string firstArg = args[1];
 			
 			// Check if first arg is a valid modifier
-			if (firstArg == "=" || firstArg == "~" || firstArg == "~*" || 
-			    firstArg == "^~" || firstArg[0] == '@')
+			if (firstArg == "=" || firstArg[0] == '@')
 			{
 				modifier = firstArg;
 				uri = args[2];

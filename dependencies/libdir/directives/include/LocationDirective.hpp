@@ -9,7 +9,7 @@ namespace Config
 	class LocationDirective : public IDirective
 	{
 	public:
-		const std::string modifier;  // "=", "~", "~*", "^~", "@", or empty
+		const std::string modifier;  // "=" (exact match), "@" (named location), or empty (prefix match)
 		const std::string uri;
 
 	public:

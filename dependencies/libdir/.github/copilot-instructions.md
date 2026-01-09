@@ -210,12 +210,13 @@ FILES = ... \
 - `tests/test_webserv.cpp` - Complete usage example
 - `tests/webserv_complete.conf` - Full configuration example
 
-## Quick Reference: 18 Built-in Directives
+## Quick Reference: 23 Built-in Directives
 
-**Block**: http, server, location (with modifiers: =, ~, ~*, ^~, @)  
+**Block**: http, server, location (with modifiers: =, @)  
 **Server**: server_name, listen  
-**Paths**: root, index, autoindex  
-**HTTP**: allowed_methods, return, error_page  
-**Limits**: client_max_body_size, keepalive_timeout  
+**Paths**: root, alias, index, autoindex  
+**HTTP**: allowed_methods, limit_except, return, error_page  
+**Access**: deny  
+**Limits**: client_body_temp_path, client_max_body_size, keepalive_timeout, proxy_request_buffering  
 **Upload**: upload_enable, upload_store  
 **CGI**: cgi_pass, cgi_param, cgi_extension

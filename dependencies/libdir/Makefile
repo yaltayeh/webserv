@@ -27,6 +27,11 @@ FILES = src/Parser.cpp 				\
 		directives/src/CgiPassDirective.cpp	\
 		directives/src/CgiParamDirective.cpp	\
 		directives/src/CgiExtensionDirective.cpp	\
+		directives/src/DenyDirective.cpp	\
+		directives/src/LimitExceptDirective.cpp	\
+		directives/src/ClientBodyTempPathDirective.cpp	\
+		directives/src/ProxyRequestBufferingDirective.cpp	\
+		directives/src/AliasDirective.cpp	\
 
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -MMD -g -std=c++98

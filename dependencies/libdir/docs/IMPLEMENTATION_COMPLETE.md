@@ -2,32 +2,36 @@
 
 ## Summary
 
-Successfully implemented **9 new directives** to fulfill all webserv project requirements:
+Successfully implemented **20 directives** total to fulfill all webserv project requirements:
 
 ### 1. HTTP Methods Control
 - ✅ **allowed_methods** - Restricts HTTP methods (GET, POST, PUT, DELETE, etc.)
+- ✅ **limit_except** - Block directive that specifies ALLOWED methods (all others denied)
 
-### 2. HTTP Responses & Redirects
+### 2. Access Control
+- ✅ **deny** - Denies access from specified IP/CIDR/all
+
+### 3. HTTP Responses & Redirects
 - ✅ **return** - HTTP status code responses and redirects
 
-### 3. Directory Features  
+### 4. Directory Features  
 - ✅ **autoindex** - Directory listing on/off
 - ✅ **index** - Default index files
 
-### 4. File Upload Support
+### 5. File Upload Support
 - ✅ **upload_enable** - Enable/disable file uploads
 - ✅ **upload_store** - Upload storage directory
 
-### 5. CGI Execution
+### 6. CGI Execution
 - ✅ **cgi_pass** - CGI interpreter path
 - ✅ **cgi_param** - CGI environment variables
 - ✅ **cgi_extension** - CGI file extensions
 
 ## Build Status
 
-✅ **Library compiled successfully** with all 18 directives:
-- 9 previously existing directives (http, server, location, server_name, listen, root, error_page, client_max_body_size, keepalive_timeout)
-- 9 newly created directives for webserv
+✅ **Library compiled successfully** with all 20 directives:
+- 9 core directives (http, server, location, server_name, listen, root, error_page, client_max_body_size, keepalive_timeout)
+- 11 webserv-specific directives (allowed_methods, limit_except, deny, return, autoindex, index, upload_enable, upload_store, cgi_pass, cgi_param, cgi_extension)
 
 ```bash
 make re
@@ -36,17 +40,15 @@ make re
 
 ## Test Status
 
-✅ **Comprehensive test passing** (`test_webserv.cpp`):
-- Parses complete webserv configuration
-- Validates all directive types
-- Tests HTTP-level defaults
-- Tests 3 server blocks with different configurations
-- Tests 8 location blocks with various features
+✅ **Comprehensive tests passing**:
+- `test_webserv.cpp` - Complete webserv configuration with all directive types
+- `test_access_control.cpp` - Tests deny and limit_except directives with IP/CIDR/method restrictions
 - All directive combinations working correctly
 
 ```bash
 ./test_webserv
-# Output: === All Tests Passed ===
+./test_access_control
+# All tests pass
 ```
 
 ## Configuration Example
@@ -211,7 +213,7 @@ directives/
 ✅ **Virtual hosting** with server_name  
 ✅ **Custom error pages** at multiple levels  
 ✅ **Request size limits** with inheritance  
-✅ **Location matching** with all nginx modifiers (=, ~, ~*, ^~, @, prefix)  
+✅ **Location matching** with modifiers (=, @, prefix)  
 ✅ **HTTP method restrictions** per location  
 ✅ **HTTP redirects** and status responses  
 ✅ **Directory listing** (autoindex)  

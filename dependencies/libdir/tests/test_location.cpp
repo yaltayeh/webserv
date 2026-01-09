@@ -33,15 +33,7 @@ int main()
 			"            root /var/www/exact;\n"
 			"        }\n"
 			"        \n"
-			"        location ~ \\.php$ {\n"
-			"            root /var/www/php;\n"
-			"        }\n"
-			"        \n"
-			"        location ~* \\.(gif|jpg|jpeg)$ {\n"
-			"            root /var/www/images;\n"
-			"        }\n"
-			"        \n"
-			"        location ^~ /static/ {\n"
+			"        location /static/ {\n"
 			"            root /var/www/static;\n"
 			"        }\n"
 			"        \n"
@@ -97,12 +89,6 @@ int main()
 				
 				if (loc->modifier == "=")
 					std::cout << " (exact match)";
-				else if (loc->modifier == "~")
-					std::cout << " (case-sensitive regex)";
-				else if (loc->modifier == "~*")
-					std::cout << " (case-insensitive regex)";
-				else if (loc->modifier == "^~")
-					std::cout << " (prefix match, stop regex)";
 				else if (loc->modifier[0] == '@')
 					std::cout << " (named location)";
 				

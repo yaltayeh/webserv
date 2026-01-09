@@ -17,24 +17,32 @@
 8. **autoindex** on|off - Directory listing (context: http, server, location)
 
 ### HTTP Methods & Responses
-9. **allowed_methods** METHOD [METHOD2...] - Restrict HTTP methods (context: location)
-10. **return** code [text] - Return HTTP response (context: server, location)
-11. **error_page** code [code2...] uri - Custom error pages (context: http, server, location)
+10. **allowed_methods** METHOD [METHOD2...] - Restrict HTTP methods (context: location)
+11. **limit_except** METHOD [METHOD2...] { ... } - Limit allowed methods (context: location)
+12. **return** code [text] - Return HTTP response (context: server, location)
+13. **error_page** code [code2...] uri - Custom error pages (context: http, server, location)
+
+### Access Control
+21. **deny** address - Deny access from address/CIDR/all (context: http, server, location)
 
 ### Request Limits
-12. **client_max_body_size** size - Max request body size (context: http, server, location)
-13. **keepalive_timeout** timeout [header_timeout] - Keepalive timeout (context: http, server, location)
+13. **client_body_temp_path** path [level1 [level2 [level3]]] - Temp directory for request bodies (context: http, server, location)
+### Request Limits
+13. **client_body_temp_path** path [level1 [level2 [level3]]] - Temp directory for request bodies (context: http, server, location)
+14. **client_max_body_size** size - Max request body size (context: http, server, location)
+15. **keepalive_timeout** timeout [header_timeout] - Keepalive timeout (context: http, server, location)
+16. **proxy_request_buffering** on|off - Buffer client request body for proxying (context: http, server, location)
 
 ### File Uploads
-14. **upload_enable** on|off - Enable file uploads (context: location)
-15. **upload_store** path - Upload storage directory (context: location)
+17. **upload_enable** on|off - Enable file uploads (context: location)
+18. **upload_store** path - Upload storage directory (context: location)
 
 ### CGI Execution
-16. **cgi_pass** interpreter_path - CGI interpreter path (context: location)
-17. **cgi_param** name value - CGI environment variable (context: location)
-18. **cgi_extension** ext [ext2...] - CGI file extensions (context: http, server, location)
+19. **cgi_pass** interpreter_path - CGI interpreter path (context: location)
+20. **cgi_param** name value - CGI environment variable (context: location)
+21. **cgi_extension** ext [ext2...] - CGI file extensions (context: http, server, location)
 
-## Total: 18 Directives
+## Total: 23 Directives
 
 ## Implementation Files
 

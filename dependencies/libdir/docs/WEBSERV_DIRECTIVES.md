@@ -22,9 +22,6 @@ This document describes all the directives implemented for the webserv project r
 - **Description:** Defines location-specific configuration rules
 - **Modifiers:**
   - `=` - Exact match
-  - `~` - Case-sensitive regex
-  - `~*` - Case-insensitive regex
-  - `^~` - Prefix match (stops regex search)
   - `@` - Named location (internal redirects)
   - (none) - Prefix match
 - **Data:**
@@ -60,6 +57,23 @@ This document describes all the directives implemented for the webserv project r
 - **Description:** Sets the root directory for requests
 - **Data:** `const std::string path`
 - **Example:** `root /var/www/html;`
+
+### alias
+- **Syntax:** `alias path;`
+- **Context:** location
+- **Description:** Defines a replacement for the specified location (unlike root which appends)
+- **Data:** `const std::string path`
+- **Example:** 
+  ```nginx
+  location /images/ {
+      alias /data/pictures/;
+  }
+  # Request /images/photo.jpg serves /data/pictures/photo.jpg
+  ```
+- **Note:** The location path is replaced entirely, not appended like with root
+- **Difference from root:**
+  - `root /data;` with `location /images/` serves `/data/images/photo.jpg`
+  - `alias /data/pictures/;` with `location /images/` serves `/data/pictures/photo.jpg`
 
 ### index
 - **Syntax:** `index file1 [file2 ...];`
@@ -106,7 +120,53 @@ This document describes all the directives implemented for the webserv project r
   - `const std::string uri` - Error page URI
 - **Example:** `error_page 404 /404.html;`
 
+## Access Control
+
+### deny
+- **Syntax:** `deny address;`
+- **Context:** http, server, location
+- **Description:** Denies access from specified address
+- **Data:** `const std::string address`
+- **Valid Values:**
+  - IP address: `192.168.1.1`
+  - CIDR notation: `192.168.1.0/24`
+  - `all` - deny all addresses
+- **Example:** 
+  - `deny 192.168.1.1;`
+  - `deny 10.0.0.0/8;`
+  - `deny all;`
+
+### limit_except
+- **Syntax:** `limit_except method [method2 ...] { ... }`
+- **Context:** location
+- **Description:** Limits allowed HTTP methods (block directive)
+- **Data:** `const std::vector<std::string> methods`
+- **Valid Methods:** GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH, CONNECT, TRACE
+- **Behavior:** Listed methods are ALLOWED, all others are DENIED
+- **Example:**
+```nginx
+location /api/ {
+    limit_except GET POST {
+        deny all;  # Only GET and POST allowed, deny all for other methods
+    }
+}
+```
+- **Note:** Can contain other directives like `deny` to further restrict access
+
 ## Request Limits
+
+### client_body_temp_path
+- **Syntax:** `client_body_temp_path path [level1 [level2 [level3]]];`
+- **Context:** http, server, location
+- **Description:** Defines a directory for storing temporary files with client request bodies
+- **Data:** `const std::string path`, `const int level1`, `const int level2`, `const int level3`
+- **Valid Values:** 
+  - `path` - directory path
+  - `level1`, `level2`, `level3` - subdirectory levels (0-10, optional)
+- **Example:** 
+  - `client_body_temp_path /var/tmp/client_body;`
+  - `client_body_temp_path /var/tmp/client_body 1 2;`
+- **Note:** Subdirectory levels define the hierarchy of subdirectories for temporary files
 
 ### client_max_body_size
 - **Syntax:** `client_max_body_size size;`
@@ -124,6 +184,15 @@ This document describes all the directives implemented for the webserv project r
   - `const std::string timeout` - Server timeout
   - `const std::string headerTimeout` - Optional header timeout
 - **Example:** `keepalive_timeout 60s 30s;`
+
+### proxy_request_buffering
+- **Syntax:** `proxy_request_buffering on|off;`
+- **Context:** http, server, location
+- **Description:** Enables or disables buffering of client request body for proxying
+- **Data:** `const bool enabled`
+- **Valid Values:** `on` (enabled), `off` (disabled)
+- **Example:** `proxy_request_buffering off;`
+- **Note:** When disabled, request body is sent to proxied server immediately without buffering
 
 ## File Upload
 
