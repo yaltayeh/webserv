@@ -128,6 +128,42 @@ public:
 };
 
 /**
+ * @class ArgumentException
+ * @brief Exception thrown when init function receives invalid arguments
+ * 
+ * This exception should be thrown from init methods when:
+ * - Required arguments are missing (args.size() too small)
+ * - Argument values are invalid (out of range, wrong format, etc.)
+ * - Argument types cannot be parsed (invalid number format, etc.)
+ * 
+ * The parser will catch this and display the error message to the user.
+ * 
+ * Example:
+ * @code
+ *   if (args.size() < 2) {
+ *       throw ArgumentException("listen", "requires at least 1 argument (port)");
+ *   }
+ *   int port = std::atoi(args[1].c_str());
+ *   if (port < 1 || port > 65535) {
+ *       throw ArgumentException("listen", "port must be between 1 and 65535");
+ *   }
+ * @endcode
+ */
+class ArgumentException : public DirectiveException
+{
+private:
+	std::string directiveName;
+
+public:
+	ArgumentException(const std::string &directive, const std::string &message)
+		: DirectiveException("Directive '" + directive + "': " + message),
+		  directiveName(directive) {}
+	virtual ~ArgumentException() throw() {}
+
+	const std::string &getDirectiveName() const { return directiveName; }
+};
+
+/**
  * @class SyntaxException
  * @brief Exception thrown for syntax errors in configuration files
  * 
