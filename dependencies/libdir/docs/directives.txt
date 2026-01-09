@@ -435,9 +435,9 @@ open_file_cache max=N[inactive=time]
 
 ======================
 
- Syntax: server { ... } Default: — Context: http 
- Default: —
- Context: http
+ Syntax: server { ... } 
+ Default: — 
+ Context: http 
 
 ======================
 
