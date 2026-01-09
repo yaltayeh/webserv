@@ -1,5 +1,6 @@
 #include "Directives/ExampleDirective.hpp"
 #include "Directives/GlobalDirective.hpp"
+#include "DirectiveFactory.hpp"
 
 /**
  * Register ExampleDirective with the factory system.

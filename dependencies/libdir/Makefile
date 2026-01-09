@@ -4,6 +4,7 @@ NAME = $(BUILD_PATH)/libdir.a
 
 FILES = src/Parser.cpp 							\
 		src/IDirective.cpp						\
+		src/DirectiveFactory.cpp				\
 		src/Config.cpp							\
 		src/Directives/GlobalDirective.cpp		\
 		src/Directives/ExampleDirective.cpp		\

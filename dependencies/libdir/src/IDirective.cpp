@@ -3,17 +3,7 @@
 #include <cstring>
 #include "IDirective.hpp"
 #include "Parser.hpp"
-
-// Static member initialization
-std::map<
-	std::string,
-	std::pair<IDirective::CreatorFunc, const std::type_info *> >
-	IDirective::registry_name;
-	
-std::map<
-	const std::type_info *,
-	std::pair<IDirective::CreatorFunc, std::string> >
-	IDirective::registry_id;
+#include "DirectiveFactory.hpp"
 
 /**
  * @brief Default constructor
@@ -63,8 +53,8 @@ void IDirective::setParent(IDirective *parent)
 	if (allowedInside[i] == NULL)
 	{
 		// Get names for better error message
-		std::string childName = getName(&typeid(*this));
-		std::string parentName = getName(&typeid(*parent));
+		std::string childName = DirectiveFactory::getName(&typeid(*this));
+		std::string parentName = DirectiveFactory::getName(&typeid(*parent));
 		throw InvalidNesting(childName, parentName);
 	}
 	this->parent = parent;
@@ -101,30 +91,12 @@ const std::multimap<std::string, IDirective *> IDirective::getChildren() const
 }
 
 /**
- * @brief Gets directive name from instance
+ * @brief Gets the name of this directive
  */
 std::string IDirective::getName() const
 {
 	const std::type_info *id = &typeid(*this);
-	return getName(id);
-}
-
-/**
- * @brief Gets directive name from type_info
- */
-std::string IDirective::getName(const std::type_info *id)
-{
-	std::pair<CreatorFunc, std::string> data = registry_id.at(id);
-	return (data.second);
-}
-
-/**
- * @brief Gets type_info from directive name
- */
-const std::type_info *IDirective::getID(const std::string &name)
-{
-	std::pair<CreatorFunc, const std::type_info *> data = registry_name.at(name);
-	return (data.second);
+	return DirectiveFactory::getName(id);
 }
 
 /**
@@ -190,7 +162,7 @@ const IDirective *IDirective::parseDirective(IDirective *parent,
 	const std::string &name = args[0];
 	try
 	{
-		const IDirective::CreatorFunc &initFunction = IDirective::getCreator(name);
+		DirectiveFactory::CreatorFunc initFunction = DirectiveFactory::getCreator(name);
 		IDirective *directive = initFunction(args);
 
 		// change parent in directive and add child to parent
@@ -269,34 +241,6 @@ void IDirective::parseBlockDirective(IDirective *parent,
 const IDirective *IDirective::parseDirective(IDirective *parent, const std::string &str)
 {
 	return (parseDirective(parent, str, str.c_str(), str.c_str() + str.length()));
-}
-
-/**
- * @brief Adds directive to registry
- */
-void IDirective::addRegistry(std::string name, const std::type_info *id, const IDirective::CreatorFunc &creator)
-{
-	registry_name[name] = std::make_pair(creator, id);
-	registry_id[id] = std::make_pair(creator, name);
-	std::cout << "Add '" << name << "' to registry" << std::endl;
-}
-
-/**
- * @brief Gets creator function by name
- */
-IDirective::CreatorFunc IDirective::getCreator(std::string name)
-{
-	std::pair<CreatorFunc, const std::type_info *> data = registry_name.at(name);
-	return data.first;
-}
-
-/**
- * @brief Gets creator function by type
- */
-IDirective::CreatorFunc IDirective::getCreator(const std::type_info *id)
-{
-	std::pair<CreatorFunc, std::string> data = registry_id.at(id);
-	return data.first;
 }
 
 /**

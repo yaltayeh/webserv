@@ -1,5 +1,6 @@
 #include <vector>
 #include "IDirective.hpp"
+#include "DirectiveFactory.hpp"
 
 /**
  * @brief Gets all children of a specific type by name
@@ -16,7 +17,7 @@ const std::vector<T *> IDirective::getChildren() const
 {
 	typedef std::multimap<std::string, IDirective *>::const_iterator iteratorType;
 
-	std::string name = getName(&typeid(T));
+	std::string name = DirectiveFactory::getName(&typeid(T));
 
 	std::vector<T *> result;
 
@@ -49,7 +50,7 @@ inline const T *IDirective::getFirstChild() const
 {
 	typedef std::multimap<std::string, IDirective *>::const_iterator iteratorType;
 
-	std::string name = getName(&typeid(T));
+	std::string name = DirectiveFactory::getName(&typeid(T));
 
 	iteratorType it = children.find(name);
 
@@ -75,7 +76,7 @@ inline const T *IDirective::getLastChild() const
 {
 	typedef std::multimap<std::string, IDirective *>::const_iterator iteratorType;
 
-	std::string name = getName(&typeid(T));
+	std::string name = DirectiveFactory::getName(&typeid(T));
 
 	std::pair<iteratorType, iteratorType> range = children.equal_range(name);
 
