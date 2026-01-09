@@ -7,6 +7,9 @@
 #include "IDirective.hpp"
 #include <iostream>
 
+namespace Config
+{
+
 // Static member initialization
 std::map<std::string, std::pair<DirectiveFactory::CreatorFunc, const std::type_info *> >
 	DirectiveFactory::registry_name;
@@ -60,3 +63,5 @@ const std::type_info *DirectiveFactory::getTypeInfo(const std::string &name)
 	std::pair<CreatorFunc, const std::type_info *> data = registry_name.at(name);
 	return data.second;
 }
+
+} // namespace Config

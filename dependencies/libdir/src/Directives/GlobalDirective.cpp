@@ -1,5 +1,8 @@
 #include "Directives/GlobalDirective.hpp"
 
+namespace Config
+{
+
 /**
  * @brief Default constructor
  */
@@ -55,3 +58,5 @@ const std::type_info **GlobalDirective::getAllowedInside() const
 	static const std::type_info *allowedInside[] = {NULL};
 	return allowedInside;
 }
+
+} // namespace Config

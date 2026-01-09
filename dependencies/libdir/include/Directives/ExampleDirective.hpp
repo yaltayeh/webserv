@@ -1,6 +1,9 @@
-#include "Directives.hpp"
+#include "../IDirective.hpp"
 
 #pragma once
+
+namespace Config
+{
 
 /**
  * @class ExampleDirective
@@ -72,3 +75,5 @@ public:
 	 */
 	DEFINE_ALLOWED_INSIDE();
 };
+
+} // namespace Config

@@ -1,6 +1,9 @@
-#include "Directives.hpp"
+#include "../IDirective.hpp"
 
 #pragma once
+
+namespace Config
+{
 
 /**
  * @class GlobalDirective
@@ -60,3 +63,4 @@ public:
 	 */
 	DEFINE_ALLOWED_INSIDE();
 };
+} // namespace Config

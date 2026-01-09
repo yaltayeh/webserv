@@ -2,13 +2,13 @@
 #include "IDirective.hpp"
 #include "Config.hpp"
 
-GlobalDirective *Config::global;
+Config::GlobalDirective *Config::global;
 
 struct GlobalDirectiveInit
 {
 	GlobalDirectiveInit()
 	{
-		Config::global = new GlobalDirective();
+		Config::global = new Config::GlobalDirective();
 	}
 
 	~GlobalDirectiveInit()

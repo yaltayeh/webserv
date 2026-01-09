@@ -8,10 +8,11 @@
 #include "Config.hpp"
 #include "Parser.hpp"
 #include "IDirective.hpp"
-#include "Directives/Directives.hpp"
 #include "Directives/GlobalDirective.hpp"
 #include "Directives/ExampleDirective.hpp"
 #include "DirectiveFactory.hpp"
+
+using namespace Config;
 
 void testParserOCF()
 {
@@ -66,9 +67,10 @@ void testExampleDirectiveOCF()
 	// Test copy constructor
 	std::vector<std::string> args;
 	args.push_back("example");
-	args.push_back("test");
+	args.push_back("value1");
+	args.push_back("value2");
 	
-	ExampleDirective* dir1 = new ExampleDirective(args);
+	ExampleDirective* dir1 = ExampleDirective::initExampleDirective(args);
 	ExampleDirective dir2(*dir1);
 	
 	std::cout << "✓ ExampleDirective copy constructor works\n";

@@ -1,5 +1,8 @@
 #include "ListDirectives.hpp"
 
+namespace Config
+{
+
 template <typename T>
 inline ListDirectives<T>::ListDirectives() {}
 
@@ -22,3 +25,5 @@ inline size_t ListDirectives<T>::size() const
 {
 	return directives.size();
 }
+
+} // namespace Config

@@ -13,6 +13,9 @@
 #include <stdexcept>
 #include <string>
 
+namespace Config
+{
+
 /**
  * @class ConfigException
  * @brief Base exception class for all configuration-related errors
@@ -207,5 +210,7 @@ public:
 
 	const std::string &getFilename() const { return filename; }
 };
+
+} // namespace Config
 
 #endif // EXCEPTIONS_HPP

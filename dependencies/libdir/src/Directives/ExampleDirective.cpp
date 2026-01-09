@@ -2,6 +2,9 @@
 #include "Directives/GlobalDirective.hpp"
 #include "DirectiveFactory.hpp"
 
+namespace Config
+{
+
 /**
  * Register ExampleDirective with the factory system.
  * This directive can only appear inside GlobalDirective.
@@ -81,3 +84,5 @@ ExampleDirective &ExampleDirective::operator=(const ExampleDirective &other)
  * @brief Destructor
  */
 ExampleDirective::~ExampleDirective() {}
+
+} // namespace Config

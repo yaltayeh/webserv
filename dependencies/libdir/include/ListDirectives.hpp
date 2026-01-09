@@ -2,6 +2,9 @@
 
 #pragma once
 
+namespace Config
+{
+
 class IDirective;
 
 template <typename T>
@@ -18,5 +21,7 @@ public:
 	const T *operator[](size_t index);
 	size_t size() const;
 };
+
+} // namespace Config
 
 #include "ListDirectives.tpp"

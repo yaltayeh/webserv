@@ -5,6 +5,9 @@
 #include "Parser.hpp"
 #include "DirectiveFactory.hpp"
 
+namespace Config
+{
+
 /**
  * @brief Default constructor
  */
@@ -303,3 +306,5 @@ const std::type_info **IDirective::getAllowedInside() const
 	static const std::type_info *allowedInside[] = {NULL};
 	return allowedInside;
 }
+
+} // namespace Config

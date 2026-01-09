@@ -9,8 +9,9 @@
 #include "Parser.hpp"
 #include "IDirective.hpp"
 #include "DirectiveFactory.hpp"
-#include "Directives/Directives.hpp"
 #include "Exceptions.hpp"
+
+using namespace Config;
 
 void testEscapeSequences()
 {

@@ -7,6 +7,8 @@
 #include <iostream>
 #include <typeinfo>
 
+using namespace Config;
+
 int main()
 {
     // Force linker to include ExampleDirective by referencing its type

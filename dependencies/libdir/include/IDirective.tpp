@@ -2,6 +2,9 @@
 #include "IDirective.hpp"
 #include "DirectiveFactory.hpp"
 
+namespace Config
+{
+
 /**
  * @brief Gets all children of a specific type by name
  * @tparam T The directive type to retrieve and cast to
@@ -120,3 +123,5 @@ inline const T *IDirective::getOne(bool first) const
 	else
 		return getLastChild<T>();
 }
+
+} // namespace Config

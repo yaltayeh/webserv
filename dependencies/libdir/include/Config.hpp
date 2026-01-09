@@ -4,5 +4,5 @@
 
 namespace Config
 {
-	extern GlobalDirective *global;
+	extern Config::GlobalDirective *global;
 }

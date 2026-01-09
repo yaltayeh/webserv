@@ -2,6 +2,12 @@
 
 This guide explains step-by-step how to create a custom directive for the configuration parser library.
 
+**IMPORTANT:** All library classes are in the `Config` namespace. When implementing directives:
+- Wrap your class declarations in `namespace Config { ... }`
+- Wrap your implementation files in `namespace Config { ... }`
+- Use `Config::` prefix when referring to library classes from outside the namespace
+- Use `using namespace Config;` in your application code for convenience
+
 ## Table of Contents
 - [Overview](#overview)
 - [Quick Start](#quick-start)
@@ -34,8 +40,11 @@ For a directive named `listen` with port and host parameters:
 
 **1. Create `include/Directives/ListenDirective.hpp`:**
 ```cpp
-#include "Directives.hpp"
+#include "../IDirective.hpp"
 #pragma once
+
+namespace Config
+{
 
 class ListenDirective : public IDirective
 {
@@ -53,13 +62,19 @@ public:
     static ListenDirective* initListenDirective(const std::vector<std::string>& args);
     DEFINE_ALLOWED_INSIDE();
 };
+
+} // namespace Config
 ```
 
 **2. Create `src/Directives/ListenDirective.cpp`:**
 ```cpp
 #include "Directives/ListenDirective.hpp"
 #include "DirectiveFactory.hpp"
+#include "Exceptions.hpp"
 #include <cstdlib>
+
+namespace Config
+{
 
 DEFINE_DIRECTIVE(ListenDirective, "listen", ServerDirective, GlobalDirective)
 
@@ -69,7 +84,15 @@ ListenDirective* ListenDirective::initListenDirective(const std::vector<std::str
     // args[1] = port number
     // args[2] = host (optional)
     
+    if (args.size() < 2) {
+        throw ArgumentException("listen", "requires at least 1 argument (port)");
+    }
+    
     int port = std::atoi(args[1].c_str());
+    if (port < 1 || port > 65535) {
+        throw ArgumentException("listen", "port must be between 1-65535, got " + args[1]);
+    }
+    
     std::string host = args.size() > 2 ? args[2] : "0.0.0.0";
     
     return new ListenDirective(port, host);
@@ -81,6 +104,8 @@ ListenDirective::ListenDirective(int port, const std::string& host)
     : port(port), host(host) {}
 
 // Copy constructor and other OCF methods...
+
+} // namespace Config
 ```
 
 **3. Add to Makefile and rebuild:**
@@ -127,8 +152,11 @@ Parent contexts: ServerDirective, GlobalDirective
 **Required Elements:**
 
 ```cpp
-#include "Directives.hpp"  // Provides IDirective base class
+#include "../IDirective.hpp"  // Provides IDirective base class
 #pragma once
+
+namespace Config
+{
 
 /**
  * @class YourDirective
@@ -155,6 +183,8 @@ public:
     // 4. Declare getAllowedInside() method
     DEFINE_ALLOWED_INSIDE();
 };
+
+} // namespace Config
 ```
 
 **Key Points:**
@@ -177,6 +207,9 @@ public:
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"  // For ArgumentException
 #include <cstdlib>  // For atoi, atof, etc.
+
+namespace Config
+{
 
 // 1. DEFINE_DIRECTIVE macro - MUST be at the top!
 //    Format: DEFINE_DIRECTIVE(ClassName, "config-name", Parent1, Parent2, ...)
@@ -296,6 +329,8 @@ YourDirective &YourDirective::operator=(const YourDirective &other)
 }
 
 YourDirective::~YourDirective() {}
+
+} // namespace Config
 ```
 
 **Init Method Best Practices:**
@@ -330,9 +365,9 @@ FILES = src/Parser.cpp \
 make clean && make
 
 # Test in code
-GlobalDirective root;
+Config::GlobalDirective root;
 const char* config = "yourdirective 42 hello;";
-IDirective::parseDirective(&root, config);
+Config::IDirective::parseDirective(&root, config);
 ```
 
 ---

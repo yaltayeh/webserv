@@ -9,6 +9,9 @@
 
 #pragma once
 
+namespace Config
+{
+
 /**
  * @class IDirective
  * @brief Abstract base class for all configuration directives
@@ -225,5 +228,7 @@ private:
 
 
 };
+
+} // namespace Config
 
 #include "IDirective.tpp"
