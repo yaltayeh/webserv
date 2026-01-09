@@ -37,6 +37,19 @@ public:
 	ExampleDirective(const std::vector<std::string>& args);
 	
 	/**
+	 * @brief Copy constructor
+	 * @param other ExampleDirective to copy from
+	 */
+	ExampleDirective(const ExampleDirective &other);
+	
+	/**
+	 * @brief Assignment operator
+	 * @param other ExampleDirective to assign from
+	 * @return Reference to this
+	 */
+	ExampleDirective &operator=(const ExampleDirective &other);
+	
+	/**
 	 * @brief Destructor
 	 */
 	~ExampleDirective();

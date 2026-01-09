@@ -26,6 +26,33 @@ ExampleDirective::ExampleDirective(const std::vector<std::string> &args)
 }
 
 /**
+ * @brief Copy constructor
+ * @param other ExampleDirective to copy from
+ * @note Calls base class copy constructor
+ */
+ExampleDirective::ExampleDirective(const ExampleDirective &other) : IDirective(other)
+{
+	// Base class handles children copying
+}
+
+/**
+ * @brief Assignment operator
+ * @param other ExampleDirective to assign from
+ * @return Reference to this
+ */
+ExampleDirective &ExampleDirective::operator=(const ExampleDirective &other)
+{
+	// Self-assignment check
+	if (this == &other)
+		return *this;
+	
+	// Call base class assignment
+	IDirective::operator=(other);
+	
+	return *this;
+}
+
+/**
  * @brief Destructor
  */
 ExampleDirective::~ExampleDirective() {}

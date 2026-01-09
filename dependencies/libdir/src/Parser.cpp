@@ -19,6 +19,67 @@ namespace Config
 	}
 	
 	/**
+	 * @brief Copy constructor
+	 * @param other Parser to copy from
+	 * @note Recalculates pointers since _configString is copied
+	 */
+	Parser::Parser(const Parser &other) : _configString(other._configString)
+	{
+		_start = _configString.c_str();
+		_end = _start + _configString.length();
+		
+		// Calculate offsets and apply to new string
+		size_t pOffset = other._p - other._start;
+		size_t directiveStartOffset = other._directiveStart - other._start;
+		size_t directiveEndOffset = other._directiveEnd - other._start;
+		
+		_p = _start + pOffset;
+		_directiveStart = _start + directiveStartOffset;
+		_directiveEnd = _start + directiveEndOffset;
+	}
+	
+	/**
+	 * @brief Assignment operator
+	 * @param other Parser to assign from
+	 * @return Reference to this
+	 */
+	Parser &Parser::operator=(const Parser &other)
+	{
+		// Self-assignment check
+		if (this == &other)
+			return *this;
+		
+		// Note: _configString is const, so we can't reassign it
+		// This is a design limitation - Parser should be non-copyable
+		// or _configString should not be const
+		// For now, we'll use const_cast (not ideal but necessary for OCF)
+		const_cast<std::string&>(_configString) = other._configString;
+		
+		_start = _configString.c_str();
+		_end = _start + _configString.length();
+		
+		// Calculate offsets and apply to new string
+		size_t pOffset = other._p - other._start;
+		size_t directiveStartOffset = other._directiveStart - other._start;
+		size_t directiveEndOffset = other._directiveEnd - other._start;
+		
+		_p = _start + pOffset;
+		_directiveStart = _start + directiveStartOffset;
+		_directiveEnd = _start + directiveEndOffset;
+		
+		return *this;
+	}
+	
+	/**
+	 * @brief Destructor
+	 * @note Nothing to clean up - string is managed by std::string
+	 */
+	Parser::~Parser()
+	{
+		// Nothing to clean up
+	}
+	
+	/**
 	 * @brief Constructs parser for substring
 	 */
 	Parser::Parser(std::string configString,
@@ -46,10 +107,6 @@ namespace Config
 		std::string str = ss.str();
 
 		return (Parser(str));
-	}
-
-	Parser::~Parser()
-	{
 	}
 
 	/**

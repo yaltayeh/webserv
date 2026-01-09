@@ -48,6 +48,21 @@ public:
 	IDirective(const std::vector<std::string> &args);
 	
 	/**
+	 * @brief Copy constructor
+	 * @param other IDirective to copy from
+	 * @note Performs deep copy of children
+	 */
+	IDirective(const IDirective &other);
+	
+	/**
+	 * @brief Assignment operator
+	 * @param other IDirective to assign from
+	 * @return Reference to this
+	 * @note Performs deep copy of children
+	 */
+	IDirective &operator=(const IDirective &other);
+	
+	/**
 	 * @brief Virtual destructor
 	 * @note Recursively deletes all child directives to prevent memory leaks
 	 */

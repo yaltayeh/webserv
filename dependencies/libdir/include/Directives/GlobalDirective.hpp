@@ -31,6 +31,19 @@ public:
 	GlobalDirective();
 	
 	/**
+	 * @brief Copy constructor
+	 * @param other GlobalDirective to copy from
+	 */
+	GlobalDirective(const GlobalDirective &other);
+	
+	/**
+	 * @brief Assignment operator
+	 * @param other GlobalDirective to assign from
+	 * @return Reference to this
+	 */
+	GlobalDirective &operator=(const GlobalDirective &other);
+	
+	/**
 	 * @brief Destructor - cleans up all child directives
 	 */
 	~GlobalDirective();

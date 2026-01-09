@@ -80,6 +80,24 @@ namespace Config
 		Parser(std::string configString);
 		
 		/**
+		 * @brief Copy constructor
+		 * @param other Parser to copy from
+		 */
+		Parser(const Parser &other);
+		
+		/**
+		 * @brief Assignment operator
+		 * @param other Parser to assign from
+		 * @return Reference to this
+		 */
+		Parser &operator=(const Parser &other);
+		
+		/**
+		 * @brief Destructor
+		 */
+		~Parser();
+		
+		/**
 		 * @brief Constructor - parses substring
 		 * @param configString Configuration file content
 		 * @param start Starting offset in string
@@ -107,11 +125,6 @@ namespace Config
 		 * @endcode
 		 */
 		static Parser openConfigFile(const char *fileName);
-		
-		/**
-		 * @brief Destructor
-		 */
-		~Parser();
 
 		/**
 		 * @brief Advances to next directive in configuration
