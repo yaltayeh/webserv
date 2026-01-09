@@ -8,6 +8,7 @@ FILES = src/Parser.cpp 				\
 		src/Config.cpp				\
 		src/GlobalDirective.cpp		\
 		src/ExampleDirective.cpp	\
+		src/Logger.cpp				\
 		directives/src/HttpDirective.cpp	\
 		directives/src/ServerDirective.cpp	\
 		directives/src/LocationDirective.cpp	\

@@ -98,6 +98,33 @@ make re         # Clean rebuild
 make clean      # Remove all build artifacts
 ```
 
+### Debugging with Logging
+
+The library includes a logging system with global log level control:
+
+```cpp
+#include "Logger.hpp"
+
+// Set log level (defaults to LOG_LEVEL_WARN)
+Config::g_log_level = Config::LOG_LEVEL_DEBUG;  // Show all messages
+Config::g_log_level = Config::LOG_LEVEL_INFO;   // Info and above
+Config::g_log_level = Config::LOG_LEVEL_WARN;   // Warnings and errors
+Config::g_log_level = Config::LOG_LEVEL_ERROR;  // Errors only
+Config::g_log_level = Config::LOG_LEVEL_NONE;   // Disable all logs
+
+// Use macros for conditional logging
+LOGE("Error message");               // Always shown (unless NONE)
+LOGW("Warning about " << variable);  // Shown at WARN level and above
+LOGI("Info: parsed " << count);      // Shown at INFO level and above
+LOGD("Debug: " << details);          // Only at DEBUG level
+```
+
+**Key points:**
+- Macros check `g_log_level` before output - zero overhead when disabled
+- Use stream syntax: `LOGI("Port: " << port << " Host: " << host)`
+- Set to `LOG_LEVEL_NONE` in production to eliminate all logging
+- Set to `LOG_LEVEL_DEBUG` during development for verbose output
+
 ### Test Compilation Pattern
 ```bash
 c++ -Wall -Wextra -Werror -std=c++98 -I./include -I./directives/include \
@@ -173,6 +200,7 @@ FILES = ... \
 5. **DON'T** use `args[0]` as data - it's the directive name
 6. **DON'T** make data members non-const - breaks immutability contract
 7. **DON'T** forget to update Makefile when adding new directive source file
+8. **DON'T** use printf/cout directly - use LOGI/LOGE/LOGD macros for conditional output
 
 ## Documentation References
 
