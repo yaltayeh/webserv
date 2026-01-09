@@ -173,33 +173,66 @@ private:
  * 
  * This macro:
  * 1. Creates a static factory function create##_class(args)
- * 2. Creates a registrar struct whose constructor auto-registers the directive
- * 3. Generates the getAllowedInside() implementation
+ * 2. Calls the directive's static init##_class(args) method for parsing and construction
+ * 3. Creates a registrar struct whose constructor auto-registers the directive
+ * 4. Generates the getAllowedInside() implementation
  * 
  * The registrar uses the "static initialization" trick: its constructor
  * runs before main(), automatically registering the directive.
  * 
+ * IMPORTANT: Your directive class MUST implement a static init function:
+ * @code
+ *   static _class* init##_class(const std::vector<std::string>& args);
+ * @endcode
+ * 
  * Example Usage:
  * @code
+ *   // In ServerDirective.hpp:
+ *   class ServerDirective : public IDirective {
+ *   private:
+ *       const std::string ip;
+ *       const int port;
+ *   public:
+ *       ServerDirective(const std::string& ip, int port);
+ *       static ServerDirective* initServerDirective(const std::vector<std::string>& args);
+ *       DEFINE_ALLOWED_INSIDE();
+ *   };
+ *   
  *   // In ServerDirective.cpp:
  *   DEFINE_DIRECTIVE(ServerDirective, "server", HttpDirective, GlobalDirective)
  *   
- *   // This expands to:
+ *   ServerDirective* ServerDirective::initServerDirective(const std::vector<std::string>& args) {
+ *       // args[0] = "server"
+ *       // args[1] = ip address
+ *       // args[2] = port number
+ *       std::string ip = args[1];
+ *       int port = std::atoi(args[2].c_str());
+ *       return new ServerDirective(ip, port);
+ *   }
+ *   
+ *   ServerDirective::ServerDirective(const std::string& ip, int port) 
+ *       : ip(ip), port(port) {
+ *       // Constructor with properly typed parameters
+ *   }
+ * @endcode
+ * 
+ * The macro expands to:
+ * @code
  *   static IDirective* createServerDirective(const std::vector<std::string>& args) {
- *       return new ServerDirective(args);
+ *       return ServerDirective::initServerDirective(args);
  *   }
  *   struct ServerDirectiveRegistrar {
  *       ServerDirectiveRegistrar() {
  *           DirectiveFactory::registerDirective("server", &typeid(ServerDirective), &createServerDirective);
  *       }
- *   } _ServerDirectiveRegistrar;  // Global instance auto-registers
+ *   } _ServerDirectiveRegistrar;
  *   // ... plus getAllowedInside() implementation
  * @endcode
  */
 #define DEFINE_DIRECTIVE(_class, _name, ...)                                  \
 	static IDirective *create##_class(const std::vector<std::string> &args)   \
 	{                                                                         \
-		return new _class(args);                                              \
+		return _class::init##_class(args);                                    \
 	}                                                                         \
 	struct _class##Registrar                                                  \
 	{                                                                         \

@@ -9,20 +9,45 @@
 DEFINE_DIRECTIVE(ExampleDirective, "example", GlobalDirective)
 
 /**
- * @brief Default constructor
+ * @brief Static initialization method - parses arguments and constructs directive
+ * @param args Argument vector from configuration file
+ * @return Newly constructed ExampleDirective instance
+ * 
+ * Arguments:
+ *   args[0] = "example" (directive name)
+ *   args[1] = first user argument
+ *   args[2] = second user argument (optional)
  */
-ExampleDirective::ExampleDirective() {}
+ExampleDirective* ExampleDirective::initExampleDirective(const std::vector<std::string>& args)
+{
+	// Example: Print all arguments for demonstration
+	std::cout << "Parsing ExampleDirective with " << args.size() << " arguments:" << std::endl;
+	for (size_t i = 0; i < args.size(); i++)
+		std::cout << "  Arg [" << i << "] = " << args[i] << std::endl;
+	
+	// Parse arguments (with defaults for missing ones)
+	std::string arg1 = args.size() > 1 ? args[1] : "default_arg1";
+	std::string arg2 = args.size() > 2 ? args[2] : "default_arg2";
+	
+	// Call constructor with typed parameters
+	return new ExampleDirective(arg1, arg2);
+}
 
 /**
- * @brief Constructor with arguments - demonstrates argument access
- * @param args Vector of arguments from configuration file
- * @note This example prints all arguments for demonstration purposes
+ * @brief Default constructor
  */
-ExampleDirective::ExampleDirective(const std::vector<std::string> &args)
+ExampleDirective::ExampleDirective() : arg1("default_arg1"), arg2("default_arg2") {}
+
+/**
+ * @brief Constructor with typed parameters
+ * @param arg1 First argument from configuration
+ * @param arg2 Second argument from configuration
+ */
+ExampleDirective::ExampleDirective(const std::string& arg1, const std::string& arg2)
+	: arg1(arg1), arg2(arg2)
 {
-	// Example: Print all arguments
-	for (size_t i = 0; i < args.size(); i++)
-		std::cout << "Arg [" << i << "] = " << args[i] << std::endl;
+	std::cout << "ExampleDirective constructed with arg1='" << arg1 
+	          << "' arg2='" << arg2 << "'" << std::endl;
 }
 
 /**

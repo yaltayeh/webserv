@@ -9,7 +9,8 @@
  * This class serves as a template for creating new directive types.
  * It shows how to:
  * - Use DEFINE_DIRECTIVE macro for registration
- * - Access arguments in constructor
+ * - Implement static init method for argument parsing
+ * - Use typed constructor parameters
  * - Specify allowed parent contexts
  * 
  * Configuration Example:
@@ -23,6 +24,8 @@
 class ExampleDirective: public IDirective
 {
 private:
+	const std::string arg1;
+	const std::string arg2;
 	
 public:
 	/**
@@ -31,10 +34,11 @@ public:
 	ExampleDirective();
 	
 	/**
-	 * @brief Constructor with arguments
-	 * @param args Argument vector (args[0] is "example", args[1+] are user args)
+	 * @brief Constructor with typed parameters
+	 * @param arg1 First argument from configuration
+	 * @param arg2 Second argument from configuration
 	 */
-	ExampleDirective(const std::vector<std::string>& args);
+	ExampleDirective(const std::string& arg1, const std::string& arg2);
 	
 	/**
 	 * @brief Copy constructor
@@ -53,6 +57,14 @@ public:
 	 * @brief Destructor
 	 */
 	~ExampleDirective();
+	
+	/**
+	 * @brief Static initialization method - parses string arguments
+	 * @param args Argument vector from configuration file
+	 * @return Newly constructed ExampleDirective instance
+	 * @note Called by DEFINE_DIRECTIVE macro's factory function
+	 */
+	static ExampleDirective* initExampleDirective(const std::vector<std::string>& args);
 	
 	/**
 	 * @brief Declares getAllowedInside() method
