@@ -10,12 +10,25 @@
 namespace Config
 {
 
-// Static member initialization
-std::map<std::string, std::pair<DirectiveFactory::CreatorFunc, const std::type_info *> >
-	DirectiveFactory::registry_name;
+/**
+ * @brief Gets registry by name (initialized on first use)
+ */
+std::map<std::string, std::pair<DirectiveFactory::CreatorFunc, const std::type_info *> >&
+DirectiveFactory::getRegistryName()
+{
+	static std::map<std::string, std::pair<CreatorFunc, const std::type_info *> > registry;
+	return registry;
+}
 
-std::map<const std::type_info *, std::pair<DirectiveFactory::CreatorFunc, std::string> >
-	DirectiveFactory::registry_id;
+/**
+ * @brief Gets registry by type info (initialized on first use)
+ */
+std::map<const std::type_info *, std::pair<DirectiveFactory::CreatorFunc, std::string> >&
+DirectiveFactory::getRegistryId()
+{
+	static std::map<const std::type_info *, std::pair<CreatorFunc, std::string> > registry;
+	return registry;
+}
 
 /**
  * @brief Registers a directive in the factory
@@ -24,8 +37,8 @@ void DirectiveFactory::registerDirective(const std::string &name,
                                          const std::type_info *id, 
                                          CreatorFunc creator)
 {
-	registry_name[name] = std::make_pair(creator, id);
-	registry_id[id] = std::make_pair(creator, name);
+	getRegistryName()[name] = std::make_pair(creator, id);
+	getRegistryId()[id] = std::make_pair(creator, name);
 }
 
 /**
@@ -33,7 +46,7 @@ void DirectiveFactory::registerDirective(const std::string &name,
  */
 DirectiveFactory::CreatorFunc DirectiveFactory::getCreator(const std::string &name)
 {
-	std::pair<CreatorFunc, const std::type_info *> data = registry_name.at(name);
+	std::pair<CreatorFunc, const std::type_info *> data = getRegistryName().at(name);
 	return data.first;
 }
 
@@ -42,7 +55,7 @@ DirectiveFactory::CreatorFunc DirectiveFactory::getCreator(const std::string &na
  */
 DirectiveFactory::CreatorFunc DirectiveFactory::getCreator(const std::type_info *id)
 {
-	std::pair<CreatorFunc, std::string> data = registry_id.at(id);
+	std::pair<CreatorFunc, std::string> data = getRegistryId().at(id);
 	return data.first;
 }
 
@@ -51,7 +64,7 @@ DirectiveFactory::CreatorFunc DirectiveFactory::getCreator(const std::type_info 
  */
 std::string DirectiveFactory::getName(const std::type_info *id)
 {
-	std::pair<CreatorFunc, std::string> data = registry_id.at(id);
+	std::pair<CreatorFunc, std::string> data = getRegistryId().at(id);
 	return data.second;
 }
 
@@ -60,7 +73,7 @@ std::string DirectiveFactory::getName(const std::type_info *id)
  */
 const std::type_info *DirectiveFactory::getTypeInfo(const std::string &name)
 {
-	std::pair<CreatorFunc, const std::type_info *> data = registry_name.at(name);
+	std::pair<CreatorFunc, const std::type_info *> data = getRegistryName().at(name);
 	return data.second;
 }
 

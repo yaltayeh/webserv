@@ -86,14 +86,16 @@ public:
 
 private:
 	/**
-	 * @brief Registry mapping directive names to creators and type info
+	 * @brief Gets registry mapping directive names to creators and type info
+	 * @return Reference to the name registry (initialized on first use)
 	 */
-	static std::map<std::string, std::pair<CreatorFunc, const std::type_info *> > registry_name;
+	static std::map<std::string, std::pair<CreatorFunc, const std::type_info *> >& getRegistryName();
 
 	/**
-	 * @brief Registry mapping type info to creators and names
+	 * @brief Gets registry mapping type info to creators and names
+	 * @return Reference to the type info registry (initialized on first use)
 	 */
-	static std::map<const std::type_info *, std::pair<CreatorFunc, std::string> > registry_id;
+	static std::map<const std::type_info *, std::pair<CreatorFunc, std::string> >& getRegistryId();
 };
 
 /**
