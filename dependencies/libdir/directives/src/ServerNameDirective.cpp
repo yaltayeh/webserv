@@ -1,12 +1,12 @@
 #include "ServerNameDirective.hpp"
+#include "ServerDirective.hpp"
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
-#include "GlobalDirective.hpp"
 
 namespace Config
 {
-	// Register directive: allowed in GlobalDirective (later will add ServerDirective)
-	DEFINE_DIRECTIVE(ServerNameDirective, "server_name", GlobalDirective)
+	// Register directive: server_name allowed in ServerDirective
+	DEFINE_DIRECTIVE(ServerNameDirective, "server_name", ServerDirective)
 
 	ServerNameDirective* ServerNameDirective::initServerNameDirective(const std::vector<std::string>& args)
 	{

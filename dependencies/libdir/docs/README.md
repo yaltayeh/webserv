@@ -2,6 +2,9 @@
 
 A C++98 configuration parser library with Nginx-style syntax support, featuring automatic directive registration, type-safe access, and comprehensive error handling.
 
+**✨ All 18 directives for webserv project requirements are now implemented!**  
+See [WEBSERV_DIRECTIVES.md](WEBSERV_DIRECTIVES.md) for complete webserv directive documentation.
+
 ## Features
 
 - **Nginx-style configuration syntax** - Familiar, hierarchical configuration format

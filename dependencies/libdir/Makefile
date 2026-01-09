@@ -8,7 +8,24 @@ FILES = src/Parser.cpp 				\
 		src/Config.cpp				\
 		src/GlobalDirective.cpp		\
 		src/ExampleDirective.cpp	\
+		directives/src/HttpDirective.cpp	\
+		directives/src/ServerDirective.cpp	\
+		directives/src/LocationDirective.cpp	\
 		directives/src/ServerNameDirective.cpp	\
+		directives/src/ListenDirective.cpp	\
+		directives/src/RootDirective.cpp	\
+		directives/src/ErrorPageDirective.cpp	\
+		directives/src/ClientMaxBodySizeDirective.cpp	\
+		directives/src/KeepaliveTimeoutDirective.cpp	\
+		directives/src/AllowedMethodsDirective.cpp	\
+		directives/src/ReturnDirective.cpp	\
+		directives/src/AutoindexDirective.cpp	\
+		directives/src/IndexDirective.cpp	\
+		directives/src/UploadEnableDirective.cpp	\
+		directives/src/UploadStoreDirective.cpp	\
+		directives/src/CgiPassDirective.cpp	\
+		directives/src/CgiParamDirective.cpp	\
+		directives/src/CgiExtensionDirective.cpp	\
 
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -MMD -g -std=c++98
