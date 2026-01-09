@@ -1,4 +1,4 @@
-#include "Directives/GlobalDirective.hpp"
+#include "GlobalDirective.hpp"
 
 namespace Config
 {

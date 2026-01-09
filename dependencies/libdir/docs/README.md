@@ -15,6 +15,44 @@ A C++98 configuration parser library with Nginx-style syntax support, featuring 
 
 ## Quick Start
 
+### Option 1: Using the Global Root (Recommended for Simple Cases)
+
+```cpp
+#include "Config.hpp"
+#include "Parser.hpp"
+#include "IDirective.hpp"
+#include "Exceptions.hpp"
+
+using namespace Config;
+
+int main() {
+    try {
+        // Parse configuration file using global root
+        Parser parser = Parser::openConfigFile("server.conf");
+        
+        while (parser.getNextDirectives()) {
+            std::string directive = parser.copyDirective();
+            IDirective::parseDirective(Config::global, directive);
+        }
+        
+        // Access configuration data
+        const ServerDirective* server = Config::global->getFirstChild<ServerDirective>();
+        const ListenDirective* listen = server->getFirstChild<ListenDirective>();
+        std::cout << "Port: " << listen->port << std::endl;
+        
+        // No cleanup needed - Config::global is auto-managed
+        
+    } catch (const ConfigException& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+    
+    return 0;
+}
+```
+
+### Option 2: Managing Your Own Root
+
 ```cpp
 #include "Config.hpp"
 #include "Parser.hpp"
@@ -26,7 +64,7 @@ using namespace Config;
 
 int main() {
     try {
-        // Parse configuration file
+        // Parse configuration file with custom root
         Parser parser = Parser::openConfigFile("server.conf");
         GlobalDirective* root = new GlobalDirective();
         
@@ -40,7 +78,7 @@ int main() {
         const ListenDirective* listen = server->getFirstChild<ListenDirective>();
         std::cout << "Port: " << listen->port << std::endl;
         
-        delete root;  // Automatic cleanup
+        delete root;  // Manual cleanup
         
     } catch (const ConfigException& e) {
         std::cerr << "Error: " << e.what() << std::endl;
@@ -119,7 +157,7 @@ c++ -Wall -Wextra -Werror -std=c++98 -I./include \
 
 ```
 include/
-├── Config.hpp              # Global root directive
+├── Config.hpp              # Global root instance declaration
 ├── Parser.hpp              # Configuration file parser
 ├── IDirective.hpp          # Base directive class
 ├── DirectiveFactory.hpp    # Factory and registration system
@@ -130,7 +168,7 @@ include/
     └── ExampleDirective.hpp # Example implementation
 
 src/
-├── Config.cpp
+├── Config.cpp              # Global root instance definition
 ├── Parser.cpp
 ├── IDirective.cpp
 ├── DirectiveFactory.cpp

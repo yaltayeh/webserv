@@ -1,5 +1,5 @@
-#include "Directives/ExampleDirective.hpp"
-#include "Directives/GlobalDirective.hpp"
+#include "ExampleDirective.hpp"
+#include "GlobalDirective.hpp"
 #include "DirectiveFactory.hpp"
 
 namespace Config

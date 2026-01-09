@@ -17,6 +17,44 @@ This guide explains how to use the configuration parser library to read configur
 
 ### Basic Usage Pattern
 
+**Option 1: Using the Global Root (Recommended for Simple Cases)**
+
+```cpp
+#include "Config.hpp"
+#include "Parser.hpp"
+#include "IDirective.hpp"
+#include "Exceptions.hpp"
+
+using namespace Config;
+
+int main() {
+    try {
+        // 1. Open and read configuration file
+        Parser parser = Parser::openConfigFile("server.conf");
+        
+        // 2. Parse all directives into global root
+        while (parser.getNextDirectives()) {
+            std::string directive = parser.copyDirective();
+            IDirective::parseDirective(Config::global, directive);
+        }
+        
+        // 3. Access your configuration data from Config::global
+        const ServerDirective* server = Config::global->getFirstChild<ServerDirective>();
+        // ...
+        
+        // 4. No cleanup needed - Config::global is auto-managed
+        
+    } catch (const ConfigException& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+    
+    return 0;
+}
+```
+
+**Option 2: Managing Your Own Root**
+
 ```cpp
 #include "Config.hpp"
 #include "Parser.hpp"
@@ -103,8 +141,14 @@ delete root;
 
 ### Method 3: Using the Global Root
 
-The library provides a global `Config::global` for convenience:
+The library provides a global `Config::global` for convenience. This is a pre-allocated `GlobalDirective*` that is automatically initialized at program startup and cleaned up at program exit.
 
+**When to use:**
+- Simple applications with one configuration
+- When you don't need multiple independent configuration trees
+- When you want automatic memory management
+
+**Usage:**
 ```cpp
 #include "Config.hpp"
 
@@ -115,7 +159,17 @@ while (parser.getNextDirectives()) {
     IDirective::parseDirective(Config::global, directive);
 }
 
+// Access data
+const ServerDirective* server = Config::global->getFirstChild<ServerDirective>();
+
 // Config::global is automatically cleaned up at program exit
+```
+
+**Note:** The global instance is defined in `Config.cpp` and declared in `Config.hpp` as:
+```cpp
+namespace Config {
+    extern Config::GlobalDirective *global;
+}
 ```
 
 ---
@@ -513,8 +567,13 @@ int main() {
    }
    ```
 
-3. **Delete root when done (or use smart pointers)**
+3. **Manage memory properly**
    ```cpp
+   // Option A: Use Config::global (auto-managed)
+   IDirective::parseDirective(Config::global, directive);
+   // No cleanup needed
+   
+   // Option B: Manage your own root
    GlobalDirective* root = new GlobalDirective();
    // ... use root ...
    delete root;  // Cleans up all children
@@ -633,7 +692,11 @@ path "C:\\Program Files\\App";
 - `std::string getName()` - Get directive name
 
 ### Global Variable
-- `Config::global` - Global root directive (auto-managed)
+- `Config::global` - Pre-allocated `GlobalDirective*` (auto-managed)
+  - Automatically initialized at program startup
+  - Automatically cleaned up at program exit
+  - Use for simple applications or single configuration trees
+  - Declared in `Config.hpp`, defined in `Config.cpp`
 
 ---
 

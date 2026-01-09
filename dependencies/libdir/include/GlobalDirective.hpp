@@ -1,4 +1,4 @@
-#include "../IDirective.hpp"
+#include "IDirective.hpp"
 
 #pragma once
 
