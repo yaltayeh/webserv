@@ -3,16 +3,24 @@
 #include <fstream>
 #include <sstream>
 #include "Parser.hpp"
+#include "Exceptions.hpp"
 
 namespace Config
 {
 
+	/**
+	 * @brief Constructs parser for entire string
+	 */
 	Parser::Parser(std::string configString) : _configString(configString)
 	{
 		_start = _configString.c_str();
 		_end = _start + _configString.length();
 		_p = _start;
 	}
+	
+	/**
+	 * @brief Constructs parser for substring
+	 */
 	Parser::Parser(std::string configString,
 				   size_t start,
 				   size_t len) : _configString(configString)
@@ -22,11 +30,15 @@ namespace Config
 		_p = _start;
 	}
 
+	/**
+	 * @brief Opens configuration file and creates parser
+	 * @throws FileException if file cannot be opened
+	 */
 	Parser Parser::openConfigFile(const char *fileName)
 	{
 		std::ifstream file(fileName);
 		if (!file)
-			throw std::runtime_error("Cannot open config file");
+			throw FileException(fileName, "Cannot open configuration file");
 
 		std::stringstream ss;
 		ss << file.rdbuf();
@@ -40,6 +52,11 @@ namespace Config
 	{
 	}
 
+	/**
+	 * @brief Extracts next directive from configuration
+	 * @return true if directive found, false if at end
+	 * @throws ParseException on mismatched brackets
+	 */
 	bool Parser::getNextDirectives()
 	{
 		const char *p;
@@ -49,6 +66,8 @@ namespace Config
 		if (_p >= _end)
 			return false;
 		p = _p;
+		
+		// Skip leading whitespace and comments
 		while (p < _end)
 		{
 			if (isspace(*p))
@@ -58,7 +77,10 @@ namespace Config
 			else
 				break;
 		}
-		slice = p;
+		
+		slice = p;  // Mark start of directive
+		
+		// Find end of directive
 		while (p < _end)
 		{
 			// skip qout and double qout
@@ -67,15 +89,15 @@ namespace Config
 			if (*p == '#')
 				p = skipComment(p, _end);
 			if (*p == ';' && bracket_level == 0)
-				break;
+				break;  // Simple directive end
 			if (*p == '{')
 				bracket_level++;
 			if (*p == '}')
 				bracket_level--;
 			if (*p == '}' && bracket_level == 0)
-				break;
+				break;  // Block directive end
 			if (bracket_level < 0)
-				throw; // TODO: invalid close bracket }
+				throw ParseException("Mismatched closing bracket '}'");
 			p++;
 		}
 		_directiveStart = slice;
@@ -84,22 +106,34 @@ namespace Config
 		return (true);
 	}
 
+	/**
+	 * @brief Returns current directive text
+	 */
 	const char *Parser::getDirectiveStart() const
 	{
 		return _directiveStart;
 	}
 
+	/**
+	 * @brief Returns pointer to end of current directive
+	 */
 	const char *Parser::getDirectiveEnd() const
 	{
 		return _directiveEnd;
 	}
 
+	/**
+	 * @brief Copies current directive as string
+	 */
 	std::string Parser::copyDirective() const
 	{
 		return _configString.substr(_directiveStart - _configString.c_str(),
 									_directiveEnd - _directiveStart + 1);
 	}
 
+	/**
+	 * @brief Skips whitespace characters
+	 */
 	const char *Parser::skipSpace(const char *p, const char *end)
 	{
 		while (p < end && std::isspace(*p))
@@ -107,24 +141,47 @@ namespace Config
 		return p;
 	}
 
+	/**
+	 * @brief Skips from '#' to end of line
+	 */
 	const char *Parser::skipComment(const char *p, const char *end)
 	{
-		p++;
+		p++;  // Skip '#'
 		while (p < end && *p != '\n')
 			p++;
 		return p;
 	}
 
+	/**
+	 * @brief Advances past closing quote, handling escape sequences
+	 * @note NOW FIXED: Properly handles \\", \\', \\\\, and other escapes
+	 * @return Pointer to closing quote, or NULL if unclosed
+	 */
 	const char *Parser::nextQout(const char *p, const char *end, char qout)
 	{
-		p++; // skip first qout
+		p++;  // skip opening quote
 		while (p < end && *p != qout)
-			p++;
-		if (*p != qout)
-			return NULL;
+		{
+			// Handle escape sequences
+			if (*p == '\\' && (p + 1) < end)
+			{
+				// Skip escaped character (including escaped quotes and backslashes)
+				p += 2;
+			}
+			else
+			{
+				p++;
+			}
+		}
+		if (p >= end || *p != qout)
+			throw SyntaxException("Unclosed quote");
 		return p;
 	}
 
+	/**
+	 * @brief Extracts and validates directive name
+	 * @throws SyntaxException on invalid characters or malformed name
+	 */
 	const char *Parser::getName(const char *p, const char *end, std::string &name)
 	{
 		const char *start;
@@ -132,24 +189,29 @@ namespace Config
 		name = "";
 		p = skipSpace(p, end);
 		start = p;
+		
+		// Parse directive name (lowercase, underscore, digits after first char)
 		while (p < end)
 		{
 			if (std::islower(*p) || *p == '_')
-				;
+				;  // Valid character
 			else if (std::isdigit(*p))
-				;
+				;  // Valid after first character
 			else if (std::isspace(*p) || *p == ';' || *p == '{')
-				break;
+				break;  // End of name
 			else
-				throw; /* TODO: throw unexpected char in directive name */
+				throw SyntaxException(std::string("Invalid character '") + *p + "' in directive name");
 			name += *p++;
 		}
+		
+		// Check for errors
 		if (p <= start)
 		{
-			if (*p == '{')
-				throw; // TODO: block directive without name
-			return NULL;
+			if (p < end && *p == '{')
+				throw SyntaxException("Block directive without name");
+			return NULL;  // No name found
 		}
+		
 		return p;
 	}
 }

@@ -4,24 +4,50 @@
 #include "IDirective.hpp"
 #include "Parser.hpp"
 
+// Static member initialization
 std::map<
 	std::string,
 	std::pair<IDirective::CreatorFunc, const std::type_info *> >
 	IDirective::registry_name;
+	
 std::map<
 	const std::type_info *,
 	std::pair<IDirective::CreatorFunc, std::string> >
 	IDirective::registry_id;
 
-IDirective::IDirective() {}
+/**
+ * @brief Default constructor
+ */
+IDirective::IDirective() : parent(NULL) {}
 
-IDirective::IDirective(const std::vector<std::string> &args)
+/**
+ * @brief Constructor with arguments (does nothing by default)
+ * @param args Argument vector (unused in base class)
+ */
+IDirective::IDirective(const std::vector<std::string> &args) : parent(NULL)
 {
 	(void)args;
 }
 
-IDirective::~IDirective() {}
+/**
+ * @brief Destructor - recursively deletes all child directives
+ * @note Fixes memory leak by properly cleaning up children
+ */
+IDirective::~IDirective()
+{
+	// Delete all children to prevent memory leaks
+	for (std::multimap<std::string, IDirective *>::iterator it = children.begin();
+		 it != children.end(); ++it)
+	{
+		delete it->second;
+	}
+	children.clear();
+}
 
+/**
+ * @brief Validates and sets parent directive
+ * @throws InvalidNesting if directive not allowed in parent
+ */
 void IDirective::setParent(IDirective *parent)
 {
 	const std::type_info **allowedInside;
@@ -35,10 +61,20 @@ void IDirective::setParent(IDirective *parent)
 			break;
 	}
 	if (allowedInside[i] == NULL)
-		throw std::runtime_error("you can't typeid(*this) inside (typeid(*parent).name()) block"); // you can't typeid(*this) inside (typeid(*parent).name()) block
+	{
+		// Get names for better error message
+		std::string childName = getName(&typeid(*this));
+		std::string parentName = getName(&typeid(*parent));
+		throw InvalidNesting(childName, parentName);
+	}
 	this->parent = parent;
 }
 
+/**
+ * @brief Adds and validates a child directive
+ * @param child Child directive to add (takes ownership)
+ * @note Logs errors to stderr but doesn't propagate exceptions
+ */
 void IDirective::addChild(IDirective *child)
 {
 	try
@@ -51,33 +87,50 @@ void IDirective::addChild(IDirective *child)
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << e.what() << std::endl;
+		std::cerr << "\033[31mError: " << e.what() << "\033[0m" << std::endl;
+		// Note: Child is NOT deleted here - caller retains ownership on failure
 	}
 }
 
+/**
+ * @brief Returns all children as multimap
+ */
 const std::multimap<std::string, IDirective *> IDirective::getChildren() const
 {
 	return children;
 }
 
+/**
+ * @brief Gets directive name from instance
+ */
 std::string IDirective::getName() const
 {
 	const std::type_info *id = &typeid(*this);
 	return getName(id);
 }
 
+/**
+ * @brief Gets directive name from type_info
+ */
 std::string IDirective::getName(const std::type_info *id)
 {
 	std::pair<CreatorFunc, std::string> data = registry_id.at(id);
 	return (data.second);
 }
 
+/**
+ * @brief Gets type_info from directive name
+ */
 const std::type_info *IDirective::getID(const std::string &name)
 {
 	std::pair<CreatorFunc, const std::type_info *> data = registry_name.at(name);
 	return (data.second);
 }
 
+/**
+ * @brief Extracts directive name and arguments from text
+ * @return Vector with directive name as first element, followed by arguments
+ */
 std::vector<std::string> IDirective::getArgs(const std::string &str,
 											 const char *start,
 											 const char *end,
@@ -115,6 +168,10 @@ std::vector<std::string> IDirective::getArgs(const std::string &str,
 	return (args);
 }
 
+/**
+ * @brief Parses a single directive and adds to parent
+ * @return Pointer to created directive or NULL on error
+ */
 const IDirective *IDirective::parseDirective(IDirective *parent,
 											 const std::string &str,
 											 const char *start,
@@ -126,8 +183,7 @@ const IDirective *IDirective::parseDirective(IDirective *parent,
 	args = IDirective::getArgs(str, start, end, &block_start);
 	if (args.size() == 0)
 	{
-		// std::cerr << "Error Directive args.size() <= 0" << std::endl;
-		// throw; // TODO
+		// Empty directive - skip
 		return NULL;
 	}
 
@@ -146,12 +202,15 @@ const IDirective *IDirective::parseDirective(IDirective *parent,
 	}
 	catch (const std::out_of_range &e)
 	{
-		std::cerr << "\033[31mError Directive '" << name << "' Doesn't exist \033[0m" << std::endl;
-		// throw; /* TODO: throw Directive not exist */
+		std::cerr << "\033[31mError: Directive '" << name << "' doesn't exist\033[0m" << std::endl;
 		return NULL;
 	}
 }
 
+/**
+ * @brief Recursively parses block directive (directives inside { })
+ * @throws ParseException on syntax errors
+ */
 void IDirective::parseBlockDirective(IDirective *parent,
 									 const std::string &str,
 									 const char *start,
@@ -161,7 +220,7 @@ void IDirective::parseBlockDirective(IDirective *parent,
 	int bracket_level = 0;
 
 	if (*start != '{')
-		throw; // TODO parseBlockDirective sould start with {
+		throw ParseException("Block directive must start with '{'");
 	start++;   // skip first {
 	bracket_level = 1;
 
@@ -186,11 +245,11 @@ void IDirective::parseBlockDirective(IDirective *parent,
 		if (*p == '}' && bracket_level == 0)
 			break;
 		if (bracket_level < 0)
-			throw; // TODO: invalid close bracket } without open bracket {
+			throw ParseException("Invalid close bracket '}' without matching open bracket '{'");
 		p++;
 	}
 	if (p >= end)
-		throw; // if loop end without }
+		throw ParseException("Missing closing bracket '}' for block directive");
 	end = p - 1;
 
 	std::string block = str.substr(start - str.c_str(), end - start);
@@ -204,29 +263,46 @@ void IDirective::parseBlockDirective(IDirective *parent,
 	}
 }
 
+/**
+ * @brief Public parsing method with string parameters
+ */
 const IDirective *IDirective::parseDirective(IDirective *parent, const std::string &str)
 {
 	return (parseDirective(parent, str, str.c_str(), str.c_str() + str.length()));
 }
 
+/**
+ * @brief Adds directive to registry
+ */
 void IDirective::addRegistry(std::string name, const std::type_info *id, const IDirective::CreatorFunc &creator)
 {
 	registry_name[name] = std::make_pair(creator, id);
 	registry_id[id] = std::make_pair(creator, name);
+	std::cout << "Add '" << name << "' to registry" << std::endl;
 }
 
+/**
+ * @brief Gets creator function by name
+ */
 IDirective::CreatorFunc IDirective::getCreator(std::string name)
 {
 	std::pair<CreatorFunc, const std::type_info *> data = registry_name.at(name);
 	return data.first;
 }
 
+/**
+ * @brief Gets creator function by type
+ */
 IDirective::CreatorFunc IDirective::getCreator(const std::type_info *id)
 {
 	std::pair<CreatorFunc, std::string> data = registry_id.at(id);
 	return data.first;
 }
 
+/**
+ * @brief Default implementation for getAllowedInside
+ * @return NULL array (no valid parents)
+ */
 const std::type_info **IDirective::getAllowedInside() const
 {
 	static const std::type_info *allowedInside[] = {NULL};
