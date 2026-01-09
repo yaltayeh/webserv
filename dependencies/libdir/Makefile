@@ -8,13 +8,15 @@ FILES = src/Parser.cpp 				\
 		src/Config.cpp				\
 		src/GlobalDirective.cpp		\
 		src/ExampleDirective.cpp	\
+		directives/src/ServerNameDirective.cpp	\
 
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -MMD -g -std=c++98
-CPPFLAGS = -I./include
+CPPFLAGS = -I./include -I./directives/include
 
-OFILES = ${FILES:src/%.cpp=$(BUILD_PATH)/%.o}
-DFILES = ${OFILES:$(BUILD_PATH)/%.o=$(BUILD_PATH)/%.d}
+OFILES = $(patsubst src/%.cpp,$(BUILD_PATH)/%.o,$(filter src/%,$(FILES))) \
+         $(patsubst directives/src/%.cpp,$(BUILD_PATH)/directives/%.o,$(filter directives/%,$(FILES)))
+DFILES = ${OFILES:.o=.d}
 
 all: $(NAME)
 
@@ -22,6 +24,10 @@ $(NAME): $(OFILES)
 	$(AR) rcs $@ $^
 
 $(BUILD_PATH)/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
+
+$(BUILD_PATH)/directives/%.o: directives/src/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
