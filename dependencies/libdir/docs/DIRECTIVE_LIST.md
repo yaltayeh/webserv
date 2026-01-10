@@ -15,6 +15,9 @@
 6. **root** path - Document root directory (context: http, server, location)
 7. **index** file [file2...] - Default index files (context: http, server, location)
 8. **autoindex** on|off - Directory listing (context: http, server, location)
+9. **autoindex_format** html|xml|json|jsonp - Directory listing format (context: http, server, location)
+10. **autoindex_localtime** on|off - Use local time in directory listing (context: http, server, location)
+11. **autoindex_exact_size** on|off - Show exact file sizes in bytes (context: http, server, location)
 
 ### HTTP Methods & Responses
 10. **allowed_methods** METHOD [METHOD2...] - Restrict HTTP methods (context: location)
@@ -42,7 +45,7 @@
 20. **cgi_param** name value - CGI environment variable (context: location)
 21. **cgi_extension** ext [ext2...] - CGI file extensions (context: http, server, location)
 
-## Total: 23 Directives
+## Total: 26 Directives
 
 ## Implementation Files
 

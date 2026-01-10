@@ -89,6 +89,41 @@ This document describes all the directives implemented for the webserv project r
 - **Data:** `const bool enabled`
 - **Example:** `autoindex on;`
 
+### autoindex_format
+- **Syntax:** `autoindex_format html|xml|json|jsonp;`
+- **Context:** http, server, location
+- **Description:** Sets the format for directory listing output
+- **Data:** `const std::string format`
+- **Valid Formats:**
+  - `html` - HTML format (default)
+  - `xml` - XML format
+  - `json` - JSON format
+  - `jsonp` - JSONP format
+- **Example:** `autoindex_format json;`
+- **Note:** Only takes effect when autoindex is enabled
+
+### autoindex_localtime
+- **Syntax:** `autoindex_localtime on|off;`
+- **Context:** http, server, location
+- **Description:** Controls whether directory listing shows file times in local time zone or GMT
+- **Data:** `const bool enabled`
+- **Values:**
+  - `on` - Show times in local time zone
+  - `off` - Show times in GMT (default)
+- **Example:** `autoindex_localtime on;`
+- **Note:** Only takes effect when autoindex is enabled
+
+### autoindex_exact_size
+- **Syntax:** `autoindex_exact_size on|off;`
+- **Context:** http, server, location
+- **Description:** Controls whether directory listing shows exact file sizes in bytes or human-readable format
+- **Data:** `const bool enabled`
+- **Values:**
+  - `on` - Show exact size in bytes (default)
+  - `off` - Show human-readable size (KB, MB, GB)
+- **Example:** `autoindex_exact_size off;`
+- **Note:** Only takes effect when autoindex is enabled
+
 ## HTTP Configuration
 
 ### allowed_methods
