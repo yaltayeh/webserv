@@ -10,6 +10,12 @@
 #include "ServerDirective.hpp"
 #include "ListenDirective.hpp"
 
+
+void printUsage(const char* progName)
+{
+    std::cout << "Usage: " << progName << " <config-file>" << std::endl;
+}
+
 /**
  * ============================================================================
  * main() - Program entry point
@@ -26,16 +32,10 @@
  */
 int main(int argc, char* argv[])
 {
-	if (argc != 2) {
-		std::cerr << "Usage: " << argv[0] << " <config-file>" << std::endl;
-		return 1;
-	}
+    // Validate command line arguments
+	if (argc != 2) { printUsage(argv[0]); return 1; }
 	
-    /**
-     * ========================================================================
-     * STEP 0: Parse configuration file
-     * ========================================================================
-     */
+    // STEP 0: Parse configuration file
 	try {
 		Config::Parser parser = Config::Parser::openConfigFile(argv[1]);
 
@@ -64,12 +64,7 @@ int main(int argc, char* argv[])
      */
     EventLoop eventLoop;
     
-    /**
-     * ------------------------------------------------------------------------
-     * STEP 2: Create Servers from Configuration
-     * ------------------------------------------------------------------------
-     */
-
+    // STEP 2: Create Servers from Configuration
     const Config::ListDirectives<Config::ServerDirective> servers = Config::global
         ->getOne<Config::HttpDirective>()
         ->getMany<Config::ServerDirective>();
@@ -91,21 +86,13 @@ int main(int argc, char* argv[])
         eventLoop.addServer(server);
     }
 
-    /**
-     * ========================================================================
-     * STEP 3: Verify we have at least one server
-     * ========================================================================
-     */
+    // STEP 3: Verify we have at least one server
     if (eventLoop.getServerCount() == 0) {
         std::cerr << "Error: No servers initialized successfully" << std::endl;
         return 1;
     }
     
-    /**
-     * ========================================================================
-     * STEP 4: Start the event loop
-     * ========================================================================
-     */
+    // STEP 4: Start the event loop
     eventLoop.run();
     
     return 0;
