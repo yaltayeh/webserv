@@ -15,7 +15,7 @@ DEPENDENCIES_FLAGS      = $(foreach lib,$(DEPENDENCIES),-L$(BUILD_PATH)/$(lib)) 
 							$(foreach lib,$(patsubst lib%,%, $(DEPENDENCIES)), -l$(lib))
 endif
 
-INCLUDE_FLAGS	   		= -Iinclude -Iinclude/directives $(foreach lib,$(DEPENDENCIES),-I$(DEPENDENCIES_DIR)/$(lib)/include)
+INCLUDE_FLAGS	   		= -Iinclude -Iinclude/directives -Idependencies $(foreach lib,$(DEPENDENCIES),-I$(DEPENDENCIES_DIR)/$(lib)/include)
 
 SRCS		    		=   src/main.cpp \
 							src/Server.cpp \

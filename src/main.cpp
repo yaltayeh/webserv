@@ -29,6 +29,13 @@
 #include "../include/config.hpp"
 #include <iostream>
 
+#include "libdir/include/Parser.hpp"
+#include "libdir/include/Config.hpp"
+#include "HttpDirective.hpp"
+#include "ClientBodyTempPathDirective.hpp"
+#include "ServerDirective.hpp"
+#include "ListenDirective.hpp"
+
 /**
  * ============================================================================
  * LEARNING ROADMAP - Implementation Progress
@@ -158,8 +165,20 @@ static ServerConfig createDefaultServerConfig(const std::string& host, int port)
  * - 0 on success (never reached - event loop is infinite)
  * - 1 on initialization failure
  */
-int main()
+int main(int argc, char* argv[])
 {
+	if (argc != 2) {
+		std::cerr << "Usage: " << argv[0] << " <config-file>" << std::endl;
+		return 1;
+	}
+	
+	Config::Parser parser = Config::Parser::openConfigFile(argv[1]);
+
+	while (parser.getNextDirectives()) {
+		std::string directive = parser.copyDirective();
+		if (!Config::IDirective::parseDirective(Config::global, directive)) { return 1; }
+	}
+    
     /**
      * ========================================================================
      * STEP 1: Create EventLoop
@@ -191,18 +210,25 @@ int main()
      * Server 1: Port 8080
      * ------------------------------------------------------------------------
      */
-    Server* server1 = new Server(
-		createDefaultServerConfig("0.0.0.0", 8080)
-	);
-    
-    if (server1->initialize() == -1) {
-        std::cerr << "Failed to initialize server on port 8080" << std::endl;
-        delete server1;
-        return 1;
+
+    const Config::ListDirectives<Config::ServerDirective> servers = Config::global
+        ->getOne<Config::HttpDirective>()
+        ->getMany<Config::ServerDirective>();
+
+    for (size_t i = 0; i < servers.size(); ++i) {
+        ServerConfig config = servers[i]->toServerConfig();
+        Server* server = new Server(config);
+        
+        if (server->initialize() == -1) {
+            std::cerr << "Failed to initialize server on port "
+                      << config.port << std::endl;
+            delete server;
+            return 1;
+        }
+        
+        eventLoop.addServer(server);
     }
-    
-    eventLoop.addServer(server1);
-    
+
     /**
      * ------------------------------------------------------------------------
      * Server 2: Port 8081 (optional - comment out if you want only one server)

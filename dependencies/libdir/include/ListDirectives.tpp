@@ -13,7 +13,7 @@ template <typename T>
 inline ListDirectives<T>::~ListDirectives() {}
 
 template <typename T>
-inline const T *ListDirectives<T>::operator[](size_t index)
+inline const T *ListDirectives<T>::operator[](size_t index) const
 {
 	if (index >= directives.size())
 		throw std::runtime_error("ListDirectives: index >= directives.size()"); // TODO

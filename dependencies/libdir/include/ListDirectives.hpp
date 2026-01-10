@@ -18,7 +18,7 @@ public:
 	ListDirectives(const std::vector<T *> directives);
 	~ListDirectives();
 
-	const T *operator[](size_t index);
+	const T *operator[](size_t index) const;
 	size_t size() const;
 };
 

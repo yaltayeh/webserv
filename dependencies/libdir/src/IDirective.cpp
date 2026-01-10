@@ -231,6 +231,11 @@ const IDirective *IDirective::parseDirective(IDirective *parent,
 		std::cerr << "\033[31mError: Directive '" << name << "' doesn't exist\033[0m" << std::endl;
 		return NULL;
 	}
+	catch (const std::exception &e)
+	{
+		std::cerr << "\033[31mError: " << e.what() << "\033[0m" << std::endl;
+		return NULL;
+	}
 }
 
 /**
