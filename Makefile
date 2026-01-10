@@ -12,7 +12,7 @@ DEPENDENCIES_FLAGS	  = $(foreach lib,$(DEPENDENCIES),-L$(BUILD_PATH)/$(lib)) \
 							$(foreach lib,$(patsubst lib%,%, $(DEPENDENCIES)), -Wl,-force_load,$(BUILD_PATH)/lib$(lib)/lib$(lib).a)
 else
 DEPENDENCIES_FLAGS      = $(foreach lib,$(DEPENDENCIES),-L$(BUILD_PATH)/$(lib)) \
-							$(foreach lib,$(patsubst lib%,%, $(DEPENDENCIES)), $(lib))
+							$(foreach lib,$(patsubst lib%,%, $(DEPENDENCIES)), -l$(lib))
 endif
 
 INCLUDE_FLAGS	   		= -Iinclude -Iinclude/directives $(foreach lib,$(DEPENDENCIES),-I$(DEPENDENCIES_DIR)/$(lib)/include)
@@ -53,7 +53,7 @@ OBJS		   			 = $(SRCS:src/%.cpp=$(BUILD_PATH)/obj/%.o)
 all: $(NAME)
 
 $(NAME): $(OBJS) $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a)
-		$(CXX) $(DEPENDENCIES_FLAGS) $(OBJS) -o $(NAME)
+		$(CXX) $(OBJS) $(DEPENDENCIES_FLAGS) -o $(NAME)
 
 $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a):
 		$(MAKE) -C $(DEPENDENCIES_DIR)/$(basename $(@F)) BUILD_PATH=../../$(BUILD_PATH)/$(basename $(@F)) all
