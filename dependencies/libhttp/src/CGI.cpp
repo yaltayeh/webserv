@@ -2,7 +2,7 @@
 #include "../include/Request.hpp"
 #include "../include/Constants.hpp"
 #include "../include/Utils.hpp"
-#include <StringUtils.hpp>  // from libutils (utils:: namespace)
+#include <StringUtils.hpp>  // from libutils (utils:: namespace) - requires -I flag
 
 #include <unistd.h>
 #include <sys/wait.h>
@@ -10,6 +10,7 @@
 #include <csignal>
 #include <cstring>
 #include <cstdlib>
+#include <cctype>
 #include <sstream>
 #include <fcntl.h>
 #include <cerrno>
@@ -132,6 +133,8 @@ std::string CGI::getSetupResultMessage(SetupResult result) {
             return "Script file not found";
         case SETUP_ERROR_SCRIPT_NOT_EXECUTABLE:
             return "Script file is not executable";
+        case SETUP_ERROR_INTERPRETER_NOT_FOUND:
+            return "Interpreter not found or not executable";
         default:
             return "Unknown error";
     }
@@ -235,13 +238,13 @@ CGI::SetupResult CGI::validateInputs(const std::string &scriptPath,
     if (!interpreterPath.empty()) {
         struct stat interpStat;
         if (stat(interpreterPath.c_str(), &interpStat) != 0) {
-            return SETUP_ERROR_SCRIPT_NOT_FOUND;
+            return SETUP_ERROR_INTERPRETER_NOT_FOUND;
         }
         // NOTE: Only checks S_IXUSR (user execute permission)
         // Does not check group/other execute permissions
         // This is sufficient for typical CGI setups where scripts are owned by the web server user
         if (!(interpStat.st_mode & S_IXUSR)) {
-            return SETUP_ERROR_SCRIPT_NOT_EXECUTABLE;
+            return SETUP_ERROR_INTERPRETER_NOT_FOUND;
         }
     } else {
         // Direct execution - script must be executable

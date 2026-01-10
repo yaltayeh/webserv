@@ -169,11 +169,25 @@ TEST(utils_toUpper) {
     ASSERT_EQ(std::string("123ABC"), utils::toUpper("123abc"));
 }
 
+TEST(utils_toLower) {
+    ASSERT_EQ(std::string("hello"), utils::toLower("HELLO"));
+    ASSERT_EQ(std::string("hello world"), utils::toLower("Hello World"));
+    ASSERT_EQ(std::string("123abc"), utils::toLower("123ABC"));
+}
+
 TEST(utils_getDirectory) {
     ASSERT_EQ(std::string("/path/to"), utils::getDirectory("/path/to/file.txt"));
     ASSERT_EQ(std::string("."), utils::getDirectory("file.txt"));
     ASSERT_EQ(std::string("/"), utils::getDirectory("/file.txt"));  // Root directory case
     ASSERT_EQ(std::string("/"), utils::getDirectory("/etc"));        // Root directory case
+}
+
+TEST(utils_getFilename) {
+    ASSERT_EQ(std::string("file.txt"), utils::getFilename("/path/to/file.txt"));
+    ASSERT_EQ(std::string("script.py"), utils::getFilename("script.py"));
+    ASSERT_EQ(std::string("file.txt"), utils::getFilename("/file.txt"));
+    ASSERT_EQ(std::string(""), utils::getFilename("/path/to/"));
+    ASSERT_EQ(std::string("test"), utils::getFilename("test"));
 }
 
 TEST(utils_getExtension) {
@@ -222,6 +236,35 @@ TEST(utils_sanitizeForEnv) {
     ASSERT_EQ(std::string("test"), utils::sanitizeForEnv("test\r\n"));
     std::string withNull = std::string("hel") + '\0' + "lo";
     ASSERT_EQ(std::string("hello"), utils::sanitizeForEnv(withNull));
+}
+
+TEST(utils_intToString) {
+    ASSERT_EQ(std::string("0"), utils::intToString(0));
+    ASSERT_EQ(std::string("123"), utils::intToString(123));
+    ASSERT_EQ(std::string("-456"), utils::intToString(-456));
+    ASSERT_EQ(std::string("2147483647"), utils::intToString(2147483647)); // INT_MAX
+    ASSERT_EQ(std::string("-2147483648"), utils::intToString(-2147483648)); // INT_MIN
+}
+
+TEST(utils_sizeToString) {
+    ASSERT_EQ(std::string("0"), utils::sizeToString(0));
+    ASSERT_EQ(std::string("12345"), utils::sizeToString(12345));
+    ASSERT_EQ(std::string("4294967295"), utils::sizeToString(4294967295U)); // Close to max size_t on 32-bit
+}
+
+TEST(utils_stringToInt) {
+    ASSERT_EQ(123, utils::stringToInt("123"));
+    ASSERT_EQ(-456, utils::stringToInt("-456"));
+    ASSERT_EQ(0, utils::stringToInt("0"));
+    // Test default value on invalid input
+    ASSERT_EQ(0, utils::stringToInt(""));
+    ASSERT_EQ(-1, utils::stringToInt("", -1));
+    ASSERT_EQ(0, utils::stringToInt("abc"));
+    ASSERT_EQ(42, utils::stringToInt("xyz", 42));
+    ASSERT_EQ(0, utils::stringToInt("123abc")); // Partial parse should fail, return default
+    // Test overflow handling
+    ASSERT_EQ(0, utils::stringToInt("9999999999999999999"));
+    ASSERT_EQ(-1, utils::stringToInt("9999999999999999999", -1));
 }
 
 TEST(utils_methodToString) {
@@ -451,6 +494,25 @@ TEST(setup_script_not_found) {
     ASSERT_EQ(CGI::SETUP_ERROR_SCRIPT_NOT_FOUND, result);
 }
 
+TEST(setup_interpreter_not_found) {
+    std::string cwd = getCwd();
+    std::string scriptPath = cwd + "/tests/cgi-bin/hello.py";
+    
+    if (access(scriptPath.c_str(), R_OK) != 0) {
+        std::cerr << COLOR_YELLOW << "  SKIPPED: Script not available" << COLOR_RESET << std::endl;
+        return;
+    }
+    
+    libhttp::Request request;
+    request.setMethod(libhttp::GET);
+    request.setUri("/test");
+    
+    CGI cgi;
+    CGI::SetupResult result = cgi.setup(request, scriptPath, "/nonexistent/interpreter", "localhost", 8080);
+    
+    ASSERT_EQ(CGI::SETUP_ERROR_INTERPRETER_NOT_FOUND, result);
+}
+
 TEST(setup_valid_inputs) {
     std::string cwd = getCwd();
     std::string scriptPath = cwd + "/tests/cgi-bin/hello.py";
@@ -476,6 +538,8 @@ TEST(setup_result_messages) {
     ASSERT_CONTAINS(CGI::getSetupResultMessage(CGI::SETUP_ERROR_EMPTY_SCRIPT_PATH), "empty");
     ASSERT_CONTAINS(CGI::getSetupResultMessage(CGI::SETUP_ERROR_INVALID_PORT), "port");
     ASSERT_CONTAINS(CGI::getSetupResultMessage(CGI::SETUP_ERROR_PATH_TRAVERSAL), "traversal");
+    ASSERT_CONTAINS(CGI::getSetupResultMessage(CGI::SETUP_ERROR_SCRIPT_NOT_FOUND), "Script");
+    ASSERT_CONTAINS(CGI::getSetupResultMessage(CGI::SETUP_ERROR_INTERPRETER_NOT_FOUND), "Interpreter");
 }
 
 // ============================================================================
@@ -778,12 +842,17 @@ int main() {
     RUN_TEST(utils_trimLeft);
     RUN_TEST(utils_trimRight);
     RUN_TEST(utils_toUpper);
+    RUN_TEST(utils_toLower);
     RUN_TEST(utils_getDirectory);
+    RUN_TEST(utils_getFilename);
     RUN_TEST(utils_getExtension);
     RUN_TEST(utils_hasExtension);
     RUN_TEST(utils_isValidPort);
     RUN_TEST(utils_containsPathTraversal);
     RUN_TEST(utils_sanitizeForEnv);
+    RUN_TEST(utils_intToString);
+    RUN_TEST(utils_sizeToString);
+    RUN_TEST(utils_stringToInt);
     
     // libhttp Utils tests
     std::cout << "\n" << COLOR_YELLOW << "--- libhttp Utils Tests ---" << COLOR_RESET << "\n";
@@ -818,6 +887,7 @@ int main() {
     RUN_TEST(setup_path_traversal_script);
     RUN_TEST(setup_path_traversal_interpreter);
     RUN_TEST(setup_script_not_found);
+    RUN_TEST(setup_interpreter_not_found);
     RUN_TEST(setup_valid_inputs);
     RUN_TEST(setup_result_messages);
     

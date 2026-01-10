@@ -3,8 +3,8 @@ CXX 					= c++
 CXXFLAGS 				= -Wall -Wextra -Werror -std=c++98 -Iinclude
 BUILD_PATH	      		?= ./build
 
-# Dependencies (order matters: libhttp depends on libutils)
-DEPENDENCIES	    	= libutils libhttp
+# Dependencies (order matters for linking: libhttp depends on libutils, so list libhttp first)
+DEPENDENCIES	    	= libhttp libutils
 DEPENDENCIES_DIR		= ./dependencies
 DEPENDENCIES_FLAGS      = $(foreach lib,$(DEPENDENCIES),-L$(BUILD_PATH)/$(lib)) \
 							$(foreach lib,$(patsubst lib%,%, $(DEPENDENCIES)),-l$(lib))
