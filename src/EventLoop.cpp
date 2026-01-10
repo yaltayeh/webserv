@@ -93,10 +93,6 @@ void EventLoop::addServer(Server* server)
      * Add to _listening_sockets map for fast lookup during dispatch
      */
     _listening_sockets[listen_fd] = server;
-    
-    const ServerConfig& cfg = server->getConfig();
-    std::cout << "Added server on " << cfg.host << ":" << cfg.port
-              << " to EventLoop (fd " << listen_fd << ")" << std::endl;
 }
 
 /**

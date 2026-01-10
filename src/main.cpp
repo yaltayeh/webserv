@@ -77,15 +77,13 @@ int main(int argc, char* argv[])
     std::cout << "Found " << servers.size() << " server(s) in configuration" << std::endl;
 
     for (size_t i = 0; i < servers.size(); ++i) {
-        std::cout << "Converting server " << (i+1) << " to ServerConfig..." << std::endl;
-        ServerConfig config = servers[i]->toServerConfig();
-        std::cout << "Server config: " << config.host << ":" << config.port << std::endl;
-        
-        Server* server = new Server(config);
+        Server* server = new Server(
+            servers[i]->toServerConfig()
+        );
         
         if (server->initialize() == -1) {
             std::cerr << "Failed to initialize server on port "
-                      << config.port << std::endl;
+                      << server->getConfig().port << std::endl;
             delete server;
             return 1;
         }
@@ -102,9 +100,6 @@ int main(int argc, char* argv[])
         std::cerr << "Error: No servers initialized successfully" << std::endl;
         return 1;
     }
-    
-    std::cout << "\nSuccessfully initialized " << eventLoop.getServerCount()
-              << " server(s)" << std::endl;
     
     /**
      * ========================================================================
