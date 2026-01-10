@@ -41,10 +41,6 @@ namespace Config
 	{
 	}
 
-	AutoindexFormatDirective::AutoindexFormatDirective(auto_index_format format)
-	{
-	}
-
 	// Parameterized constructor
 	AutoindexFormatDirective::AutoindexFormatDirective(auto_index_format format)
 		: IDirective(), format(format)
