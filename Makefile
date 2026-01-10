@@ -33,6 +33,9 @@ SRCS		    		=   src/main.cpp \
 							src/directives/AllowedMethodsDirective.cpp	\
 							src/directives/ReturnDirective.cpp	\
 							src/directives/AutoindexDirective.cpp	\
+							src/directives/AutoindexFormatDirective.cpp	\
+							src/directives/AutoindexLocaltimeDirective.cpp	\
+							src/directives/AutoindexExactSizeDirective.cpp	\
 							src/directives/IndexDirective.cpp	\
 							src/directives/UploadEnableDirective.cpp	\
 							src/directives/UploadStoreDirective.cpp	\
