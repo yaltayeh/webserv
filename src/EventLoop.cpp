@@ -14,34 +14,11 @@
 #include <cerrno>
 #include <cstring>
 
-/**
- * ============================================================================
- * EventLoop Class Method Implementations
- * ============================================================================
- */
 
-/**
- * Constructor - Creates empty EventLoop
- */
-EventLoop::EventLoop()
-{
-    /**
-     * All members are default-constructed:
-     * - _servers: empty vector
-     * - _listening_sockets: empty map
-     * - _poll_fds: empty vector
-     * - _connection_manager: default-constructed ConnectionManager
-     * 
-     * Nothing additional needed here.
-     */
-}
+EventLoop::EventLoop() {}
 
 /**
  * Destructor - Cleans up all resources
- * 
- * WHAT THIS DOES:
- * Deletes all Server* pointers in _servers vector. Other members
- * clean up automatically through their own destructors.
  * 
  * DESTRUCTION ORDER (automatic, reverse of declaration):
  * 1. ~_connection_manager (Connections destroyed)
@@ -51,13 +28,6 @@ EventLoop::EventLoop()
  */
 EventLoop::~EventLoop()
 {
-    /**
-     * Iterate through all Server pointers and delete them
-     * 
-     * C++98 iterator syntax:
-     * - std::vector<Server*>::iterator is the iterator type
-     * - *it dereferences to Server*
-     */
     for (std::vector<Server*>::iterator it = _servers.begin();
          it != _servers.end();
          ++it)
@@ -67,14 +37,6 @@ EventLoop::~EventLoop()
          */
         delete *it;
     }
-    
-    /**
-     * Clear vector (removes all pointers)
-     * 
-     * Technically unnecessary since vector is about to be destroyed,
-     * but explicit cleanup helps debugging.
-     */
-    _servers.clear();
 }
 
 /**

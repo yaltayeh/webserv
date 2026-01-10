@@ -113,14 +113,5 @@ int main(int argc, char* argv[])
      */
     eventLoop.run();
     
-    /**
-     * ========================================================================
-     * This code is never reached (event loop is infinite)
-     * ========================================================================
-     * 
-     * If we add graceful shutdown support in the future, cleanup would
-     * happen here. For now, destructors handle cleanup when process exits.
-     */
-    
     return 0;
 }

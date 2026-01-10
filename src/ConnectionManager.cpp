@@ -16,86 +16,29 @@
 #include <iostream>
 
 /**
- * ============================================================================
- * Constants
- * ============================================================================
- */
-
-/**
- * Size of read buffer for socket I/O
- * 
- * 4096 bytes (4 KB) is a common choice because:
  * - Matches typical memory page size on many systems
  * - Large enough to read most HTTP headers in one call
  * - Small enough to avoid excessive memory usage
  * - Powers of 2 tend to perform well with memory alignment
  */
-static const size_t READ_BUFFER_SIZE = 4096;
+static const size_t READ_BUFFER_SIZE = 4096; // 4 KB
 
-/**
- * ============================================================================
- * ConnectionManager Class Method Implementations
- * ============================================================================
- */
 
-/**
- * Constructor - Creates empty ConnectionManager
- * 
- * WHAT THIS DOES:
- * Initializes an empty _connections map. No connections exist until
- * addConnection() is called.
- */
-ConnectionManager::ConnectionManager()
-{
-    /**
-     * Default constructor for std::map creates empty map
-     * Nothing else needed here
-     */
-}
 
-/**
- * Destructor - Cleans up all connections
- * 
- * WHAT THIS DOES:
- * Iterates through all connections, closes their sockets, and deletes
- * the Connection objects to prevent memory leaks.
- * 
- * WHY THIS IS IMPORTANT:
- * Even if the program exits abruptly (Ctrl+C), destructors run and
- * ensure resources are released properly.
- */
+
+ConnectionManager::ConnectionManager() {}
+
 ConnectionManager::~ConnectionManager()
 {
-    /**
-     * Iterate through all connections in the map
-     * 
-     * C++98 iterator syntax:
-     * - std::map<int, Connection*>::iterator is the iterator type
-     * - it->first is the key (int fd)
-     * - it->second is the value (Connection* pointer)
-     */
     for (std::map<int, Connection*>::iterator it = _connections.begin();
          it != _connections.end();
          ++it)
     {
-        /**
-         * Close the socket to free system resources
-         */
+        // Close the socket to free system resources
+        // Delete the heap-allocated Connection object
         close(it->second->fd);
-        
-        /**
-         * Delete the heap-allocated Connection object
-         */
         delete it->second;
     }
-    
-    /**
-     * Clear the map (removes all entries)
-     * 
-     * Technically unnecessary since the map itself is about to be destroyed,
-     * but explicit cleanup makes intentions clear and helps debugging.
-     */
-    _connections.clear();
 }
 
 /**
@@ -111,20 +54,9 @@ ConnectionManager::~ConnectionManager()
  */
 void ConnectionManager::addConnection(int client_fd, Server* server)
 {
-    /**
-     * Create new Connection object on heap with new
-     * 
-     * WHY HEAP ALLOCATION:
-     * - Connection must remain at stable memory address
-     * - std::map guarantees pointer stability (pointers don't invalidate)
-     * - Stack allocation would require storing objects directly in map,
-     *   which would make pointer-based access awkward
-     */
     Connection* conn = new Connection();
     
     /**
-     * Initialize Connection members
-     * 
      * - fd: Socket file descriptor
      * - parser: Default-constructed (initial state)
      * - write_buffer: Empty string (no response data yet)
@@ -133,17 +65,6 @@ void ConnectionManager::addConnection(int client_fd, Server* server)
     conn->fd = client_fd;
     conn->owner_server = server;
     
-    /**
-     * Insert into map: fd -> Connection*
-     * 
-     * std::map::operator[] creates entry if key doesn't exist
-     * In production code, we might want to check for duplicate fds:
-     *   if (_connections.count(client_fd) > 0) { error }
-     * 
-     * But in our architecture, duplicate fds should never occur because:
-     * - EventLoop only calls addConnection() for newly accepted sockets
-     * - Each socket fd is unique until closed
-     */
     _connections[client_fd] = conn;
     
     std::cout << "Added connection fd " << client_fd
@@ -163,55 +84,21 @@ void ConnectionManager::addConnection(int client_fd, Server* server)
  */
 void ConnectionManager::removeConnection(int fd)
 {
-    /**
-     * Look up connection in map
-     * 
-     * std::map::find() returns iterator to element if found, or
-     * _connections.end() if not found.
-     */
     std::map<int, Connection*>::iterator it = _connections.find(fd);
     
-    /**
-     * Check if connection exists
-     */
-    if (it == _connections.end()) {
-        /**
-         * Connection doesn't exist - this is actually OK
-         * 
-         * Might happen if removeConnection() is called multiple times
-         * for the same fd (defensive programming). Just return silently.
-         */
-        return;
-    }
+    // Check if connection exists
+    // defensive programming
+    if (it == _connections.end()) { return; }
     
-    /**
-     * Get Connection pointer for convenience
-     */
+    // Get Connection pointer for convenience
     Connection* conn = it->second;
     
-    /**
-     * Close the socket to free system resources
-     * 
-     * IMPORTANT: Close before deleting Connection object so we can
-     * still access conn->fd safely.
-     */
+   
     close(conn->fd);
     
-    std::cout << "Closed connection fd " << conn->fd << std::endl;
-    
-    /**
-     * Delete the heap-allocated Connection object
-     * 
-     * This calls ~Connection() which destroys the parser and write_buffer.
-     */
+    // This calls ~Connection() which destroys the parser and write_buffer.
     delete conn;
-    
-    /**
-     * Remove entry from map
-     * 
-     * std::map::erase() with iterator removes the element and
-     * invalidates the iterator (but not other iterators).
-     */
+   
     _connections.erase(it);
     
     std::cout << "Removed connection (remaining: "
@@ -220,25 +107,8 @@ void ConnectionManager::removeConnection(int fd)
 
 /**
  * hasConnection() - Checks if a connection exists
- * 
- * PARAMETERS:
- * - fd: File descriptor to check
- * 
- * RETURNS:
- * - true if connection exists
- * - false otherwise
  */
-bool ConnectionManager::hasConnection(int fd) const
-{
-    /**
-     * std::map::count() returns:
-     * - 1 if key exists (std::map doesn't allow duplicates)
-     * - 0 if key doesn't exist
-     * 
-     * We could also use find() != end(), but count() is more concise.
-     */
-    return _connections.count(fd) > 0;
-}
+bool ConnectionManager::hasConnection(int fd) const { return _connections.count(fd) > 0; }
 
 /**
  * getConnection() - Retrieves a connection by fd
@@ -657,9 +527,6 @@ bool ConnectionManager::handleError(int fd, short revents)
 
 /**
  * getConnectionCount() - Returns number of active connections
- * 
- * RETURNS:
- * Number of connections in the _connections map
  */
 size_t ConnectionManager::getConnectionCount() const
 {
