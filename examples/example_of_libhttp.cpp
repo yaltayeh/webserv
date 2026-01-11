@@ -3,7 +3,6 @@
 # include "Parser.hpp"
 
 int main() {
-	libhttp::Response res;
 	libhttp::Parser parser;
 	
 	const std::string batch_1 = "GET /index.html HTTP/1.0\r\nHost: example.com\r\nConnect";

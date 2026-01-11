@@ -1,0 +1,533 @@
+ Syntax: absolute_redirect on | off
+ Default: absolute_redirect on
+ Context: http, server, location 
+
+======================
+
+ Syntax: aio on | off | threads[=pool]
+ Default: aio off
+ Context: http, server, location 
+
+======================
+
+ Syntax: aio_write on | off
+ Default: aio_write off
+ Context: http, server, location 
+
+======================
+
+ Syntax: alias path
+ Default: — 
+ Context: location
+
+======================
+
+ Syntax: auth_delay time
+ Default: auth_delay 0s
+ Context: http, server, location 
+
+======================
+
+ Syntax: chunked_transfer_encoding on | off
+ Default: chunked_transfer_encoding on
+ Context: http, server, location 
+
+======================
+
+ Syntax: client_body_buffer_size size
+ Default: client_body_buffer_size 8k|16k
+ Context: http, server, location 
+
+======================
+
+ Syntax: client_body_in_file_only on | clean | off
+ Default: client_body_in_file_only off
+ Context: http, server, location 
+
+======================
+
+ Syntax: client_body_in_single_buffer on | off
+ Default: client_body_in_single_buffer off
+ Context: http, server, location 
+
+======================
+
+ Syntax: client_body_temp_path path [level1 [level2 [level3]]]
+ Default: client_body_temp_path client_body_temp
+ Context: http, server, location 
+
+======================
+
+ Syntax: client_body_timeout time
+ Default: client_body_timeout 60s
+ Context: http, server, location 
+
+======================
+
+ Syntax: client_header_buffer_size size
+ Default: client_header_buffer_size 1k
+ Context: http, server 
+
+======================
+
+ Syntax: client_header_timeout time
+ Default: client_header_timeout 60s
+ Context: http, server 
+
+======================
+
+ Syntax: client_max_body_size size
+ Default: client_max_body_size 1m
+ Context: http, server, location 
+
+======================
+
+ Syntax: connection_pool_size size
+ Default: connection_pool_size 256|512
+ Context: http, server 
+
+======================
+
+ Syntax: default_type mime-type
+ Default: default_type text/plain
+ Context: http, server, location 
+
+======================
+
+ Syntax: directio size | off
+ Default: directio off
+ Context: http, server, location 
+
+======================
+
+ Syntax: directio_alignment size
+ Default: directio_alignment 512
+ Context: http, server, location 
+
+======================
+
+ Syntax: disable_symlinks off
+disable_symlinks on | if_not_owner [from=part]
+ Default: disable_symlinks off
+
+======================
+
+ Syntax: early_hints string ...
+ Default: — 
+ Context: http, server, location 
+
+======================
+
+ Syntax: error_page code ... [=[response]] uri
+ Default: — 
+ Context: http, server, location, if in location 
+
+======================
+
+ Syntax: etag on | off
+ Default: etag on
+ Context: http, server, location 
+
+======================
+
+ Syntax: http { ... } 
+ Default: — 
+ Context: main 
+
+======================
+
+ Syntax: if_modified_since off | exact | before
+ Default: if_modified_since exact
+ Context: http, server, location 
+
+======================
+
+ Syntax: ignore_invalid_headers on | off
+ Default: ignore_invalid_headers on
+ Context: http, server 
+
+======================
+
+ Syntax: internal
+ Default: — 
+ Context: location 
+
+======================
+
+ Syntax: keepalive_disable none | browser ...
+ Default: keepalive_disable msie6
+ Context: http, server, location 
+
+======================
+
+ Syntax: keepalive_min_timeout timeout
+ Default: keepalive_min_timeout 0
+ Context: http, server, location 
+
+======================
+
+ Syntax: keepalive_requests number
+ Default: keepalive_requests 1000
+ Context: http, server, location 
+
+======================
+
+ Syntax: keepalive_time time
+ Default: keepalive_time 1h
+ Context: http, server, location 
+
+======================
+
+ Syntax: keepalive_timeout timeout [header_timeout]
+ Default: keepalive_timeout 75s
+ Context: http, server, location 
+
+======================
+
+ Syntax: large_client_header_buffers number size
+ Default: large_client_header_buffers 4 8k
+ Context: http, server 
+
+======================
+
+ Syntax: limit_except method ... { ... } 
+ Default: — 
+ Context: location 
+
+======================
+
+ Syntax: limit_rate rate
+ Default: limit_rate 0
+ Context: http, server, location, if in location 
+
+======================
+
+ Syntax: limit_rate_after size
+ Default: limit_rate_after 0
+ Context: http, server, location, if in location 
+
+======================
+
+ Syntax: lingering_close off | on | always
+ Default: lingering_close on
+ Context: http, server, location 
+
+======================
+
+ Syntax: lingering_time time
+ Default: lingering_time 30s
+ Context: http, server, location 
+
+======================
+
+ Syntax: lingering_timeout time
+ Default: lingering_timeout 5s
+ Context: http, server, location 
+
+======================
+
+ Syntax: 	listen 
+    address[:port]
+    [default_server]
+    [ssl]
+    [http2 | quic]
+    [proxy_protocol]
+    [setfib=number]
+    [fastopen=number]
+    [backlog=number]
+    [rcvbuf=size]
+    [sndbuf=size]
+    [accept_filter=filter]
+    [deferred]
+    [bind]
+    [ipv6only=on|off]
+    [reuseport]
+    [so_keepalive=on|off|[keepidle]:[keepintvl]:[keepcnt]];
+listen 
+    port
+    [default_server]
+    [ssl]
+    [http2 | quic]
+    [proxy_protocol]
+    [setfib=number]
+    [fastopen=number]
+    [backlog=number]
+    [rcvbuf=size]
+    [sndbuf=size]
+    [accept_filter=filter]
+    [deferred]
+    [bind]
+    [ipv6only=on|off]
+    [reuseport]
+    [so_keepalive=on|off|[keepidle]:[keepintvl]:[keepcnt]];
+listen 
+    unix:path
+    [default_server]
+    [ssl]
+    [http2 | quic]
+    [proxy_protocol]
+    [backlog=number]
+    [rcvbuf=size]
+    [sndbuf=size]
+    [accept_filter=filter]
+    [deferred]
+    [bind]
+    [so_keepalive=on|off|[keepidle]:[keepintvl]:[keepcnt]];
+	
+ Default: listen *:80 | *:8000;
+ Context: server
+
+======================
+
+ Syntax:    location [ = | ~ | ~* | ^~ ] uri { ... }
+            location @name { ... } 
+ Default: — 
+ Context: server, location 
+
+======================
+
+ Syntax: log_not_found on | off
+ Default: log_not_found on
+ Context: http, server, location 
+
+======================
+
+ Syntax: log_subrequest on | off
+ Default: log_subrequest off
+ Context: http, server, location 
+
+======================
+
+ Syntax: max_ranges number
+ Default: — 
+ Context: http, server, location 
+======================
+
+ Syntax: merge_slashes on | off
+ Default: merge_slashes on
+ Context: http, server 
+
+======================
+
+ Syntax: msie_padding on | off
+ Default: msie_padding on
+ Context: http, server, location 
+
+======================
+
+ Syntax: msie_refresh on | off
+ Default: msie_refresh off
+ Context: http, server, location 
+
+======================
+
+ Syntax: open_file_cache off
+open_file_cache max=N[inactive=time]
+ Default: open_file_cache off
+
+======================
+
+ Syntax: open_file_cache_errors on | off
+ Default: open_file_cache_errors off
+ Context: http, server, location 
+
+======================
+
+ Syntax: open_file_cache_min_uses number
+ Default: open_file_cache_min_uses 1
+ Context: http, server, location 
+
+======================
+
+ Syntax: open_file_cache_valid time
+ Default: open_file_cache_valid 60s
+ Context: http, server, location 
+
+======================
+
+ Syntax: output_buffers number size
+ Default: output_buffers 2 32k
+ Context: http, server, location 
+
+======================
+
+ Syntax: port_in_redirect on | off
+ Default: port_in_redirect on
+ Context: http, server, location 
+
+======================
+
+ Syntax: postpone_output size
+ Default: postpone_output 1460
+ Context: http, server, location 
+
+======================
+
+ Syntax: read_ahead size
+ Default: read_ahead 0
+ Context: http, server, location 
+
+======================
+
+ Syntax: recursive_error_pages on | off
+ Default: recursive_error_pages off
+ Context: http, server, location 
+
+======================
+
+ Syntax: request_pool_size size
+ Default: request_pool_size 4k
+ Context: http, server 
+
+======================
+
+ Syntax: reset_timedout_connection on | off
+ Default: reset_timedout_connection off
+ Context: http, server, location 
+
+======================
+
+ Syntax: resolver address ... [valid=time] [ipv4=on|off] [ipv6=on|off] [status_zone=zone]
+ Default: — 
+ Context: http, server, location 
+
+======================
+
+ Syntax: resolver_timeout time
+ Default: resolver_timeout 30s
+ Context: http, server, location 
+
+======================
+
+ Syntax: root path
+ Default: root html
+ Context: http, server, location, if in location 
+
+======================
+
+ Syntax: satisfy all | any
+ Default: satisfy all
+ Context: http, server, location 
+
+======================
+
+ Syntax: send_lowat size
+ Default: send_lowat 0
+ Context: http, server, location 
+
+======================
+
+ Syntax: send_timeout time
+ Default: send_timeout 60s
+ Context: http, server, location 
+
+======================
+
+ Syntax: sendfile on | off
+ Default: sendfile off
+ Context: http, server, location, if in location 
+
+======================
+
+ Syntax: sendfile_max_chunk size
+ Default: sendfile_max_chunk 2m
+ Context: http, server, location 
+
+======================
+
+ Syntax: server { ... } 
+ Default: — 
+ Context: http 
+
+======================
+
+ Syntax: server_name name ...
+ Default: server_name ""
+ Context: server 
+
+======================
+
+ Syntax: server_name_in_redirect on | off
+ Default: server_name_in_redirect off
+ Context: http, server, location 
+
+======================
+
+ Syntax: server_names_hash_bucket_size size
+ Default: server_names_hash_bucket_size 32|64|128
+ Context: http 
+
+======================
+
+ Syntax: server_names_hash_max_size size
+ Default: server_names_hash_max_size 512
+ Context: http 
+
+======================
+
+ Syntax: server_tokens on | off | build | string
+ Default: server_tokens on
+ Context: http, server, location 
+
+======================
+
+ Syntax: subrequest_output_buffer_size size
+ Default: subrequest_output_buffer_size 4k|8k
+ Context: http, server, location 
+
+======================
+
+ Syntax: tcp_nodelay on | off
+ Default: tcp_nodelay on
+ Context: http, server, location 
+
+======================
+
+ Syntax: tcp_nopush on | off
+ Default: tcp_nopush off
+ Context: http, server, location 
+
+======================
+
+ Syntax: try_files file ... uri
+try_files file ... =code
+ Default: — Context: server, location 
+
+======================
+
+ Syntax: types { ... } Default: types { text/html html
+ image/gif gif
+ image/jpeg jpg
+
+======================
+
+ Syntax: types_hash_bucket_size size
+ Default: types_hash_bucket_size 64
+ Context: http, server, location 
+
+======================
+
+ Syntax: types_hash_max_size size
+ Default: types_hash_max_size 1024
+ Context: http, server, location 
+
+======================
+
+ Syntax: underscores_in_headers on | off
+ Default: underscores_in_headers off
+ Context: http, server 
+
+======================
+
+ Syntax: variables_hash_bucket_size size
+ Default: variables_hash_bucket_size 64
+ Context: http 
+
+======================
+
+ Syntax: variables_hash_max_size size
+ Default: variables_hash_max_size 1024
+ Context: http 
+
+======================
+

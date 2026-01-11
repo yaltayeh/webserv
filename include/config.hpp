@@ -83,6 +83,13 @@ struct RouteConfig
     std::string path;
     
     /**
+     * Location modifier for matching behavior
+     * 
+     * Examples: "=" for exact match, "" for prefix match, "@" for named location
+     */
+    std::string modifier;
+    
+    /**
      * HTTP methods allowed for this route
      * 
      * Example: [GET, POST] for API endpoints, [GET] for static files
@@ -91,6 +98,14 @@ struct RouteConfig
      * not in this list should return 405 Method Not Allowed.
      */
     std::vector<libhttp::Method> allowed_methods;
+    
+    /**
+     * HTTP methods for limit_except directive (inverted logic)
+     * 
+     * These are the ONLY methods allowed when limit_except is used.
+     * All other methods return 403 Forbidden.
+     */
+    std::vector<libhttp::Method> limit_except_methods;
     
     /**
      * Root directory for file serving
@@ -104,15 +119,27 @@ struct RouteConfig
     std::string root;
     
     /**
-     * HTTP redirect URL (if non-empty, this route triggers a redirect)
+     * Alias path - alternative to root for location replacement
      * 
-     * Example: "/old-page" -> redirect = "/new-page" (301 Moved Permanently)
-     * 
-     * If this field is non-empty, the server should return a 301 redirect
-     * response with Location header set to this value. No file serving or
-     * CGI execution should occur.
+     * Unlike root which appends location to path, alias replaces the location.
+     * Example: location /images { alias /data/pics; }
+     * Request: /images/logo.png -> /data/pics/logo.png
      */
-    std::string redirect;
+    std::string alias;
+    
+    /**
+     * Return directive - HTTP status code
+     * 
+     * If non-zero, return this status code immediately with optional text/URL.
+     */
+    int return_code;
+    
+    /**
+     * Return directive - text/URL to return
+     * 
+     * Can be redirect URL (3xx codes) or response text.
+     */
+    std::string return_text;
     
     /**
      * Enable directory listing (auto-index)
@@ -122,7 +149,22 @@ struct RouteConfig
      * 
      * When false: Return 403 Forbidden for directory requests without index.
      */
-    bool directory_listing;
+    bool autoindex;
+    
+    /**
+     * Autoindex format: html, json, xml, jsonp
+     */
+    std::string autoindex_format;
+    
+    /**
+     * Autoindex - use local time instead of UTC
+     */
+    bool autoindex_localtime;
+    
+    /**
+     * Autoindex - show exact file sizes in bytes
+     */
+    bool autoindex_exact_size;
     
     /**
      * Default index files to serve for directory requests
@@ -130,10 +172,15 @@ struct RouteConfig
      * Example: ["index.html", "index.htm", "default.html"]
      * 
      * When a request URI resolves to a directory, check these files in order.
-     * Serve the first one that exists. If none exist and directory_listing
+     * Serve the first one that exists. If none exist and autoindex
      * is false, return 403 Forbidden.
      */
     std::vector<std::string> index_files;
+    
+    /**
+     * Enable file uploads for this location
+     */
+    bool upload_enable;
     
     /**
      * Directory for storing uploaded files (for POST requests)
@@ -144,7 +191,7 @@ struct RouteConfig
      * should be written to this directory. If empty, file uploads are not
      * allowed for this route.
      */
-    std::string upload_dir;
+    std::string upload_store;
     
     /**
      * CGI executor path (for dynamic script execution)
@@ -159,32 +206,92 @@ struct RouteConfig
      * IMPORTANT: Must un-chunk Transfer-Encoding: chunked requests before
      * passing to CGI (CGI expects Content-Length).
      */
-    std::string cgi_executor;
+    std::string cgi_pass;
     
     /**
-     * File extension for CGI matching
+     * CGI file extensions
      * 
-     * Example: ".php", ".py", ".pl"
+     * Example: [".php", ".py", ".pl"]
      * 
-     * Only execute CGI if request URI ends with this extension. This allows
-     * different routes to handle different script types with different
-     * executors.
+     * Only execute CGI if request URI ends with one of these extensions.
      */
-    std::string cgi_extension;
+    std::vector<std::string> cgi_extensions;
+    
+    /**
+     * CGI environment variables (parameter name -> value)
+     * 
+     * Additional environment variables to pass to CGI scripts.
+     */
+    std::map<std::string, std::string> cgi_params;
+    
+    /**
+     * Access control - denied addresses
+     * 
+     * List of IP addresses, CIDR blocks, or "all" to deny access.
+     */
+    std::vector<std::string> deny_rules;
+    
+    /**
+     * Client body temp path for this location
+     */
+    std::string client_body_temp_path;
+    
+    /**
+     * Maximum allowed size of client request body (in bytes)
+     * 
+     * 0 means use server default.
+     */
+    size_t client_max_body_size;
+    
+    /**
+     * Keepalive timeout in seconds (0 = use server default)
+     */
+    int keepalive_timeout;
+    
+    /**
+     * Keepalive header timeout in seconds
+     */
+    int keepalive_header_timeout;
+    
+    /**
+     * Proxy request buffering (on/off)
+     */
+    bool proxy_request_buffering;
+    
+    /**
+     * Custom error pages for this location
+     */
+    std::map<int, std::string> error_pages;
     
     /**
      * Default constructor - initializes safe defaults
      */
     RouteConfig()
         : path("/"),
+          modifier(""),
           allowed_methods(),
+          limit_except_methods(),
           root(""),
-          redirect(""),
-          directory_listing(false),
+          alias(""),
+          return_code(0),
+          return_text(""),
+          autoindex(false),
+          autoindex_format("html"),
+          autoindex_localtime(false),
+          autoindex_exact_size(false),
           index_files(),
-          upload_dir(""),
-          cgi_executor(""),
-          cgi_extension("")
+          upload_enable(false),
+          upload_store(""),
+          cgi_pass(""),
+          cgi_extensions(),
+          cgi_params(),
+          deny_rules(),
+          client_body_temp_path(""),
+          client_max_body_size(0),
+          keepalive_timeout(0),
+          keepalive_header_timeout(0),
+          proxy_request_buffering(true),
+          error_pages()
     {
         /* All fields initialized in member initializer list */
     }
@@ -254,15 +361,14 @@ struct ServerConfig
     int port;
     
     /**
-     * Server name for virtual host matching
+     * Server names for virtual host matching
      * 
-     * Example: "example.com", "localhost", "www.mysite.org"
+     * Example: ["example.com", "www.example.com"]
      * 
      * In HTTP/1.1, clients send "Host" header. This field can be used for
-     * virtual hosting (multiple domains on one IP). For HTTP/1.0 (our target),
-     * this is primarily for documentation/logging purposes.
+     * virtual hosting (multiple domains on one IP).
      */
-    std::string server_name;
+    std::vector<std::string> server_names;
     
     /**
      * Custom error page paths mapped by HTTP status code
@@ -291,6 +397,66 @@ struct ServerConfig
     size_t client_max_body_size;
     
     /**
+     * Client body temporary path for storing request bodies
+     */
+    std::string client_body_temp_path;
+    
+    /**
+     * Keepalive timeout in seconds
+     */
+    int keepalive_timeout;
+    
+    /**
+     * Keepalive header timeout in seconds
+     */
+    int keepalive_header_timeout;
+    
+    /**
+     * Proxy request buffering enabled
+     */
+    bool proxy_request_buffering;
+    
+    /**
+     * Root directory (server-level default)
+     */
+    std::string root;
+    
+    /**
+     * Index files (server-level default)
+     */
+    std::vector<std::string> index_files;
+    
+    /**
+     * Autoindex enabled (server-level default)
+     */
+    bool autoindex;
+    
+    /**
+     * Autoindex format (server-level default)
+     */
+    std::string autoindex_format;
+    
+    /**
+     * Autoindex localtime (server-level default)
+     */
+    bool autoindex_localtime;
+    
+    /**
+     * Autoindex exact size (server-level default)
+     */
+    bool autoindex_exact_size;
+    
+    /**
+     * CGI extensions (server-level)
+     */
+    std::vector<std::string> cgi_extensions;
+    
+    /**
+     * Deny rules (server-level)
+     */
+    std::vector<std::string> deny_rules;
+    
+    /**
      * List of routes/locations for this server
      * 
      * Order matters: During request handling, routes should be checked from
@@ -311,9 +477,21 @@ struct ServerConfig
     ServerConfig()
         : host("0.0.0.0"),
           port(8080),
-          server_name("localhost"),
+          server_names(),
           error_pages(),
           client_max_body_size(1048576),  /* 1MB default */
+          client_body_temp_path(""),
+          keepalive_timeout(75),
+          keepalive_header_timeout(0),
+          proxy_request_buffering(true),
+          root(""),
+          index_files(),
+          autoindex(false),
+          autoindex_format("html"),
+          autoindex_localtime(false),
+          autoindex_exact_size(false),
+          cgi_extensions(),
+          deny_rules(),
           routes()
     {
         /* All fields initialized in member initializer list */

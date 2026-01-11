@@ -77,29 +77,8 @@ static int setNonBlocking(int fd)
  * - config: ServerConfig containing host, port, routes, error pages, etc.
  */
 Server::Server(const ServerConfig& config)
-    : _config(config), _listen_fd(-1)
-{
-    /**
-     * Initialize configuration from parameter (copy)
-     * Initialize listening socket to -1 (invalid/uninitialized)
-     * 
-     * Member initializer list handles all initialization above.
-     * Nothing else needed in constructor body.
-     */
-}
+    : _config(config), _listen_fd(-1) {}
 
-/**
- * Destructor - Closes listening socket if open
- * 
- * WHAT THIS DOES:
- * If the listening socket is open (_listen_fd >= 0), closes it to
- * free the system resource and make the port available for rebinding.
- * 
- * WHY THIS IS IMPORTANT:
- * RAII principle: Resource acquired in initialize() must be released
- * automatically. Even if the program exits abnormally, destructors run
- * and sockets get closed properly.
- */
 Server::~Server()
 {
     if (_listen_fd >= 0) {
@@ -111,66 +90,40 @@ Server::~Server()
 /**
  * Copy Constructor - Creates copy of another Server
  * 
- * WHAT THIS DOES:
  * Copies the configuration from 'other' but does NOT duplicate the
  * listening socket (that would be dangerous - two objects owning the
  * same fd). New Server starts uninitialized.
- * 
- * PARAMETERS:
- * - other: Server to copy configuration from
  * 
  * NOTE: After copy construction, you must call initialize() to create
  * a new listening socket.
  */
 Server::Server(const Server& other)
-    : _config(other._config), _listen_fd(-1)
-{
-    /**
-     * Copy configuration but not the socket fd
-     * New Server must call initialize() to create its own socket
-     */
-}
+    : _config(other._config), _listen_fd(-1) {}
 
 /**
  * Assignment Operator - Assigns one Server to another
  * 
- * WHAT THIS DOES:
  * Copies configuration from 'other'. If this Server already has a
  * listening socket, closes it first. New Server is left uninitialized.
  * 
- * PARAMETERS:
- * - other: Server to copy configuration from
- * 
- * RETURNS:
- * Reference to this Server (allows chaining: a = b = c)
+ * NOTE: _listen_fd remains -1 (uninitialized)
+ * Caller must call initialize() to create new socket
  */
 Server& Server::operator=(const Server& other)
 {
-    /**
-     * Check for self-assignment (a = a)
-     */
     if (this == &other) {
         return *this;
     }
     
-    /**
-     * Close existing listening socket if any
-     */
+    // Close existing listening socket if any
     if (_listen_fd >= 0) {
         close(_listen_fd);
         _listen_fd = -1;
     }
     
-    /**
-     * Copy configuration from other
-     */
     _config = other._config;
     
-    /**
-     * Note: _listen_fd remains -1 (uninitialized)
-     * Caller must call initialize() to create new socket
-     */
-    
+
     return *this;
 }
 
