@@ -11,7 +11,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-using namespace Config;
+using namespace Directive;
 
 void testEscapeSequences()
 {
@@ -23,7 +23,7 @@ void testEscapeSequences()
 		"example \"backslash: \\\\\";\n";
 	
 	try {
-		Config::Parser parser(config);
+		Directive::Parser parser(config);
 		GlobalDirective root;
 		
 		while (parser.getNextDirectives()) {
@@ -44,7 +44,7 @@ void testExceptionHandling()
 	
 	// Test 1: Unclosed quote
 	try {
-		Config::Parser parser("example \"unclosed;");
+		Directive::Parser parser("example \"unclosed;");
 		parser.getNextDirectives();
 		std::cout << "✗ Should have thrown SyntaxException\n";
 	}
@@ -85,7 +85,7 @@ void testMemoryManagement()
 	GlobalDirective* root = new GlobalDirective();
 	
 	try {
-		Config::Parser parser(config);
+		Directive::Parser parser(config);
 		while (parser.getNextDirectives()) {
 			std::string directive = parser.copyDirective();
 			IDirective::parseDirective(root, directive);
@@ -132,7 +132,7 @@ void testDirectiveCreation()
 	std::string config = "example arg1 arg2;";
 	
 	try {
-		Config::Parser parser(config);
+		Directive::Parser parser(config);
 		GlobalDirective root;
 		
 		while (parser.getNextDirectives()) {

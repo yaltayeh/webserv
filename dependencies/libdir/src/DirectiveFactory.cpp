@@ -7,7 +7,7 @@
 #include "IDirective.hpp"
 #include <iostream>
 
-namespace Config
+namespace Directive
 {
 
 /**
@@ -77,4 +77,4 @@ const std::type_info *DirectiveFactory::getTypeInfo(const std::string &name)
 	return data.second;
 }
 
-} // namespace Config
+} // namespace Directive

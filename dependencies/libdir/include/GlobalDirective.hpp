@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace Config
+namespace Directive
 {
 
 /**
@@ -63,4 +63,4 @@ public:
 	 */
 	DEFINE_ALLOWED_INSIDE();
 };
-} // namespace Config
+} // namespace Directive

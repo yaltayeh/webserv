@@ -3,7 +3,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: allowed_methods allowed in LocationDirective
 	DEFINE_DIRECTIVE(AllowedMethodsDirective, "allowed_methods", LocationDirective)

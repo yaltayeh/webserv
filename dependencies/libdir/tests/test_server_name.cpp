@@ -6,7 +6,7 @@
 #include "../directives/include/ServerNameDirective.hpp"
 #include <iostream>
 
-using namespace Config;
+using namespace Directive;
 
 int main()
 {
@@ -21,12 +21,12 @@ int main()
 		while (parser.getNextDirectives())
 		{
 			std::string directive = parser.copyDirective();
-			IDirective::parseDirective(Config::global, directive);
+			IDirective::parseDirective(Directive::global, directive);
 		}
 		
 		// Get all server_name directives
 		std::vector<ServerNameDirective*> serverNames = 
-			Config::global->getChildren<ServerNameDirective>();
+			Directive::global->getChildren<ServerNameDirective>();
 		
 		std::cout << "Found " << serverNames.size() << " server_name directive(s):" << std::endl;
 		

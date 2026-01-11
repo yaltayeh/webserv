@@ -3,7 +3,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: cgi_pass allowed in LocationDirective
 	DEFINE_DIRECTIVE(CgiPassDirective, "cgi_pass", LocationDirective)

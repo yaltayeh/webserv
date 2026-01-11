@@ -3,7 +3,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: limit_except allowed only in LocationDirective (it's a block directive)
 	DEFINE_DIRECTIVE(LimitExceptDirective, "limit_except", LocationDirective)

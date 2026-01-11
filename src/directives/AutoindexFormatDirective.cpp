@@ -5,7 +5,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: autoindex_format allowed in HttpDirective, ServerDirective, and LocationDirective
 	DEFINE_DIRECTIVE(AutoindexFormatDirective, "autoindex_format", HttpDirective, ServerDirective, LocationDirective)

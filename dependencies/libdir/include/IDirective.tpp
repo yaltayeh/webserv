@@ -2,7 +2,7 @@
 #include "IDirective.hpp"
 #include "DirectiveFactory.hpp"
 
-namespace Config
+namespace Directive
 {
 
 /**
@@ -124,4 +124,4 @@ inline const T *IDirective::getOne(bool first) const
 		return getLastChild<T>();
 }
 
-} // namespace Config
+} // namespace Directive

@@ -4,7 +4,7 @@
 #include "IDirective.hpp"
 #include <string>
 
-namespace Config
+namespace Directive
 {
 	class AliasDirective : public IDirective
 	{

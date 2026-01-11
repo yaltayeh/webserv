@@ -5,7 +5,7 @@
 #include "Parser.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 
 	/**

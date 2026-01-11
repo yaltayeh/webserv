@@ -8,7 +8,7 @@
 #include <cerrno>
 #include <sstream>
 
-namespace Config
+namespace Directive
 {
 	// Register directive: client_body_temp_path allowed in HttpDirective, ServerDirective, LocationDirective
 	DEFINE_DIRECTIVE(ClientBodyTempPathDirective, "client_body_temp_path", HttpDirective, ServerDirective, LocationDirective)

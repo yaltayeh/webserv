@@ -5,7 +5,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: index allowed in HttpDirective, ServerDirective, and LocationDirective
 	DEFINE_DIRECTIVE(IndexDirective, "index", HttpDirective, ServerDirective, LocationDirective)

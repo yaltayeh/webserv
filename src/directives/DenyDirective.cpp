@@ -6,7 +6,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: deny allowed in HttpDirective, ServerDirective, LocationDirective, and LimitExceptDirective
 	DEFINE_DIRECTIVE(DenyDirective, "deny", HttpDirective, ServerDirective, LocationDirective, LimitExceptDirective)

@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-namespace Config
+namespace Directive
 {
 	class CgiExtensionDirective : public IDirective
 	{

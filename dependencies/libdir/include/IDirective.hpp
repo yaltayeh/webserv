@@ -9,7 +9,7 @@
 
 #pragma once
 
-namespace Config
+namespace Directive
 {
 
 /**
@@ -28,7 +28,7 @@ namespace Config
  * Example Usage:
  * @code
  *   GlobalDirective* root = new GlobalDirective();
- *   Config::Parser parser("server { listen 8080; }");
+ *   Directive::Parser parser("server { listen 8080; }");
  *   while (parser.getNextDirectives()) {
  *       IDirective::parseDirective(root, parser.copyDirective());
  *   }
@@ -229,6 +229,6 @@ private:
 
 };
 
-} // namespace Config
+} // namespace Directive
 
 #include "IDirective.tpp"

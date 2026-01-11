@@ -1,6 +1,6 @@
 #include "Logger.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Default log level: show errors and warnings only
 	// Set to LOG_LEVEL_DEBUG for verbose output during development

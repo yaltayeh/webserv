@@ -3,7 +3,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: alias allowed only in LocationDirective
 	DEFINE_DIRECTIVE(AliasDirective, "alias", LocationDirective)

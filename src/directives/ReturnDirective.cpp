@@ -5,7 +5,7 @@
 #include "Exceptions.hpp"
 #include <cstdlib>
 
-namespace Config
+namespace Directive
 {
 	// Register directive: return allowed in ServerDirective and LocationDirective
 	DEFINE_DIRECTIVE(ReturnDirective, "return", ServerDirective, LocationDirective)

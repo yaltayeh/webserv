@@ -3,7 +3,7 @@
 
 #include "IDirective.hpp"
 
-namespace Config
+namespace Directive
 {
 	class HttpDirective : public IDirective
 	{

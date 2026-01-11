@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-namespace Config
+namespace Directive
 {
 	/**
 	 * @enum LogLevel
@@ -43,7 +43,7 @@ namespace Config
  */
 #define LOGE(msg) \
 	do { \
-		if (Config::g_log_level >= Config::LOG_LEVEL_ERROR) { \
+		if (Directive::g_log_level >= Directive::LOG_LEVEL_ERROR) { \
 			std::cerr << COLOR_RED << COLOR_BOLD << "[ERROR] " << COLOR_RESET \
 					  << COLOR_RED << msg << COLOR_RESET << std::endl; \
 		} \
@@ -56,7 +56,7 @@ namespace Config
  */
 #define LOGW(msg) \
 	do { \
-		if (Config::g_log_level >= Config::LOG_LEVEL_WARN) { \
+		if (Directive::g_log_level >= Directive::LOG_LEVEL_WARN) { \
 			std::cerr << COLOR_YELLOW << COLOR_BOLD << "[WARN] " << COLOR_RESET \
 					  << COLOR_YELLOW << msg << COLOR_RESET << std::endl; \
 		} \
@@ -69,7 +69,7 @@ namespace Config
  */
 #define LOGI(msg) \
 	do { \
-		if (Config::g_log_level >= Config::LOG_LEVEL_INFO) { \
+		if (Directive::g_log_level >= Directive::LOG_LEVEL_INFO) { \
 			std::cout << COLOR_CYAN << COLOR_BOLD << "[INFO] " << COLOR_RESET \
 					  << COLOR_CYAN << msg << COLOR_RESET << std::endl; \
 		} \
@@ -82,7 +82,7 @@ namespace Config
  */
 #define LOGD(msg) \
 	do { \
-		if (Config::g_log_level >= Config::LOG_LEVEL_DEBUG) { \
+		if (Directive::g_log_level >= Directive::LOG_LEVEL_DEBUG) { \
 			std::cout << COLOR_GRAY << "[DEBUG] " << msg << COLOR_RESET << std::endl; \
 		} \
 	} while (0)

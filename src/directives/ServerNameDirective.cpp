@@ -3,7 +3,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: server_name allowed in ServerDirective
 	DEFINE_DIRECTIVE(ServerNameDirective, "server_name", ServerDirective)

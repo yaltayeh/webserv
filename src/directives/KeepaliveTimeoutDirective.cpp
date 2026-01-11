@@ -5,7 +5,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: keepalive_timeout allowed in HttpDirective, ServerDirective, and LocationDirective
 	DEFINE_DIRECTIVE(KeepaliveTimeoutDirective, "keepalive_timeout", HttpDirective, ServerDirective, LocationDirective)

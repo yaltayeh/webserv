@@ -12,7 +12,7 @@
 #include "KeepaliveTimeoutDirective.hpp"
 #include <iostream>
 
-using namespace Config;
+using namespace Directive;
 
 int main()
 {
@@ -44,11 +44,11 @@ int main()
 		while (parser.getNextDirectives())
 		{
 			std::string directive = parser.copyDirective();
-			IDirective::parseDirective(Config::global, directive);
+			IDirective::parseDirective(Directive::global, directive);
 		}
 		
 		// Get http directive
-		const HttpDirective* http = Config::global->getFirstChild<HttpDirective>();
+		const HttpDirective* http = Directive::global->getFirstChild<HttpDirective>();
 		std::cout << "=== HTTP Configuration ===" << std::endl;
 		
 		// Get http-level directives

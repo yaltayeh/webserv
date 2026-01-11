@@ -3,7 +3,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: location allowed in ServerDirective and LocationDirective (can be nested)
 	DEFINE_DIRECTIVE(LocationDirective, "location", ServerDirective, LocationDirective)

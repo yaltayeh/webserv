@@ -6,7 +6,7 @@
 #include "Exceptions.hpp"
 #include <cstdlib>
 
-namespace Config
+namespace Directive
 {
 	// Register directive: error_page allowed in HttpDirective, ServerDirective, and LocationDirective
 	DEFINE_DIRECTIVE(ErrorPageDirective, "error_page", HttpDirective, ServerDirective, LocationDirective)

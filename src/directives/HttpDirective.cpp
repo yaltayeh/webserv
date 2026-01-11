@@ -3,7 +3,7 @@
 #include "Exceptions.hpp"
 #include "GlobalDirective.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: http block allowed in GlobalDirective (root/main context)
 	DEFINE_DIRECTIVE(HttpDirective, "http", GlobalDirective)

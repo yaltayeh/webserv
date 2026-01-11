@@ -10,7 +10,7 @@
 #include <fstream>
 #include <cassert>
 
-using namespace Config;
+using namespace Directive;
 
 void testAliasDirective() {
     std::cout << "\n=== Testing Alias Directive ===" << std::endl;

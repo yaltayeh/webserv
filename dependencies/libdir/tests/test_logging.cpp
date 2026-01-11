@@ -9,47 +9,47 @@
 
 int main() {
     // Set log level for debugging
-    Config::g_log_level = Config::LOG_LEVEL_DEBUG;
+    Directive::g_log_level = Directive::LOG_LEVEL_DEBUG;
     
     LOGI("Starting configuration parser test");
     
     try {
         LOGD("Opening configuration file");
-        Config::Parser parser = Config::Parser::openConfigFile("tests/complete.conf");
+        Directive::Parser parser = Directive::Parser::openConfigFile("tests/complete.conf");
         
         LOGD("Parsing directives...");
         int directive_count = 0;
         while (parser.getNextDirectives()) {
             std::string directive = parser.copyDirective();
             LOGD("Found directive: " << directive);
-            Config::IDirective::parseDirective(Config::global, directive);
+            Directive::IDirective::parseDirective(Directive::global, directive);
             directive_count++;
         }
         
         LOGI("Parsed " << directive_count << " directives successfully");
         
         // Access configuration
-        const Config::HttpDirective* http = 
-            Config::global->getFirstChild<Config::HttpDirective>();
+        const Directive::HttpDirective* http = 
+            Directive::global->getFirstChild<Directive::HttpDirective>();
         
         if (http) {
-            std::vector<Config::ServerDirective*> servers = 
-                http->getChildren<Config::ServerDirective>();
+            std::vector<Directive::ServerDirective*> servers = 
+                http->getChildren<Directive::ServerDirective>();
             LOGI("Found " << servers.size() << " server blocks");
         }
         
         LOGI("Configuration loaded successfully");
         
-    } catch (const Config::FileException& e) {
+    } catch (const Directive::FileException& e) {
         LOGE("File error: " << e.what());
         return 1;
-    } catch (const Config::SyntaxException& e) {
+    } catch (const Directive::SyntaxException& e) {
         LOGE("Syntax error: " << e.what());
         return 1;
-    } catch (const Config::ArgumentException& e) {
+    } catch (const Directive::ArgumentException& e) {
         LOGE("Argument error: " << e.what());
         return 1;
-    } catch (const Config::ConfigException& e) {
+    } catch (const Directive::ConfigException& e) {
         LOGE("Configuration error: " << e.what());
         return 1;
     }

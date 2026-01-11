@@ -5,7 +5,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: cgi_extension allowed in HttpDirective, ServerDirective, and LocationDirective
 	DEFINE_DIRECTIVE(CgiExtensionDirective, "cgi_extension", HttpDirective, ServerDirective, LocationDirective)

@@ -9,7 +9,7 @@
 #include <fstream>
 #include <cassert>
 
-using namespace Config;
+using namespace Directive;
 
 int main() {
     try {

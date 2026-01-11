@@ -13,7 +13,7 @@ static ngx_conf_enum_t  ngx_http_autoindex_format[] = {
 	{ ngx_null_string, 0 }
 };
 */
-namespace Config
+namespace Directive
 {
 	enum auto_index_format
 	{

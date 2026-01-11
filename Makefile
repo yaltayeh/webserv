@@ -21,6 +21,9 @@ SRCS		    		=   src/main.cpp \
 							src/Server.cpp \
 							src/ConnectionManager.cpp \
 							src/EventLoop.cpp		\
+							src/Config/ServerConfig.cpp	\
+							src/Config/RouteConfig.cpp	\
+							src/Config/HttpConfig.cpp	\
 							src/directives/HttpDirective.cpp	\
 							src/directives/ServerDirective.cpp	\
 							src/directives/LocationDirective.cpp	\

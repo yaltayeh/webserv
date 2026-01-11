@@ -5,7 +5,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: autoindex_localtime allowed in HttpDirective, ServerDirective, and LocationDirective
 	DEFINE_DIRECTIVE(AutoindexLocaltimeDirective, "autoindex_localtime", HttpDirective, ServerDirective, LocationDirective)

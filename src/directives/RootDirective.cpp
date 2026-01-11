@@ -5,7 +5,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: root allowed in HttpDirective, ServerDirective, and LocationDirective
 	DEFINE_DIRECTIVE(RootDirective, "root", HttpDirective, ServerDirective, LocationDirective)

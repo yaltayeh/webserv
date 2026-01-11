@@ -9,7 +9,7 @@
 #include <fstream>
 #include <cassert>
 
-using namespace Config;
+using namespace Directive;
 
 void testClientBodyTempPathDirective() {
     std::cout << "\n=== Testing ClientBodyTempPath Directive ===" << std::endl;

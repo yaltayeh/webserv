@@ -2,17 +2,17 @@
 #include "IDirective.hpp"
 #include "Config.hpp"
 
-Config::GlobalDirective *Config::global;
+Directive::GlobalDirective *Directive::global;
 
 struct GlobalDirectiveInit
 {
 	GlobalDirectiveInit()
 	{
-		Config::global = new Config::GlobalDirective();
+		Directive::global = new Directive::GlobalDirective();
 	}
 
 	~GlobalDirectiveInit()
 	{
-		delete Config::global;
+		delete Directive::global;
 	}
 } globalDirectiveInit;

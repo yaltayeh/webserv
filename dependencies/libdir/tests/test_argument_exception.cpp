@@ -7,7 +7,7 @@
 #include <iostream>
 #include <typeinfo>
 
-using namespace Config;
+using namespace Directive;
 
 int main()
 {

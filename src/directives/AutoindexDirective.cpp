@@ -5,7 +5,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: autoindex allowed in HttpDirective, ServerDirective, and LocationDirective
 	DEFINE_DIRECTIVE(AutoindexDirective, "autoindex", HttpDirective, ServerDirective, LocationDirective)

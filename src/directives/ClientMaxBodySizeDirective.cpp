@@ -5,7 +5,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: client_max_body_size allowed in HttpDirective, ServerDirective, and LocationDirective
 	DEFINE_DIRECTIVE(ClientMaxBodySizeDirective, "client_max_body_size", HttpDirective, ServerDirective, LocationDirective)

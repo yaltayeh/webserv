@@ -4,7 +4,7 @@
 #include "Exceptions.hpp"
 #include <cstdlib>
 
-namespace Config
+namespace Directive
 {
 	// Register directive: listen allowed in ServerDirective
 	DEFINE_DIRECTIVE(ListenDirective, "listen", ServerDirective)

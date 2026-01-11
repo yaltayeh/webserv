@@ -11,7 +11,7 @@
 #include <vector>
 #include <cassert>
 
-using namespace Config;
+using namespace Directive;
 
 void testDenyDirective() {
     std::cout << "\n=== Testing Deny Directive ===" << std::endl;

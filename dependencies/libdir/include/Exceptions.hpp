@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace Config
+namespace Directive
 {
 
 /**
@@ -211,6 +211,6 @@ public:
 	const std::string &getFilename() const { return filename; }
 };
 
-} // namespace Config
+} // namespace Directive
 
 #endif // EXCEPTIONS_HPP

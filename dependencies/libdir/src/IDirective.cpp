@@ -5,7 +5,7 @@
 #include "Parser.hpp"
 #include "DirectiveFactory.hpp"
 
-namespace Config
+namespace Directive
 {
 
 /**
@@ -168,7 +168,7 @@ std::vector<std::string> IDirective::getArgs(const std::string &str,
 	std::string name;
 	std::vector<std::string> args;
 
-	p = Config::Parser::getName(start, end, name);
+	p = Directive::Parser::getName(start, end, name);
 	if (p == NULL)
 		return args;
 	start = p;
@@ -179,7 +179,7 @@ std::vector<std::string> IDirective::getArgs(const std::string &str,
 	// split args
 	while (p < end)
 	{
-		p = Config::Parser::skipSpace(p, end);
+		p = Directive::Parser::skipSpace(p, end);
 		slice = p;
 		while (p < end && !std::isspace(*p) && *p != '{' && *p != ';')
 			p++;
@@ -263,11 +263,11 @@ void IDirective::parseBlockDirective(IDirective *parent,
 	{
 		// skip qout and double qout
 		if (*p == '\"' || *p == '\'')
-			p = Config::Parser::nextQout(p, end, *p);
+			p = Directive::Parser::nextQout(p, end, *p);
 
 		// skip comment
 		if (*p == '#')
-			p = Config::Parser::skipComment(p, end);
+			p = Directive::Parser::skipComment(p, end);
 
 		if (*p == '{')
 			bracket_level++;
@@ -285,7 +285,7 @@ void IDirective::parseBlockDirective(IDirective *parent,
 
 	std::string block = str.substr(start - str.c_str(), end - start);
 
-	Config::Parser parser(block);
+	Directive::Parser parser(block);
 
 	while (parser.getNextDirectives())
 	{
@@ -312,4 +312,4 @@ const std::type_info **IDirective::getAllowedInside() const
 	return allowedInside;
 }
 
-} // namespace Config
+} // namespace Directive

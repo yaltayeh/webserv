@@ -23,13 +23,13 @@
 #include <iostream>
 #include <fstream>
 
-void printServerConfig(const Config::ServerDirective* server) {
+void printServerConfig(const Directive::ServerDirective* server) {
 	std::cout << "  Server Configuration:" << std::endl;
 	
 	// Server name
 	try {
-		const Config::ServerNameDirective* serverName = 
-			server->getFirstChild<Config::ServerNameDirective>();
+		const Directive::ServerNameDirective* serverName = 
+			server->getFirstChild<Directive::ServerNameDirective>();
 		if (serverName) {
 			std::cout << "    Server names: ";
 			for (size_t i = 0; i < serverName->names.size(); ++i) {
@@ -38,29 +38,29 @@ void printServerConfig(const Config::ServerDirective* server) {
 			}
 			std::cout << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// Listen
 	try {
-		const Config::ListenDirective* listen = 
-			server->getFirstChild<Config::ListenDirective>();
+		const Directive::ListenDirective* listen = 
+			server->getFirstChild<Directive::ListenDirective>();
 		if (listen) {
 			std::cout << "    Listen: " << listen->host << ":" << listen->port << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// Root
 	try {
-		const Config::RootDirective* root = 
-			server->getFirstChild<Config::RootDirective>();
+		const Directive::RootDirective* root = 
+			server->getFirstChild<Directive::RootDirective>();
 		if (root) {
 			std::cout << "    Root: " << root->path << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// Error pages
-	std::vector<Config::ErrorPageDirective*> errorPages = 
-		server->getChildren<Config::ErrorPageDirective>();
+	std::vector<Directive::ErrorPageDirective*> errorPages = 
+		server->getChildren<Directive::ErrorPageDirective>();
 	if (!errorPages.empty()) {
 		std::cout << "    Error pages:" << std::endl;
 		for (size_t i = 0; i < errorPages.size(); ++i) {
@@ -75,19 +75,19 @@ void printServerConfig(const Config::ServerDirective* server) {
 	
 	// Client max body size
 	try {
-		const Config::ClientMaxBodySizeDirective* maxBodySize = 
-			server->getFirstChild<Config::ClientMaxBodySizeDirective>();
+		const Directive::ClientMaxBodySizeDirective* maxBodySize = 
+			server->getFirstChild<Directive::ClientMaxBodySizeDirective>();
 		if (maxBodySize) {
 			std::cout << "    Max body size: " << maxBodySize->size << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {
+	} catch (const Directive::DirectiveNotFound&) {
 		// Not configured at this level
 	}
 	
 	// Index files
 	try {
-		const Config::IndexDirective* index = 
-			server->getFirstChild<Config::IndexDirective>();
+		const Directive::IndexDirective* index = 
+			server->getFirstChild<Directive::IndexDirective>();
 		if (index) {
 			std::cout << "    Index files: ";
 			for (size_t i = 0; i < index->files.size(); ++i) {
@@ -96,25 +96,25 @@ void printServerConfig(const Config::ServerDirective* server) {
 			}
 			std::cout << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {
+	} catch (const Directive::DirectiveNotFound&) {
 		// Not configured at this level
 	}
 	
 	// Autoindex
 	try {
-		const Config::AutoindexDirective* autoindex = 
-			server->getFirstChild<Config::AutoindexDirective>();
+		const Directive::AutoindexDirective* autoindex = 
+			server->getFirstChild<Directive::AutoindexDirective>();
 		if (autoindex) {
 			std::cout << "    Autoindex: " << (autoindex->enabled ? "on" : "off") << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {
+	} catch (const Directive::DirectiveNotFound&) {
 		// Not configured at this level
 	}
 	
 	// CGI extensions
 	try {
-		const Config::CgiExtensionDirective* cgiExt = 
-			server->getFirstChild<Config::CgiExtensionDirective>();
+		const Directive::CgiExtensionDirective* cgiExt = 
+			server->getFirstChild<Directive::CgiExtensionDirective>();
 		if (cgiExt) {
 			std::cout << "    CGI extensions: ";
 			for (size_t i = 0; i < cgiExt->extensions.size(); ++i) {
@@ -123,12 +123,12 @@ void printServerConfig(const Config::ServerDirective* server) {
 			}
 			std::cout << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {
+	} catch (const Directive::DirectiveNotFound&) {
 		// Not configured at this level
 	}
 }
 
-void printLocationConfig(const Config::LocationDirective* location, int indent = 4) {
+void printLocationConfig(const Directive::LocationDirective* location, int indent = 4) {
 	std::string indentStr(indent, ' ');
 	std::cout << indentStr << "Location: ";
 	if (!location->modifier.empty()) {
@@ -138,8 +138,8 @@ void printLocationConfig(const Config::LocationDirective* location, int indent =
 	
 	// Allowed methods
 	try {
-		const Config::AllowedMethodsDirective* methods = 
-			location->getFirstChild<Config::AllowedMethodsDirective>();
+		const Directive::AllowedMethodsDirective* methods = 
+			location->getFirstChild<Directive::AllowedMethodsDirective>();
 		if (methods) {
 			std::cout << indentStr << "  Allowed methods: ";
 			for (size_t i = 0; i < methods->methods.size(); ++i) {
@@ -148,12 +148,12 @@ void printLocationConfig(const Config::LocationDirective* location, int indent =
 			}
 			std::cout << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// Return
 	try {
-		const Config::ReturnDirective* returnDir = 
-			location->getFirstChild<Config::ReturnDirective>();
+		const Directive::ReturnDirective* returnDir = 
+			location->getFirstChild<Directive::ReturnDirective>();
 		if (returnDir) {
 			std::cout << indentStr << "  Return: " << returnDir->code;
 			if (!returnDir->text.empty()) {
@@ -161,21 +161,21 @@ void printLocationConfig(const Config::LocationDirective* location, int indent =
 			}
 			std::cout << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// Root
 	try {
-		const Config::RootDirective* root = 
-			location->getFirstChild<Config::RootDirective>();
+		const Directive::RootDirective* root = 
+			location->getFirstChild<Directive::RootDirective>();
 		if (root) {
 			std::cout << indentStr << "  Root: " << root->path << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// Index
 	try {
-		const Config::IndexDirective* index = 
-			location->getFirstChild<Config::IndexDirective>();
+		const Directive::IndexDirective* index = 
+			location->getFirstChild<Directive::IndexDirective>();
 		if (index) {
 			std::cout << indentStr << "  Index: ";
 			for (size_t i = 0; i < index->files.size(); ++i) {
@@ -184,47 +184,47 @@ void printLocationConfig(const Config::LocationDirective* location, int indent =
 			}
 			std::cout << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// Autoindex
 	try {
-		const Config::AutoindexDirective* autoindex = 
-			location->getFirstChild<Config::AutoindexDirective>();
+		const Directive::AutoindexDirective* autoindex = 
+			location->getFirstChild<Directive::AutoindexDirective>();
 		if (autoindex) {
 			std::cout << indentStr << "  Autoindex: " << (autoindex->enabled ? "on" : "off") << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// Upload enable
 	try {
-		const Config::UploadEnableDirective* uploadEnable = 
-			location->getFirstChild<Config::UploadEnableDirective>();
+		const Directive::UploadEnableDirective* uploadEnable = 
+			location->getFirstChild<Directive::UploadEnableDirective>();
 		if (uploadEnable) {
 			std::cout << indentStr << "  Upload enable: " << (uploadEnable->enabled ? "on" : "off") << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// Upload store
 	try {
-		const Config::UploadStoreDirective* uploadStore = 
-			location->getFirstChild<Config::UploadStoreDirective>();
+		const Directive::UploadStoreDirective* uploadStore = 
+			location->getFirstChild<Directive::UploadStoreDirective>();
 		if (uploadStore) {
 			std::cout << indentStr << "  Upload store: " << uploadStore->path << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// CGI pass
 	try {
-		const Config::CgiPassDirective* cgiPass = 
-			location->getFirstChild<Config::CgiPassDirective>();
+		const Directive::CgiPassDirective* cgiPass = 
+			location->getFirstChild<Directive::CgiPassDirective>();
 		if (cgiPass) {
 			std::cout << indentStr << "  CGI pass: " << cgiPass->interpreterPath << std::endl;
 		}
-	} catch (const Config::DirectiveNotFound&) {}
+	} catch (const Directive::DirectiveNotFound&) {}
 	
 	// CGI params
-	std::vector<Config::CgiParamDirective*> cgiParams = 
-		location->getChildren<Config::CgiParamDirective>();
+	std::vector<Directive::CgiParamDirective*> cgiParams = 
+		location->getChildren<Directive::CgiParamDirective>();
 	if (!cgiParams.empty()) {
 		std::cout << indentStr << "  CGI params:" << std::endl;
 		for (size_t i = 0; i < cgiParams.size(); ++i) {
@@ -234,8 +234,8 @@ void printLocationConfig(const Config::LocationDirective* location, int indent =
 	}
 	
 	// Nested locations
-	std::vector<Config::LocationDirective*> nestedLocations = 
-		location->getChildren<Config::LocationDirective>();
+	std::vector<Directive::LocationDirective*> nestedLocations = 
+		location->getChildren<Directive::LocationDirective>();
 	if (!nestedLocations.empty()) {
 		std::cout << indentStr << "  Nested locations:" << std::endl;
 		for (size_t i = 0; i < nestedLocations.size(); ++i) {
@@ -339,15 +339,15 @@ int main() {
 		std::cout << "=== Testing Complete Webserv Configuration ===" << std::endl;
 		std::cout << "\nParsing configuration file..." << std::endl;
 		
-		Config::Parser parser = Config::Parser::openConfigFile("tests/webserv_complete.conf");
+		Directive::Parser parser = Directive::Parser::openConfigFile("tests/webserv_complete.conf");
 		while (parser.getNextDirectives()) {
 			std::string directive = parser.copyDirective();
-			Config::IDirective::parseDirective(Config::global, directive);
+			Directive::IDirective::parseDirective(Directive::global, directive);
 		}
 		
 		// Get HTTP block
-		const Config::HttpDirective* http = 
-			Config::global->getFirstChild<Config::HttpDirective>();
+		const Directive::HttpDirective* http = 
+			Directive::global->getFirstChild<Directive::HttpDirective>();
 		if (!http) {
 			std::cerr << "ERROR: No HTTP block found" << std::endl;
 			return 1;
@@ -356,15 +356,15 @@ int main() {
 		std::cout << "\n=== HTTP Level Configuration ===" << std::endl;
 		
 		// HTTP level max body size
-		const Config::ClientMaxBodySizeDirective* httpMaxBodySize = 
-			http->getFirstChild<Config::ClientMaxBodySizeDirective>();
+		const Directive::ClientMaxBodySizeDirective* httpMaxBodySize = 
+			http->getFirstChild<Directive::ClientMaxBodySizeDirective>();
 		if (httpMaxBodySize) {
 			std::cout << "  Default max body size: " << httpMaxBodySize->size << std::endl;
 		}
 		
 		// HTTP level keepalive
-		const Config::KeepaliveTimeoutDirective* httpKeepalive = 
-			http->getFirstChild<Config::KeepaliveTimeoutDirective>();
+		const Directive::KeepaliveTimeoutDirective* httpKeepalive = 
+			http->getFirstChild<Directive::KeepaliveTimeoutDirective>();
 		if (httpKeepalive) {
 			std::cout << "  Default keepalive timeout: " << httpKeepalive->timeout;
 			if (!httpKeepalive->headerTimeout.empty()) {
@@ -374,8 +374,8 @@ int main() {
 		}
 		
 		// HTTP level error pages
-		std::vector<Config::ErrorPageDirective*> httpErrorPages = 
-			http->getChildren<Config::ErrorPageDirective>();
+		std::vector<Directive::ErrorPageDirective*> httpErrorPages = 
+			http->getChildren<Directive::ErrorPageDirective>();
 		if (!httpErrorPages.empty()) {
 			std::cout << "  Default error pages:" << std::endl;
 			for (size_t i = 0; i < httpErrorPages.size(); ++i) {
@@ -389,8 +389,8 @@ int main() {
 		}
 		
 		// HTTP level CGI extensions
-		const Config::CgiExtensionDirective* httpCgiExt = 
-			http->getFirstChild<Config::CgiExtensionDirective>();
+		const Directive::CgiExtensionDirective* httpCgiExt = 
+			http->getFirstChild<Directive::CgiExtensionDirective>();
 		if (httpCgiExt) {
 			std::cout << "  Default CGI extensions: ";
 			for (size_t i = 0; i < httpCgiExt->extensions.size(); ++i) {
@@ -401,8 +401,8 @@ int main() {
 		}
 		
 		// Get all servers
-		std::vector<Config::ServerDirective*> servers = 
-			http->getChildren<Config::ServerDirective>();
+		std::vector<Directive::ServerDirective*> servers = 
+			http->getChildren<Directive::ServerDirective>();
 		
 		std::cout << "\n=== Found " << servers.size() << " server blocks ===" << std::endl;
 		
@@ -412,8 +412,8 @@ int main() {
 			printServerConfig(servers[i]);
 			
 			// Get all locations in this server
-			std::vector<Config::LocationDirective*> locations = 
-				servers[i]->getChildren<Config::LocationDirective>();
+			std::vector<Directive::LocationDirective*> locations = 
+				servers[i]->getChildren<Directive::LocationDirective>();
 			
 			if (!locations.empty()) {
 				std::cout << "    Locations:" << std::endl;

@@ -7,7 +7,7 @@
 #include "ServerNameDirective.hpp"
 #include <iostream>
 
-using namespace Config;
+using namespace Directive;
 
 int main()
 {
@@ -28,11 +28,11 @@ int main()
 		while (parser.getNextDirectives())
 		{
 			std::string directive = parser.copyDirective();
-			IDirective::parseDirective(Config::global, directive);
+			IDirective::parseDirective(Directive::global, directive);
 		}
 		
 		// Get http directive
-		const HttpDirective* http = Config::global->getFirstChild<HttpDirective>();
+		const HttpDirective* http = Directive::global->getFirstChild<HttpDirective>();
 		std::cout << "Found http block" << std::endl;
 		
 		// Get all server directives

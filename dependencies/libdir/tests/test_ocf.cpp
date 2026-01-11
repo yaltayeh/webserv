@@ -12,20 +12,20 @@
 #include "Directives/ExampleDirective.hpp"
 #include "DirectiveFactory.hpp"
 
-using namespace Config;
+using namespace Directive;
 
 void testParserOCF()
 {
 	std::cout << "\n=== Testing Parser OCF ===\n";
 	
 	// Test copy constructor
-	Config::Parser parser1("example arg1;");
-	Config::Parser parser2(parser1);
+	Directive::Parser parser1("example arg1;");
+	Directive::Parser parser2(parser1);
 	
 	std::cout << "✓ Parser copy constructor works\n";
 	
 	// Test assignment operator
-	Config::Parser parser3("other;");
+	Directive::Parser parser3("other;");
 	parser3 = parser1;
 	
 	std::cout << "✓ Parser assignment operator works\n";

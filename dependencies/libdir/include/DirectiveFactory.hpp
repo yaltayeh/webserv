@@ -11,7 +11,7 @@
 #include <vector>
 #include <typeinfo>
 
-namespace Config
+namespace Directive
 {
 
 // Forward declaration
@@ -248,6 +248,6 @@ private:
 	} _##_class##Registrar;                                                   \
 	ALLOWED_INSIDE(_class, _allowedInsert, __VA_ARGS__)
 
-} // namespace Config
+} // namespace Directive
 
 #endif // DIRECTIVEFACTORY_HPP

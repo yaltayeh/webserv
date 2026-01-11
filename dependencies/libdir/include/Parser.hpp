@@ -3,10 +3,10 @@
 #pragma once
 
 /**
- * @namespace Config
+ * @namespace Directive
  * @brief Namespace containing configuration parsing utilities
  */
-namespace Config
+namespace Directive
 {
 
 /**
@@ -25,7 +25,7 @@ namespace Config
  * 
  * Example Usage:
  * @code
- *   Config::Parser parser = Config::Parser::openConfigFile("nginx.conf");
+ *   Directive::Parser parser = Directive::Parser::openConfigFile("nginx.conf");
  *   while (parser.getNextDirectives()) {
  *       std::string directive = parser.copyDirective();
  *       // Process directive...
@@ -117,10 +117,10 @@ namespace Config
 		 * 
 		 * Example:
 		 * @code
-		 *   Config::Parser parser = Config::Parser::openConfigFile("example.conf");
+		 *   Directive::Parser parser = Directive::Parser::openConfigFile("example.conf");
 		 *   while (parser.getNextDirectives()) {
 		 *       std::string directive = parser.copyDirective();
-		 *       IDirective::parseDirective(Config::global, directive);
+		 *       IDirective::parseDirective(Directive::global, directive);
 		 *   }
 		 * @endcode
 		 */

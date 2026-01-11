@@ -3,7 +3,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: upload_enable allowed in LocationDirective
 	DEFINE_DIRECTIVE(UploadEnableDirective, "upload_enable", LocationDirective)

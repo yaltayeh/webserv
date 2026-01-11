@@ -12,7 +12,7 @@
 #include "ClientMaxBodySizeDirective.hpp"
 #include <iostream>
 
-using namespace Config;
+using namespace Directive;
 
 int main()
 {
@@ -57,11 +57,11 @@ int main()
 		while (parser.getNextDirectives())
 		{
 			std::string directive = parser.copyDirective();
-			IDirective::parseDirective(Config::global, directive);
+			IDirective::parseDirective(Directive::global, directive);
 		}
 		
 		// Get http -> server
-		const HttpDirective* http = Config::global->getFirstChild<HttpDirective>();
+		const HttpDirective* http = Directive::global->getFirstChild<HttpDirective>();
 		const ServerDirective* server = http->getFirstChild<ServerDirective>();
 		
 		std::cout << "=== Location Directive Test ===" << std::endl;

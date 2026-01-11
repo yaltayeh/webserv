@@ -1,6 +1,6 @@
 #include "GlobalDirective.hpp"
 
-namespace Config
+namespace Directive
 {
 
 /**
@@ -59,4 +59,4 @@ const std::type_info **GlobalDirective::getAllowedInside() const
 	return allowedInside;
 }
 
-} // namespace Config
+} // namespace Directive

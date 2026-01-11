@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace Config
+namespace Directive
 {
-	extern Config::GlobalDirective *global;
+	extern Directive::GlobalDirective *global;
 }

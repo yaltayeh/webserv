@@ -5,7 +5,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: autoindex_exact_size allowed in HttpDirective, ServerDirective, and LocationDirective
 	DEFINE_DIRECTIVE(AutoindexExactSizeDirective, "autoindex_exact_size", HttpDirective, ServerDirective, LocationDirective)

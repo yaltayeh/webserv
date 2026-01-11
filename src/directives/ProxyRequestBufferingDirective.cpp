@@ -5,7 +5,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 
-namespace Config
+namespace Directive
 {
 	// Register directive: proxy_request_buffering allowed in HttpDirective, ServerDirective, LocationDirective
 	DEFINE_DIRECTIVE(ProxyRequestBufferingDirective, "proxy_request_buffering", HttpDirective, ServerDirective, LocationDirective)

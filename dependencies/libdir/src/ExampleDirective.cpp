@@ -2,7 +2,7 @@
 #include "GlobalDirective.hpp"
 #include "DirectiveFactory.hpp"
 
-namespace Config
+namespace Directive
 {
 
 /**
@@ -85,4 +85,4 @@ ExampleDirective &ExampleDirective::operator=(const ExampleDirective &other)
  */
 ExampleDirective::~ExampleDirective() {}
 
-} // namespace Config
+} // namespace Directive

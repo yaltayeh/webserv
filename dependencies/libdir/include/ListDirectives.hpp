@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace Config
+namespace Directive
 {
 
 class IDirective;
@@ -22,6 +22,6 @@ public:
 	size_t size() const;
 };
 
-} // namespace Config
+} // namespace Directive
 
 #include "ListDirectives.tpp"

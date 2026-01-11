@@ -1,6 +1,6 @@
 #include "../include/EventLoop.hpp"
 #include "../include/Server.hpp"
-#include "../include/config.hpp"
+#include "../include/Config/ServerConfig.hpp"
 #include <iostream>
 
 #include "libdir/include/Parser.hpp"
@@ -37,11 +37,11 @@ int main(int argc, char* argv[])
 	
     // STEP 0: Parse configuration file
 	try {
-		Config::Parser parser = Config::Parser::openConfigFile(argv[1]);
+		Directive::Parser parser = Directive::Parser::openConfigFile(argv[1]);
 
 		while (parser.getNextDirectives()) {
 			std::string directive = parser.copyDirective();
-			if (!Config::IDirective::parseDirective(Config::global, directive)) { 
+			if (!Directive::IDirective::parseDirective(Directive::global, directive)) { 
 				std::cerr << "Failed to parse directive" << std::endl;
 				return 1; 
 			}
@@ -65,15 +65,15 @@ int main(int argc, char* argv[])
     EventLoop eventLoop;
     
     // STEP 2: Create Servers from Configuration
-    const Config::ListDirectives<Config::ServerDirective> servers = Config::global
-        ->getOne<Config::HttpDirective>()
-        ->getMany<Config::ServerDirective>();
+    const Directive::ListDirectives<Directive::ServerDirective> servers = Directive::global
+        ->getOne<Directive::HttpDirective>()
+        ->getMany<Directive::ServerDirective>();
 
     std::cout << "Found " << servers.size() << " server(s) in configuration" << std::endl;
 
     for (size_t i = 0; i < servers.size(); ++i) {
         Server* server = new Server(
-            servers[i]->toServerConfig()
+            ServerConfig::fromDirective(servers[i])
         );
         
         if (server->initialize() == -1) {
