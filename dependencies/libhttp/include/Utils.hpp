@@ -1,5 +1,5 @@
-#ifndef UTILS_HPP
-#define UTILS_HPP
+#ifndef LIBHTTP_UTILS_HPP
+#define LIBHTTP_UTILS_HPP
 
 #include "../include/Constants.hpp"
 #include <string>
@@ -16,4 +16,4 @@ namespace libhttp {
 
 }
 
-#endif
+#endif // LIBHTTP_UTILS_HPP

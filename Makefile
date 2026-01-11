@@ -3,7 +3,8 @@ CXX 					= c++
 CXXFLAGS 				= -Wall -Wextra -Werror -std=c++98 -Iinclude
 BUILD_PATH	      		?= ./build
 
-DEPENDENCIES	    	= libhttp libdir
+# Dependencies (order matters for linking: libhttp depends on libutils and libdir)
+DEPENDENCIES	    	= libhttp libutils libdir
 DEPENDENCIES_DIR		= ./dependencies
 
 #if you need to force load static libraries (macOS)
@@ -72,4 +73,19 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean re fclean
+# Test target
+TEST_NAME = $(BUILD_PATH)/test_cgi
+TEST_SRCS = tests/test_cgi.cpp
+TEST_OBJS = $(TEST_SRCS:tests/%.cpp=$(BUILD_PATH)/obj/tests/%.o)
+
+test: $(TEST_NAME)
+	./$(TEST_NAME)
+
+$(TEST_NAME): $(TEST_OBJS) $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a)
+	$(CXX) $(CXXFLAGS) $(TEST_OBJS) $(DEPENDENCIES_FLAGS) $(INCLUDE_FLAGS) -o $(TEST_NAME)
+
+$(BUILD_PATH)/obj/tests/%.o: tests/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+
+.PHONY: all clean re fclean test
