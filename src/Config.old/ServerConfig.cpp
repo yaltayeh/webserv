@@ -1,25 +1,8 @@
 #include "../include/Config/ServerConfig.hpp"
 #include "../include/Config/RouteConfig.hpp"
-#include "directives/ServerDirective.hpp"
-#include "directives/ListenDirective.hpp"
-#include "directives/ServerNameDirective.hpp"
-#include "directives/ErrorPageDirective.hpp"
-#include "directives/ClientMaxBodySizeDirective.hpp"
-#include "directives/ClientBodyTempPathDirective.hpp"
-#include "directives/KeepaliveTimeoutDirective.hpp"
-#include "directives/ProxyRequestBufferingDirective.hpp"
-#include "directives/RootDirective.hpp"
-#include "directives/IndexDirective.hpp"
-#include "directives/AutoindexDirective.hpp"
-#include "directives/AutoindexFormatDirective.hpp"
-#include "directives/AutoindexLocaltimeDirective.hpp"
-#include "directives/AutoindexExactSizeDirective.hpp"
-#include "directives/CgiExtensionDirective.hpp"
-#include "directives/DenyDirective.hpp"
-#include "directives/LocationDirective.hpp"
+#include "Directives.hpp"
 #include "IDirective.hpp"
 #include "Exceptions.hpp"
-
 #include <cstdlib>
 #include <cctype>
 #include <algorithm>
