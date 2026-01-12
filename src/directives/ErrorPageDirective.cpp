@@ -1,81 +1,62 @@
-#include "ErrorPageDirective.hpp"
-#include "HttpDirective.hpp"
-#include "ServerDirective.hpp"
-#include "LocationDirective.hpp"
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
+#include "Config/CommonConfig.hpp"
 #include <cstdlib>
 
-namespace Directive
+static int getStatusCode(const char *code_str)
 {
-	// Register directive: error_page allowed in HttpDirective, ServerDirective, and LocationDirective
-	DEFINE_DIRECTIVE(ErrorPageDirective, "error_page", HttpDirective, ServerDirective, LocationDirective)
-
-	ErrorPageDirective* ErrorPageDirective::initErrorPageDirective(const std::vector<std::string>& args)
-	{
-		// error_page requires at least: error_page code uri
-		if (args.size() < 3)
-		{
-			throw ArgumentException("error_page", "requires at least one error code and a URI");
-		}
-
-		// Parse error codes (all arguments except the last one which is the URI)
-		std::vector<int> codes;
-		for (size_t i = 1; i < args.size() - 1; i++)
-		{
-			int code = std::atoi(args[i].c_str());
-			
-			// Validate HTTP status code range
-			if (code < 300 || code > 599)
-			{
-				throw ArgumentException("error_page", "error code must be between 300-599");
-			}
-			
-			codes.push_back(code);
-		}
-
-		// Last argument is the URI
-		std::string uri = args[args.size() - 1];
-		
-		if (uri.empty())
-		{
-			throw ArgumentException("error_page", "URI cannot be empty");
-		}
-
-		return new ErrorPageDirective(codes, uri);
-	}
-
-	// Default constructor
-	ErrorPageDirective::ErrorPageDirective()
-		: IDirective(), codes(), uri("")
-	{
-	}
-
-	// Parameterized constructor
-	ErrorPageDirective::ErrorPageDirective(const std::vector<int>& codes, const std::string& uri)
-		: IDirective(), codes(codes), uri(uri)
-	{
-	}
-
-	// Copy constructor
-	ErrorPageDirective::ErrorPageDirective(const ErrorPageDirective& other)
-		: IDirective(other), codes(other.codes), uri(other.uri)
-	{
-	}
-
-	// Assignment operator
-	ErrorPageDirective& ErrorPageDirective::operator=(const ErrorPageDirective& other)
-	{
-		if (this != &other)
-		{
-			IDirective::operator=(other);
-			// codes and uri are const, cannot reassign
-		}
-		return *this;
-	}
-
-	// Destructor
-	ErrorPageDirective::~ErrorPageDirective()
-	{
-	}
+	char *end = NULL;
+	long code = std::strtol(code_str, &end, 10);
+	if (*end != '\0' || code < 100 || code > 599)
+		throw Directive::ArgumentException("error_page", "invalid error code: " + std::string(code_str));
+	return (code);
 }
+
+/**
+ * @brief Parses the 'error_page' directive
+ * Syntax: error_page code [...] uri;
+ * Example: error_page 404 /404.html;
+ *          error_page 500 502 503 504 /50x.html;
+ */
+struct Config *parseErrorPageDirective(const std::vector<std::string> &args, Config *parent)
+{
+	// Cast parent to config
+	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
+	if (!config)
+		throw Directive::InvalidNesting("error_page", "can only be used in http, server or location context");
+
+	// Parse value
+	if (args.size() < 3)
+		throw Directive::ArgumentException("error_page", "requires at least error code and uri");
+
+	CommonConfig::ErrorPage errorPage;
+
+	// Last argument is the URI
+	errorPage.uri = args[args.size() - 1];
+
+	// check response
+	int with_response = 0;
+	if (args.size() >= 4)
+	{
+		std::string response = errorPage.uri = args[args.size() - 2];
+		if (response[0] == '=')
+		{
+			if (response.length() > 1)
+				getStatusCode(&response.c_str()[1]);
+			errorPage.response = response;
+			with_response = 1;
+		}
+	}
+
+	// Set value to config
+	for (size_t i = 1; i < args.size() - (1 + with_response); i++)
+	{
+		long code = getStatusCode(args[i].c_str());
+		config->error_pages[code] = errorPage;
+	}
+
+	// Return no new config
+	return NULL;
+}
+
+DEFINE_DIRECTIVE("error_page", parseErrorPageDirective);

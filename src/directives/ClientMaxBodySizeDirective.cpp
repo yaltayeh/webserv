@@ -1,65 +1,55 @@
-#include "ClientMaxBodySizeDirective.hpp"
-#include "HttpDirective.hpp"
-#include "ServerDirective.hpp"
-#include "LocationDirective.hpp"
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
+#include "Config/CommonConfig.hpp"
+#include <cstdlib>
+#include <cctype>
 
-namespace Directive
+/**
+ * @brief Parses the 'client_max_body_size' directive
+ * Syntax: client_max_body_size size;
+ * Example: client_max_body_size 10m;
+ *          client_max_body_size 1024;
+ *          client_max_body_size 0; (unlimited)
+ */
+struct Config *parseClientMaxBodySizeDirective(const std::vector<std::string> &args, Config *parent)
 {
-	// Register directive: client_max_body_size allowed in HttpDirective, ServerDirective, and LocationDirective
-	DEFINE_DIRECTIVE(ClientMaxBodySizeDirective, "client_max_body_size", HttpDirective, ServerDirective, LocationDirective)
+	// Cast parent to config
+	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
+	if (!config)
+		throw Directive::InvalidNesting("client_max_body_size", "can only be used in http, server or location context");
 
-	ClientMaxBodySizeDirective* ClientMaxBodySizeDirective::initClientMaxBodySizeDirective(const std::vector<std::string>& args)
+	// Parse value
+	if (args.size() != 2)
+		throw Directive::ArgumentException("client_max_body_size", "requires exactly one argument");
+
+	std::string size_str = args[1];
+	size_t size = 0;
+	size_t multiplier = 1;
+
+	// Check for size suffix (k, m, g)
+	if (!size_str.empty())
 	{
-		// client_max_body_size requires exactly one argument (size)
-		if (args.size() != 2)
+		char last = std::tolower(size_str[size_str.length() - 1]);
+		switch (last)
 		{
-			throw ArgumentException("client_max_body_size", "takes exactly one argument (size)");
+		case 'g':
+			multiplier *= 1024;
+		case 'm':
+			multiplier *= 1024;
+		case 'k':
+			multiplier *= 1024;
+		default:
+			break;
 		}
-
-		std::string size = args[1];
-		
-		// Validate size is not empty
-		if (size.empty())
-		{
-			throw ArgumentException("client_max_body_size", "size cannot be empty");
-		}
-
-		return new ClientMaxBodySizeDirective(size);
 	}
 
-	// Default constructor
-	ClientMaxBodySizeDirective::ClientMaxBodySizeDirective()
-		: IDirective(), size("1m")
-	{
-	}
+	size = std::atoll(size_str.c_str()) * multiplier;
 
-	// Parameterized constructor
-	ClientMaxBodySizeDirective::ClientMaxBodySizeDirective(const std::string& size)
-		: IDirective(), size(size)
-	{
-	}
+	// Set value to config
+	config->client_max_body_size = size;
 
-	// Copy constructor
-	ClientMaxBodySizeDirective::ClientMaxBodySizeDirective(const ClientMaxBodySizeDirective& other)
-		: IDirective(other), size(other.size)
-	{
-	}
-
-	// Assignment operator
-	ClientMaxBodySizeDirective& ClientMaxBodySizeDirective::operator=(const ClientMaxBodySizeDirective& other)
-	{
-		if (this != &other)
-		{
-			IDirective::operator=(other);
-			// size is const, cannot reassign
-		}
-		return *this;
-	}
-
-	// Destructor
-	ClientMaxBodySizeDirective::~ClientMaxBodySizeDirective()
-	{
-	}
+	// Return no new config
+	return NULL;
 }
+
+DEFINE_DIRECTIVE("client_max_body_size", parseClientMaxBodySizeDirective);

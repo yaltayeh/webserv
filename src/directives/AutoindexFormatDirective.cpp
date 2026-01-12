@@ -1,71 +1,33 @@
-#include "AutoindexFormatDirective.hpp"
-#include "HttpDirective.hpp"
-#include "ServerDirective.hpp"
-#include "LocationDirective.hpp"
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
+#include "Config/CommonConfig.hpp"
 
-namespace Directive
+/**
+ * @brief Parses the 'autoindex_format' directive
+ * Syntax: autoindex_format html | xml | json | jsonp;
+ * Example: autoindex_format html;
+ *          autoindex_format json;
+ */
+struct Config *parseAutoindexFormatDirective(const std::vector<std::string> &args, Config *parent)
 {
-	// Register directive: autoindex_format allowed in HttpDirective, ServerDirective, and LocationDirective
-	DEFINE_DIRECTIVE(AutoindexFormatDirective, "autoindex_format", HttpDirective, ServerDirective, LocationDirective)
+	// Cast parent to config
+	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
+	if (!config)
+		throw Directive::InvalidNesting("autoindex_format", "can only be used in http, server or location context");
 
-	AutoindexFormatDirective *AutoindexFormatDirective::initAutoindexFormatDirective(const std::vector<std::string> &args)
-	{
-		// autoindex_format requires exactly one argument: html | xml | json | jsonp
-		if (args.size() != 2)
-		{
-			throw ArgumentException("autoindex_format", "takes exactly one argument (html, xml, json, or jsonp)");
-		}
+	// Parse value
+	if (args.size() != 2)
+		throw Directive::ArgumentException("autoindex_format", "requires exactly one argument");
 
-		std::string format_str = args[1];
-		enum auto_index_format format;
+	std::string format = args[1];
+	if (format != "html" && format != "xml" && format != "json" && format != "jsonp")
+		throw Directive::ArgumentException("autoindex_format", "invalid format '" + format + "' (must be html, xml, json, or jsonp)");
 
-		if (format_str == "html")
-			format = HTTP_AUTOINDEX_HTML;
-		else if (format_str == "json")
-			format = HTTP_AUTOINDEX_JSON;
-		else if (format_str == "jsonp")
-			format = HTTP_AUTOINDEX_JSONP;
-		else if (format_str == "xml")
-			format = HTTP_AUTOINDEX_XML;
-		else 
-			throw ArgumentException("autoindex_format", "invalid format, must be 'html', 'xml', 'json', or 'jsonp'");
+	// Set value to config
+	config->autoindex_format = format;
 
-		return new AutoindexFormatDirective(format);
-	}
-
-	// Default constructor
-	AutoindexFormatDirective::AutoindexFormatDirective()
-		: IDirective(), format(HTTP_AUTOINDEX_HTML)
-	{
-	}
-
-	// Parameterized constructor
-	AutoindexFormatDirective::AutoindexFormatDirective(auto_index_format format)
-		: IDirective(), format(format)
-	{
-	}
-
-	// Copy constructor
-	AutoindexFormatDirective::AutoindexFormatDirective(const AutoindexFormatDirective &other)
-		: IDirective(other), format(other.format)
-	{
-	}
-
-	// Assignment operator
-	AutoindexFormatDirective &AutoindexFormatDirective::operator=(const AutoindexFormatDirective &other)
-	{
-		if (this != &other)
-		{
-			IDirective::operator=(other);
-			// format is const, cannot reassign
-		}
-		return *this;
-	}
-
-	// Destructor
-	AutoindexFormatDirective::~AutoindexFormatDirective()
-	{
-	}
+	// Return no new config
+	return NULL;
 }
+
+DEFINE_DIRECTIVE("autoindex_format", parseAutoindexFormatDirective);

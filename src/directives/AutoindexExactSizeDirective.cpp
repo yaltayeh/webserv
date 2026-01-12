@@ -1,73 +1,33 @@
-#include "AutoindexExactSizeDirective.hpp"
-#include "HttpDirective.hpp"
-#include "ServerDirective.hpp"
-#include "LocationDirective.hpp"
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
+#include "Config/CommonConfig.hpp"
 
-namespace Directive
+/**
+ * @brief Parses the 'autoindex_exact_size' directive
+ * Syntax: autoindex_exact_size on | off;
+ * Example: autoindex_exact_size off;
+ * Controls whether file sizes are shown exactly or in human-readable format
+ */
+struct Config *parseAutoindexExactSizeDirective(const std::vector<std::string> &args, Config *parent)
 {
-	// Register directive: autoindex_exact_size allowed in HttpDirective, ServerDirective, and LocationDirective
-	DEFINE_DIRECTIVE(AutoindexExactSizeDirective, "autoindex_exact_size", HttpDirective, ServerDirective, LocationDirective)
+	// Cast parent to config
+	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
+	if (!config)
+		throw Directive::InvalidNesting("autoindex_exact_size", "can only be used in http, server or location context");
 
-	AutoindexExactSizeDirective* AutoindexExactSizeDirective::initAutoindexExactSizeDirective(const std::vector<std::string>& args)
-	{
-		// autoindex_exact_size requires exactly one argument: on | off
-		if (args.size() != 2)
-		{
-			throw ArgumentException("autoindex_exact_size", "takes exactly one argument (on or off)");
-		}
+	// Parse value
+	if (args.size() != 2)
+		throw Directive::ArgumentException("autoindex_exact_size", "requires exactly one argument (on or off)");
 
-		std::string value = args[1];
-		bool enabled = false;
-		
-		if (value == "on")
-		{
-			enabled = true;
-		}
-		else if (value == "off")
-		{
-			enabled = false;
-		}
-		else
-		{
-			throw ArgumentException("autoindex_exact_size", "invalid value, must be 'on' or 'off'");
-		}
+	if (args[1] == "on")
+		config->autoindex_exact_size = true;
+	else if (args[1] == "off")
+		config->autoindex_exact_size = false;
+	else
+		throw Directive::ArgumentException("autoindex_exact_size", "invalid value '" + args[1] + "' (must be 'on' or 'off')");
 
-		return new AutoindexExactSizeDirective(enabled);
-	}
-
-	// Default constructor
-	AutoindexExactSizeDirective::AutoindexExactSizeDirective()
-		: IDirective(), enabled(true)
-	{
-	}
-
-	// Parameterized constructor
-	AutoindexExactSizeDirective::AutoindexExactSizeDirective(bool enabled)
-		: IDirective(), enabled(enabled)
-	{
-	}
-
-	// Copy constructor
-	AutoindexExactSizeDirective::AutoindexExactSizeDirective(const AutoindexExactSizeDirective& other)
-		: IDirective(other), enabled(other.enabled)
-	{
-	}
-
-	// Assignment operator
-	AutoindexExactSizeDirective& AutoindexExactSizeDirective::operator=(const AutoindexExactSizeDirective& other)
-	{
-		if (this != &other)
-		{
-			IDirective::operator=(other);
-			// enabled is const, cannot reassign
-		}
-		return *this;
-	}
-
-	// Destructor
-	AutoindexExactSizeDirective::~AutoindexExactSizeDirective()
-	{
-	}
+	// Return no new config
+	return NULL;
 }
+
+DEFINE_DIRECTIVE("autoindex_exact_size", parseAutoindexExactSizeDirective);

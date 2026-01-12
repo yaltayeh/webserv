@@ -1,63 +1,29 @@
-#include "AliasDirective.hpp"
-#include "LocationDirective.hpp"
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
+#include "Config/LocationConfig.hpp"
 
-namespace Directive
+/**
+ * @brief Parses the 'alias' directive
+ * Syntax: alias path;
+ * Example: alias /var/www/files/;
+ * Note: Replaces location path in URI, unlike root which appends
+ */
+struct Config *parseAliasDirective(const std::vector<std::string> &args, Config *parent)
 {
-	// Register directive: alias allowed only in LocationDirective
-	DEFINE_DIRECTIVE(AliasDirective, "alias", LocationDirective)
+	// Cast parent to config
+	LocationConfig *config = dynamic_cast<LocationConfig *>(parent);
+	if (!config)
+		throw Directive::InvalidNesting("alias", "can only be used in location context");
 
-	AliasDirective* AliasDirective::initAliasDirective(const std::vector<std::string>& args)
-	{
-		// alias requires exactly one argument (path)
-		if (args.size() != 2)
-		{
-			throw ArgumentException("alias", "takes exactly one argument (path)");
-		}
+	// Parse value
+	if (args.size() != 2)
+		throw Directive::ArgumentException("alias", "requires exactly one argument");
 
-		std::string path = args[1];
-		
-		// Validate path is not empty
-		if (path.empty())
-		{
-			throw ArgumentException("alias", "path cannot be empty");
-		}
+	// Set value to config
+	config->alias = args[1];
 
-		return new AliasDirective(path);
-	}
-
-	// Default constructor
-	AliasDirective::AliasDirective()
-		: IDirective(), path("")
-	{
-	}
-
-	// Parameterized constructor
-	AliasDirective::AliasDirective(const std::string& path)
-		: IDirective(), path(path)
-	{
-	}
-
-	// Copy constructor
-	AliasDirective::AliasDirective(const AliasDirective& other)
-		: IDirective(other), path(other.path)
-	{
-	}
-
-	// Assignment operator
-	AliasDirective& AliasDirective::operator=(const AliasDirective& other)
-	{
-		if (this != &other)
-		{
-			IDirective::operator=(other);
-			// path is const, cannot be reassigned
-		}
-		return *this;
-	}
-
-	// Destructor
-	AliasDirective::~AliasDirective()
-	{
-	}
+	// Return no new config
+	return NULL;
 }
+
+DEFINE_DIRECTIVE("alias", parseAliasDirective);

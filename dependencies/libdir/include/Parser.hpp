@@ -1,6 +1,7 @@
-#include <string>
-
 #pragma once
+
+#include <string>
+#include "Config.hpp"
 
 /**
  * @namespace Directive
@@ -9,32 +10,32 @@
 namespace Directive
 {
 
-/**
- * @class Parser
- * @brief Tokenizer for configuration files
- * 
- * This class provides low-level parsing of configuration text into individual
- * directive strings. It handles:
- * - Whitespace and comment skipping
- * - Quote handling (both single and double quotes)
- * - Bracket matching for block directives
- * - Escape sequence processing
- * 
- * The parser maintains state across calls to getNextDirectives(), allowing
- * iteration over all directives in a configuration string.
- * 
- * Example Usage:
- * @code
- *   Directive::Parser parser = Directive::Parser::openConfigFile("nginx.conf");
- *   while (parser.getNextDirectives()) {
- *       std::string directive = parser.copyDirective();
- *       // Process directive...
- *   }
- * @endcode
- * 
- * Memory: O(n) where n is the size of the configuration string
- * Time: O(n) for complete parsing (single pass through input)
- */
+	/**
+	 * @class Parser
+	 * @brief Tokenizer for configuration files
+	 *
+	 * This class provides low-level parsing of configuration text into individual
+	 * directive strings. It handles:
+	 * - Whitespace and comment skipping
+	 * - Quote handling (both single and double quotes)
+	 * - Bracket matching for block directives
+	 * - Escape sequence processing
+	 *
+	 * The parser maintains state across calls to getNextDirectives(), allowing
+	 * iteration over all directives in a configuration string.
+	 *
+	 * Example Usage:
+	 * @code
+	 *   Directive::Parser parser = Directive::Parser::openConfigFile("nginx.conf");
+	 *   while (parser.getNextDirectives()) {
+	 *       std::string directive = parser.copyDirective();
+	 *       // Process directive...
+	 *   }
+	 * @endcode
+	 *
+	 * Memory: O(n) where n is the size of the configuration string
+	 * Time: O(n) for complete parsing (single pass through input)
+	 */
 	class Parser
 	{
 	private:
@@ -43,34 +44,73 @@ namespace Directive
 		 * @note Stored as const to prevent accidental modification
 		 */
 		const std::string _configString;
-		
+
 		/**
 		 * @brief Pointer to start of parsing region
 		 */
 		const char *_start;
-		
+
 		/**
 		 * @brief Pointer to end of parsing region
 		 */
 		const char *_end;
-		
+
 		/**
 		 * @brief Current parsing position
 		 * @note Advanced by getNextDirectives()
 		 */
 		const char *_p;
-		
+
 		/**
 		 * @brief Start of current directive
 		 * @note Set by getNextDirectives()
 		 */
 		const char *_directiveStart;
-		
+
 		/**
 		 * @brief End of current directive
 		 * @note Set by getNextDirectives()
 		 */
 		const char *_directiveEnd;
+
+		/**
+		 * @brief Extracts directive arguments from text
+		 * @param str Full configuration string
+		 * @param start Pointer to start of directive in string
+		 * @param end Pointer to end of parsing region
+		 * @param block_start_ptr Output parameter set to block start if present
+		 * @return Vector of argument strings (first is directive name)
+		 */
+		static std::vector<std::string> getArgs(const std::string &str,
+												const char *start,
+												const char *end,
+												const char **block_start_ptr);
+
+		/**
+		 * @brief Internal parsing method with pointer parameters
+		 * @param parent Parent directive to add parsed directive to
+		 * @param str Full configuration string
+		 * @param start Pointer to start of directive
+		 * @param end Pointer to end of directive
+		 * @return Pointer to created directive or NULL
+		 */
+		static const Config *parseDirective(Config *parent,
+												const std::string &str,
+												const char *start,
+												const char *end);
+
+		/**
+		 * @brief Recursively parses block directive contents
+		 * @param parent Parent directive containing the block
+		 * @param str Full configuration string
+		 * @param start Pointer to opening brace '{'
+		 * @param end Pointer to end of block
+		 * @throws ParseException on bracket mismatch
+		 */
+		static void parseBlockDirective(Config *parent,
+										const std::string &str,
+										const char *start,
+										const char *end);
 
 	public:
 		/**
@@ -78,25 +118,25 @@ namespace Directive
 		 * @param configString Configuration file content
 		 */
 		Parser(std::string configString);
-		
+
 		/**
 		 * @brief Copy constructor
 		 * @param other Parser to copy from
 		 */
 		Parser(const Parser &other);
-		
+
 		/**
 		 * @brief Assignment operator
 		 * @param other Parser to assign from
 		 * @return Reference to this
 		 */
 		Parser &operator=(const Parser &other);
-		
+
 		/**
 		 * @brief Destructor
 		 */
 		~Parser();
-		
+
 		/**
 		 * @brief Constructor - parses substring
 		 * @param configString Configuration file content
@@ -111,37 +151,33 @@ namespace Directive
 		 * @param fileName Path to configuration file
 		 * @return Parser instance with file contents
 		 * @throws FileException if file cannot be opened
-		 * 
+		 *
 		 * This static factory method reads the entire file into memory
 		 * and creates a Parser instance.
-		 * 
-		 * Example:
-		 * @code
-		 *   Directive::Parser parser = Directive::Parser::openConfigFile("example.conf");
-		 *   while (parser.getNextDirectives()) {
-		 *       std::string directive = parser.copyDirective();
-		 *       IDirective::parseDirective(Directive::global, directive);
-		 *   }
-		 * @endcode
+		 *
 		 */
 		static Parser openConfigFile(const char *fileName);
+
+
+		static bool loadConfigFile(const char *fileName, Config &config); 
+
 
 		/**
 		 * @brief Advances to next directive in configuration
 		 * @return true if directive found, false if end reached
 		 * @throws ParseException on syntax errors (unmatched brackets, etc.)
-		 * 
+		 *
 		 * This method:
 		 * 1. Skips whitespace and comments
 		 * 2. Finds the start of the next directive
 		 * 3. Determines directive boundaries (';' or '}')
 		 * 4. Handles nested blocks with bracket counting
 		 * 5. Sets _directiveStart and _directiveEnd pointers
-		 * 
+		 *
 		 * Call copyDirective() to get the directive text.
 		 */
 		bool getNextDirectives();
-		
+
 		/**
 		 * @brief Copies current directive as string
 		 * @return String containing the current directive
@@ -155,7 +191,7 @@ namespace Directive
 		 * @return Pointer into _configString
 		 */
 		const char *getDirectiveStart() const;
-		
+
 		/**
 		 * @brief Gets pointer to end of current directive
 		 * @return Pointer into _configString
@@ -170,7 +206,7 @@ namespace Directive
 		 * @note Static utility method usable without Parser instance
 		 */
 		static const char *skipSpace(const char *p, const char *end);
-		
+
 		/**
 		 * @brief Skips comment (from '#' to end of line)
 		 * @param p Pointer to '#' character
@@ -179,7 +215,7 @@ namespace Directive
 		 * @note Static utility method
 		 */
 		static const char *skipComment(const char *p, const char *end);
-		
+
 		/**
 		 * @brief Advances to closing quote, handling escape sequences
 		 * @param p Pointer to opening quote
@@ -190,7 +226,7 @@ namespace Directive
 		 * @note Static utility method
 		 */
 		static const char *nextQout(const char *p, const char *end, char qout);
-		
+
 		/**
 		 * @brief Extracts and validates directive name
 		 * @param p Current position
@@ -198,15 +234,25 @@ namespace Directive
 		 * @param name Output parameter - receives the directive name
 		 * @return Pointer past the name, or NULL if invalid
 		 * @throws SyntaxException on invalid characters
-		 * 
+		 *
 		 * Directive names must:
 		 * - Start with lowercase letter or underscore
 		 * - Contain only lowercase, underscore, or digits
 		 * - Not be immediately followed by '{'
-		 * 
+		 *
 		 * @note Static utility method
 		 */
 		static const char *getName(const char *p, const char *end, std::string &name);
+
+		/**
+		 * @brief Parses a directive string and adds it to parent
+		 * @param parent Parent directive to add parsed directive to
+		 * @param str String containing the directive to parse
+		 * @return Pointer to newly created directive, or NULL on error
+		 * @throws DirectiveNotFound if directive type unknown
+		 * @throws ParseException on syntax errors
+		 */
+		static const Config *parseDirective(Config *parent, const std::string &str);
 	};
 
 }

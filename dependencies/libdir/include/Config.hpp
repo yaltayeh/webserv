@@ -1,8 +1,16 @@
-#include "GlobalDirective.hpp"
-
 #pragma once
 
-namespace Directive
+#include <cstddef>
+
+struct Config
 {
-	extern Directive::GlobalDirective *global;
-}
+	const struct Config *parent;
+
+	Config() : parent(NULL) {};
+	Config(struct Config *parent) : parent(parent) {};
+	Config(const Config &other) : parent(NULL) {
+		(void)other;
+	};
+
+	virtual ~Config() {};
+};

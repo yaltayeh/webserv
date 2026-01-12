@@ -144,6 +144,12 @@ Server& Server::operator=(const Server& other)
  */
 int Server::initialize()
 {
+    if (_config.listenAddresses.size() == 0)
+        return (-1);
+
+    uint32_t ip = _config.listenAddresses[0].ip;
+    uint16_t port = _config.listenAddresses[0].port;
+
     /**
      * ========================================================================
      * STEP 1: Create TCP socket (IPv4, stream-based)
@@ -157,7 +163,7 @@ int Server::initialize()
     _listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (_listen_fd < 0) {
         std::cerr << "Error: Failed to create socket for port "
-                  << _config.port << std::endl;
+                  << port << std::endl; // FIX
         return -1;
     }
     
@@ -182,7 +188,7 @@ int Server::initialize()
     int opt = 1;
     if (setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         std::cerr << "Error: Failed to set SO_REUSEADDR on port "
-                  << _config.port << std::endl;
+                  << port << std::endl; // FIX
         close(_listen_fd);
         _listen_fd = -1;
         return -1;
@@ -215,12 +221,12 @@ int Server::initialize()
     sockaddr_in addr;
     std::memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(_config.port);
-    addr.sin_addr.s_addr = INADDR_ANY;  /** TODO: Use _config.host */
+    addr.sin_port = htons(port); // FIX
+    addr.sin_addr.s_addr = ip;  /** TODO: Use _config.host */
     
     if (bind(_listen_fd, (sockaddr*)&addr, sizeof(addr)) < 0) {
         std::cerr << "Error: Failed to bind socket to port "
-                  << _config.port << std::endl;
+                  << port << std::endl;  // FIX
         close(_listen_fd);
         _listen_fd = -1;
         return -1;
@@ -247,7 +253,7 @@ int Server::initialize()
      */
     if (listen(_listen_fd, 128) < 0) {
         std::cerr << "Error: Failed to listen on port "
-                  << _config.port << std::endl;
+                  << port << std::endl; // FIX
         close(_listen_fd);
         _listen_fd = -1;
         return -1;
@@ -268,7 +274,7 @@ int Server::initialize()
      */
     if (setNonBlocking(_listen_fd) < 0) {
         std::cerr << "Error: Failed to set non-blocking mode on port "
-                  << _config.port << std::endl;
+                  << port << std::endl; // FIX
         close(_listen_fd);
         _listen_fd = -1;
         return -1;
@@ -280,8 +286,8 @@ int Server::initialize()
      * ========================================================================
      */
     std::cout << "Server listening on "
-              << _config.host << ":" << _config.port
-              << " (fd " << _listen_fd << ")" << std::endl;
+              << ip << ":" << port
+              << " (fd " << _listen_fd << ")" << std::endl;  // FIX
     
     return 0;
 }
@@ -305,6 +311,13 @@ int Server::initialize()
  */
 int Server::acceptConnection()
 {
+    if (_config.listenAddresses.size() == 0)
+        return (-1);
+
+    // uint32_t ip = _config.listenAddresses[0].ip;
+    uint16_t port = _config.listenAddresses[0].port;
+
+
     /**
      * accept() parameters:
      * - _listen_fd: Listening socket with pending connections
@@ -350,7 +363,7 @@ int Server::acceptConnection()
     /**
      * Log successful connection (useful for debugging)
      */
-    std::cout << "Server on port " << _config.port
+    std::cout << "Server on port " << port  // FIX
               << " accepted connection (fd " << client_fd << ")"
               << std::endl;
     

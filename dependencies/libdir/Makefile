@@ -2,13 +2,8 @@ BUILD_PATH ?= ./build
 
 NAME = $(BUILD_PATH)/libdir.a
 
-FILES = src/Parser.cpp 				\
-		src/IDirective.cpp			\
-		src/DirectiveFactory.cpp	\
-		src/Config.cpp				\
-		src/GlobalDirective.cpp		\
-		src/ExampleDirective.cpp	\
-		src/Logger.cpp
+FILES = src/DirectiveFactory.cpp	\
+		src/Parser.cpp					\
 
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -MMD -g -std=c++98
@@ -40,5 +35,22 @@ fclean: clean
 re: fclean all
 
 .PHONY: all clean fclean re
+
+test: all
+	c++ -I./include -I./directives/include -std=c++98 tests/test.cpp -L$(BUILD_PATH) -Wl,-force_load,$(NAME) -o tests/test_executable
+	@echo "==================================================================="
+	@echo "Testing with tests/server.conf"
+	@echo "==================================================================="
+	./tests/test_executable tests/server.conf
+	@echo ""
+	@echo "==================================================================="
+	@echo "Testing with tests/webserve.conf"
+	@echo "==================================================================="
+	./tests/test_executable tests/webserve.conf
+	@echo ""
+	@echo "==================================================================="
+	@echo "Testing with tests/complete.conf"
+	@echo "==================================================================="
+	./tests/test_executable tests/complete.conf
 
 -include $(DFILES)
