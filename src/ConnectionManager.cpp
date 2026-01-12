@@ -1,5 +1,6 @@
 #include "../include/ConnectionManager.hpp"
 #include "../include/Server.hpp"
+#include "../include/RequestRouter.hpp"
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
@@ -172,28 +173,15 @@ bool ConnectionManager::handleRead(int fd, pollfd* poll_fd)
     if (parse_result == 0) {
         std::cout << "Request complete for client fd " << conn->fd << std::endl;
         
-        /**
-         * TODO: Replace this hardcoded response with proper request routing
-         * 
-         * FUTURE IMPLEMENTATION:
-         * 1. Get ServerConfig from conn->owner_server->getConfig()
-         * 2. Extract request URI from conn->parser.getRequest()
-         * 3. Match URI against routes in ServerConfig
-         * 4. Handle based on route type:
-         *    - Static file serving
-         *    - CGI execution
-         *    - Redirect
-         *    - Error page
-         * 5. Generate appropriate HTTP response
-         * 
-         * For now, we return a simple "Hello, World!" response.
-         */
-        conn->write_buffer =
-            "HTTP/1.0 200 OK\r\n"
-            "Content-Type: text/html\r\n"
-            "Content-Length: 13\r\n"
-            "\r\n"
-            "Hello, World!";
+        // Route the request and generate response
+        RequestRouter router;
+        libhttp::Request request = conn->parser.getRequest();
+        const ServerConfig& server_config = conn->owner_server->getConfig();
+        
+        libhttp::Response response = router.route(request, server_config);
+        
+        // Convert response to string and store in write buffer
+        conn->write_buffer = response.toString();
         
         /**
          * Enable POLLOUT event to get notified when socket is writable

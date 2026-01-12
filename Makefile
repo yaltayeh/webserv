@@ -22,6 +22,7 @@ SRCS		    		=   src/main.cpp 										\
 							src/Server.cpp 										\
 							src/ConnectionManager.cpp 							\
 							src/EventLoop.cpp									\
+							src/RequestRouter.cpp								\
 							src/directives/AutoindexExactSizeDirective.cpp		\
 							src/directives/ErrorPageDirective.cpp				\
 							src/directives/Core/LocationDirective.cpp			\
