@@ -15,6 +15,44 @@ void printUsage(const char *progName)
 
 /**
  * ============================================================================
+ * initializeServers() - Initialize and add servers from config to event loop
+ * ============================================================================
+ */
+int initializeServers(const GlobalConfig &config, EventLoop &eventLoop)
+{
+    for (size_t i = 0; i < config.https.size(); i++)
+    {
+        std::vector<ServerConfig *> servers = config.https[i]->servers;
+        for (size_t j = 0; j < servers.size(); j++)
+        {
+            std::cout << "listenAddresses: " 
+                << servers[j]->listenAddresses.size()
+                << std::endl;
+            Server *server = new Server(*servers[j]);
+
+            if (server->initialize() == -1)
+            {
+                std::cerr << "Failed to initialize server" << std::endl;
+                delete server;
+                return -1;
+            }
+
+            eventLoop.addServer(server);
+        }
+    }
+
+
+    if (eventLoop.getServerCount() == 0)
+    {
+        std::cerr << "Error: No servers initialized successfully" << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
+ * ============================================================================
  * main() - Program entry point
  * ============================================================================
  *
@@ -30,26 +68,19 @@ void printUsage(const char *progName)
 int main(int argc, char *argv[])
 {
     // Validate command line arguments
-    if (argc != 2)
-    {
-        printUsage(argv[0]);
-        return 1;
-    }
+    if (argc != 2) { printUsage(argv[0]); return 1; }
+
 
     // STEP 0: Parse configuration file
     GlobalConfig config = GlobalConfig();
     try
     {
-
         Directive::Parser parser = Directive::Parser::openConfigFile(argv[1]);
         Directive::Parser::loadConfigFile(argv[1], config);
-        std::cout << "Configuration parsed successfully" << std::endl;
     }
     catch (const std::exception &e)
-    {
-        std::cerr << "Error parsing configuration: " << e.what() << std::endl;
-        return 1;
-    }
+    { std::cerr << "Error parsing configuration: " << e.what() << std::endl; return 1; }
+
 
     /**
      * ========================================================================
@@ -61,37 +92,11 @@ int main(int argc, char *argv[])
      */
     EventLoop eventLoop;
 
-    for (size_t i = 0; i < config.https.size(); i++)
-    {
-        std::vector<ServerConfig *> servers = config.https[i]->servers;
-        for (size_t j = 0; j < servers.size(); j++)
-        {
-            std::cout << "listenAddresses: " 
-                << servers[j]->listenAddresses.size()
-                << std::endl;
-            Server *server = new Server(*servers[j]);
-
-            if (server->initialize() == -1)
-            {
-                std::cerr << "Failed to initialize server on port "
-                        //   << server->getConfig().port 
-                          << std::endl; // FIX
-                delete server;
-                return 1;
-            }
-
-            eventLoop.addServer(server);
-        }
-    }
-
-    // STEP 3: Verify we have at least one server
-    if (eventLoop.getServerCount() == 0)
-    {
-        std::cerr << "Error: No servers initialized successfully" << std::endl;
+    // STEP 2: Initialize servers from configuration
+    if (initializeServers(config, eventLoop) == -1)
         return 1;
-    }
 
-    // STEP 4: Start the event loop
+    // STEP 3: Start the event loop
     eventLoop.run();
 
     return 0;
