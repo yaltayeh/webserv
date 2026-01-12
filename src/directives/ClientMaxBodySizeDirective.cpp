@@ -33,11 +33,14 @@ struct Config *parseClientMaxBodySizeDirective(const std::vector<std::string> &a
 		switch (last)
 		{
 		case 'g':
-			multiplier *= 1024;
+			multiplier = 1024 * 1024 * 1024;
+			break;
 		case 'm':
-			multiplier *= 1024;
+			multiplier = 1024 * 1024;
+			break;
 		case 'k':
-			multiplier *= 1024;
+			multiplier = 1024;
+			break;
 		default:
 			break;
 		}

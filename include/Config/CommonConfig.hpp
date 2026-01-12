@@ -59,8 +59,8 @@ struct CommonConfig : Config
 	}
 
 	CommonConfig(const CommonConfig &config)
+		: Config(config)
 	{
-		Config(other);
 		this->autoindex = config.autoindex;
 		this->autoindex_exact_size = config.autoindex_exact_size;
 		this->autoindex_format = config.autoindex_format;
@@ -97,8 +97,8 @@ struct CommonConfigServerLocation : CommonConfig
 		  is_return(false) {}
 
 	CommonConfigServerLocation(const CommonConfigServerLocation &other)
+		: CommonConfig(other)
 	{
-		CommonConfig(varname);
 		this->locations = other.locations;
 		this->is_return = other.is_return;
 		this->return_code = other.return_code;
