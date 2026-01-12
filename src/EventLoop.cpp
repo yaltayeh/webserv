@@ -1,14 +1,3 @@
-/**
- * ============================================================================
- * EventLoop.cpp - Main Event Loop Implementation
- * ============================================================================
- * 
- * This file implements the EventLoop class methods. EventLoop is the heart
- * of the server, coordinating all I/O operations through a single poll() call.
- * 
- * ============================================================================
- */
-
 #include "../include/EventLoop.hpp"
 #include <iostream>
 #include <cerrno>
@@ -39,7 +28,6 @@ EventLoop::~EventLoop()
 
 /**
  * addServer() - Registers a new server instance
- * 
  */
 void EventLoop::addServer(Server* server)
 {

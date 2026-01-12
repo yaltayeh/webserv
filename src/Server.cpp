@@ -1,14 +1,3 @@
-/**
- * ============================================================================
- * Server.cpp - HTTP Server Instance Implementation
- * ============================================================================
- * 
- * This file implements the Server class methods. Each Server instance
- * represents one listening endpoint (host:port) with its own configuration.
- * 
- * ============================================================================
- */
-
 #include "../include/Server.hpp"
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -19,23 +8,12 @@
 #include <iostream>
 
 /**
- * ============================================================================
- * Static Helper Functions (Internal Implementation Details)
- * ============================================================================
- */
-
-/**
  * Sets a file descriptor to non-blocking mode
  * 
  * WHAT THIS DOES:
  * Uses fcntl() to add the O_NONBLOCK flag to the socket, which makes
  * all I/O operations on this socket non-blocking (read/write/accept
  * return immediately instead of waiting).
- * 
- * WHY THIS IS CRITICAL:
- * The 42 subject requires all I/O to go through poll(). Non-blocking
- * sockets ensure we never freeze waiting for I/O - we only read/write
- * when poll() tells us it's safe.
  * 
  * PARAMETERS:
  * - fd: File descriptor to make non-blocking
@@ -46,36 +24,19 @@
  */
 static int setNonBlocking(int fd)
 {
-    /**
-     * Get current flags on the file descriptor
-     */
+    // Get current flags on the file descriptor
     int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0) {
-        return -1;
-    }
+    if (flags < 0)
+        { return -1; }
     
-    /**
-     * Add O_NONBLOCK flag and set it back
-     */
-    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
-        return -1;
-    }
+    // Add O_NONBLOCK flag and set it back
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+        { return -1; }
     
     return 0;
 }
 
-/**
- * ============================================================================
- * Server Class Method Implementations
- * ============================================================================
- */
 
-/**
- * Constructor - Creates uninitialized Server with given configuration
- * 
- * PARAMETERS:
- * - config: ServerConfig containing host, port, routes, error pages, etc.
- */
 Server::Server(const ServerConfig& config)
     : _config(config), _listen_fd(-1) {}
 
@@ -89,11 +50,7 @@ Server::~Server()
 
 /**
  * Copy Constructor - Creates copy of another Server
- * 
- * Copies the configuration from 'other' but does NOT duplicate the
- * listening socket (that would be dangerous - two objects owning the
- * same fd). New Server starts uninitialized.
- * 
+
  * NOTE: After copy construction, you must call initialize() to create
  * a new listening socket.
  */
@@ -151,9 +108,7 @@ int Server::initialize()
     uint16_t port = _config.listenAddresses[0].port;
 
     /**
-     * ========================================================================
      * STEP 1: Create TCP socket (IPv4, stream-based)
-     * ========================================================================
      * 
      * socket() parameters:
      * - AF_INET: IPv4 protocol
@@ -168,9 +123,7 @@ int Server::initialize()
     }
     
     /**
-     * ========================================================================
      * STEP 2: Set SO_REUSEADDR socket option
-     * ========================================================================
      * 
      * WHY THIS IS ESSENTIAL:
      * When a server stops, the OS keeps the port in TIME_WAIT state for
@@ -195,9 +148,7 @@ int Server::initialize()
     }
     
     /**
-     * ========================================================================
      * STEP 3: Bind socket to address (IP + port)
-     * ========================================================================
      * 
      * WHAT bind() DOES:
      * Associates the socket with a specific network address and port.
@@ -233,9 +184,7 @@ int Server::initialize()
     }
     
     /**
-     * ========================================================================
      * STEP 4: Start listening for connections
-     * ========================================================================
      * 
      * WHAT listen() DOES:
      * Marks the socket as passive (ready to accept connections). Creates
@@ -260,9 +209,7 @@ int Server::initialize()
     }
     
     /**
-     * ========================================================================
      * STEP 5: Set socket to non-blocking mode
-     * ========================================================================
      * 
      * WHY THIS IS MANDATORY:
      * The 42 subject requires non-blocking I/O with poll(). This ensures:
@@ -280,14 +227,10 @@ int Server::initialize()
         return -1;
     }
     
-    /**
-     * ========================================================================
-     * SUCCESS: Listening socket is ready
-     * ========================================================================
-     */
+    // SUCCESS: Listening socket is ready
     std::cout << "Server listening on "
               << ip << ":" << port
-              << " (fd " << _listen_fd << ")" << std::endl;  // FIX
+              << " (fd " << _listen_fd << ")" << std::endl;
     
     return 0;
 }
@@ -302,12 +245,6 @@ int Server::initialize()
  * RETURNS:
  * - Client socket fd (>= 0) on success
  * - -1 on failure or no pending connections (EAGAIN/EWOULDBLOCK)
- * 
- * IMPORTANT: Non-blocking behavior
- * If no connections are pending, accept() returns -1 immediately with
- * errno set to EAGAIN or EWOULDBLOCK. This is NOT an error - it's
- * expected behavior. Only call acceptConnection() when poll() indicates
- * POLLIN on the listening socket.
  */
 int Server::acceptConnection()
 {
@@ -319,16 +256,6 @@ int Server::acceptConnection()
 
 
     /**
-     * accept() parameters:
-     * - _listen_fd: Listening socket with pending connections
-     * - &client_addr: Pointer to structure that receives client's address
-     * - &addr_len: Size of address structure (modified by accept())
-     * 
-     * accept() returns:
-     * - New socket fd for this specific client (>= 0)
-     * - -1 on error or no connections pending (check errno)
-     * 
-     * WHAT HAPPENS:
      * - Removes one connection from the listening socket's queue
      * - Creates a brand NEW socket for this client
      * - Returns the new socket's file descriptor
@@ -347,12 +274,7 @@ int Server::acceptConnection()
         return -1;
     }
     
-    /**
-     * CRITICAL: Set accepted socket to non-blocking mode
-     * 
-     * The new socket inherits settings from the listening socket, but
-     * O_NONBLOCK is NOT inherited. We must explicitly set it.
-     */
+    // O_NONBLOCK is NOT inherited. We must explicitly set it.
     if (setNonBlocking(client_fd) < 0) {
         std::cerr << "Error: Failed to set client socket non-blocking"
                   << std::endl;
@@ -360,10 +282,7 @@ int Server::acceptConnection()
         return -1;
     }
     
-    /**
-     * Log successful connection (useful for debugging)
-     */
-    std::cout << "Server on port " << port  // FIX
+    std::cout << "Server on port " << port
               << " accepted connection (fd " << client_fd << ")"
               << std::endl;
     
@@ -372,10 +291,6 @@ int Server::acceptConnection()
 
 /**
  * getListenFd() - Returns the listening socket file descriptor
- * 
- * RETURNS:
- * - Listening socket fd (>= 0) if initialized
- * - -1 if not initialized
  */
 int Server::getListenFd() const
 {
@@ -384,12 +299,6 @@ int Server::getListenFd() const
 
 /**
  * getConfig() - Returns reference to server configuration
- * 
- * RETURNS:
- * Const reference to this Server's ServerConfig object
- * 
- * WHY CONST REFERENCE:
- * Avoids copying large config structure while preventing modification
  */
 const ServerConfig& Server::getConfig() const
 {

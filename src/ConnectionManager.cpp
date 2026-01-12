@@ -1,14 +1,3 @@
-/**
- * ============================================================================
- * ConnectionManager.cpp - Client Connection Management Implementation
- * ============================================================================
- * 
- * This file implements the ConnectionManager class methods. ConnectionManager
- * owns all active client connections and handles their I/O operations.
- * 
- * ============================================================================
- */
-
 #include "../include/ConnectionManager.hpp"
 #include "../include/Server.hpp"
 #include <unistd.h>
@@ -22,8 +11,6 @@
  * - Powers of 2 tend to perform well with memory alignment
  */
 static const size_t READ_BUFFER_SIZE = 4096; // 4 KB
-
-
 
 
 ConnectionManager::ConnectionManager() {}
@@ -43,25 +30,11 @@ ConnectionManager::~ConnectionManager()
 
 /**
  * addConnection() - Adds a new client connection
- * 
- * WHAT THIS DOES:
- * Creates a new Connection object on the heap, initializes it with the
- * client socket and owning server, and stores it in the _connections map.
- * 
- * PARAMETERS:
- * - client_fd: Socket file descriptor for the new client
- * - server: Pointer to the Server that accepted this connection
  */
 void ConnectionManager::addConnection(int client_fd, Server* server)
 {
     Connection* conn = new Connection();
     
-    /**
-     * - fd: Socket file descriptor
-     * - parser: Default-constructed (initial state)
-     * - write_buffer: Empty string (no response data yet)
-     * - owner_server: Pointer to Server for config access
-     */
     conn->fd = client_fd;
     conn->owner_server = server;
     
@@ -74,13 +47,6 @@ void ConnectionManager::addConnection(int client_fd, Server* server)
 
 /**
  * removeConnection() - Removes and destroys a client connection
- * 
- * WHAT THIS DOES:
- * Looks up the connection by fd, closes the socket, deletes the
- * Connection object, and removes the map entry.
- * 
- * PARAMETERS:
- * - fd: File descriptor of connection to remove
  */
 void ConnectionManager::removeConnection(int fd)
 {
@@ -113,12 +79,6 @@ bool ConnectionManager::hasConnection(int fd) const { return _connections.count(
 /**
  * getConnection() - Retrieves a connection by fd
  * 
- * PARAMETERS:
- * - fd: File descriptor to look up
- * 
- * RETURNS:
- * - Pointer to Connection if found
- * - NULL if not found
  */
 Connection* ConnectionManager::getConnection(int fd)
 {
@@ -140,7 +100,6 @@ Connection* ConnectionManager::getConnection(int fd)
 /**
  * handleRead() - Handles readable client socket
  * 
- * WHAT THIS DOES:
  * Reads data from socket, feeds it to the HTTP parser, and generates
  * a response when the request is complete.
  * 
@@ -154,85 +113,37 @@ Connection* ConnectionManager::getConnection(int fd)
  */
 bool ConnectionManager::handleRead(int fd, pollfd* poll_fd)
 {
-    /**
-     * ========================================================================
-     * STEP 1: Look up connection
-     * ========================================================================
-     */
+    // STEP 1: Look up connection
     Connection* conn = getConnection(fd);
-    if (conn == NULL) {
-        /**
-         * Connection doesn't exist - this shouldn't happen
-         * EventLoop should only call handleRead() for existing connections
-         */
-        std::cerr << "Error: handleRead called for non-existent fd "
-                  << fd << std::endl;
-        return false;
-    }
+    if (conn == NULL) { return false; }
     
-    /**
-     * ========================================================================
-     * STEP 2: Read data from socket into buffer
-     * ========================================================================
-     * 
-     * read() is a POSIX system call that reads data from a file descriptor.
-     * In non-blocking mode:
-     * - Returns number of bytes read (> 0) if data available
-     * - Returns 0 if connection closed by peer (EOF)
-     * - Returns -1 if error or no data available (EAGAIN/EWOULDBLOCK)
-     * 
-     * IMPORTANT: We don't check errno because 42 subject forbids it.
-     * We rely on poll() to only call handleRead() when data is ready.
-     */
+    // STEP 2: Read data from socket into buffer
     char buffer[READ_BUFFER_SIZE];
     std::memset(buffer, 0, READ_BUFFER_SIZE);
     
     ssize_t bytes_read = read(conn->fd, buffer, READ_BUFFER_SIZE);
     
-    /**
-     * ========================================================================
-     * STEP 3: Handle read() return values
-     * ========================================================================
-     */
+    // STEP 3: Handle read() return values
     
-    /**
-     * Case 1: Client closed connection (graceful shutdown)
-     * 
-     * read() returns 0 when the peer has closed the connection. This is
-     * normal behavior - clients close connections after receiving responses.
-     */
+    // Case 1: Client closed connection (graceful shutdown)
     if (bytes_read == 0) {
         std::cout << "Client fd " << conn->fd
                   << " closed connection" << std::endl;
         return false;
     }
     
-    /**
-     * Case 2: Read error
-     * 
-     * read() returns -1 on error. In non-blocking mode, this could be:
-     * - EAGAIN/EWOULDBLOCK: No data available (shouldn't happen if poll()
-     *   indicated POLLIN, but possible in rare race conditions)
-     * - Other errors: Socket broken, network issue, etc.
-     * 
-     * We treat all -1 returns as fatal errors and close the connection.
-     * More sophisticated error handling could distinguish error types.
-     */
+    // Case 2: Read error
     if (bytes_read < 0) {
         std::cerr << "Error reading from client fd " << conn->fd << std::endl;
         return false;
     }
     
-    /**
-     * Case 3: Successfully read data
-     */
+    // Case 3: Successfully read data
     std::cout << "Read " << bytes_read << " bytes from client fd "
               << conn->fd << std::endl;
     
     /**
-     * ========================================================================
      * STEP 4: Feed data to HTTP parser
-     * ========================================================================
      * 
      * The parser is stateful and accumulates data across multiple calls.
      * 
@@ -252,20 +163,12 @@ bool ConnectionManager::handleRead(int fd, pollfd* poll_fd)
     int parse_result = conn->parser.parse(buffer, bytes_read);
     
     if (parse_result == -1) {
-        /**
-         * Parse error: Malformed HTTP request
-         * 
-         * TODO: Generate 400 Bad Request response instead of just closing
-         */
+        // TODO: Generate 400 Bad Request response instead of just closing
         std::cerr << "Parse error for client fd " << conn->fd << std::endl;
         return false;
     }
     
-    /**
-     * ========================================================================
-     * STEP 5: Generate response if request is complete
-     * ========================================================================
-     */
+    // STEP 5: Generate response if request is complete
     if (parse_result == 0) {
         std::cout << "Request complete for client fd " << conn->fd << std::endl;
         
@@ -315,7 +218,6 @@ bool ConnectionManager::handleRead(int fd, pollfd* poll_fd)
 /**
  * handleWrite() - Handles writable client socket
  * 
- * WHAT THIS DOES:
  * Writes data from Connection::write_buffer to the socket, erasing
  * successfully written bytes. Clears POLLOUT flag when buffer is empty.
  * 
@@ -329,46 +231,18 @@ bool ConnectionManager::handleRead(int fd, pollfd* poll_fd)
  */
 bool ConnectionManager::handleWrite(int fd, pollfd* poll_fd)
 {
-    /**
-     * ========================================================================
-     * STEP 1: Look up connection
-     * ========================================================================
-     */
+    // STEP 1: Look up connection
     Connection* conn = getConnection(fd);
-    if (conn == NULL) {
-        std::cerr << "Error: handleWrite called for non-existent fd "
-                  << fd << std::endl;
-        return false;
-    }
+    if (conn == NULL) { return false; }
     
-    /**
-     * ========================================================================
-     * STEP 2: Check if we have data to send
-     * ========================================================================
-     * 
-     * If write_buffer is empty, there's nothing to write. This shouldn't
-     * happen because we only enable POLLOUT when we have data, but check
-     * defensively anyway.
-     */
+    // STEP 2: Check if we have data to send
     if (conn->write_buffer.empty()) {
-        /**
-         * No data to write - clear POLLOUT to avoid unnecessary wake-ups
-         */
+        // clear POLLOUT to avoid unnecessary wake-ups
         poll_fd->events = POLLIN;
         return true;
     }
     
     /**
-     * ========================================================================
-     * STEP 3: Write data to socket
-     * ========================================================================
-     * 
-     * write() is a POSIX system call that writes data to a file descriptor.
-     * In non-blocking mode:
-     * - Returns number of bytes written (> 0) if socket has buffer space
-     * - Returns 0 if nothing written (rare, treat as error)
-     * - Returns -1 if error or socket not ready (EAGAIN/EWOULDBLOCK)
-     * 
      * PARTIAL WRITES:
      * write() might not send all data in one call if the TCP send buffer
      * is full. We must track how many bytes were sent and retry later for
@@ -382,15 +256,8 @@ bool ConnectionManager::handleWrite(int fd, pollfd* poll_fd)
                                conn->write_buffer.c_str(),
                                conn->write_buffer.size());
     
-    /**
-     * ========================================================================
-     * STEP 4: Handle write() return values
-     * ========================================================================
-     */
     
-    /**
-     * Case 1: Write error
-     */
+    // Case 1: Write error
     if (bytes_sent < 0) {
         /**
          * write() returned -1, indicating error. Possible causes:
@@ -411,42 +278,16 @@ bool ConnectionManager::handleWrite(int fd, pollfd* poll_fd)
      * write() returned 0, which means no bytes were sent. This is unusual
      * but not necessarily an error. Treat conservatively as an error.
      */
-    if (bytes_sent == 0) {
-        /**
-         * Retry on next POLLOUT event
-         * 
-         * Alternatively, we could treat this as an error. For now, keep
-         * connection alive and hope the next write() succeeds.
-         */
-        return true;
-    }
+    if (bytes_sent == 0) { return true; }
     
-    /**
-     * Case 3: Successfully wrote data
-     */
+    // Case 3: Successfully wrote data
     std::cout << "Sent " << bytes_sent << " bytes to client fd "
               << conn->fd << std::endl;
     
-    /**
-     * ========================================================================
-     * STEP 5: Remove sent data from buffer
-     * ========================================================================
-     * 
-     * std::string::erase(pos, count) removes characters starting at pos.
-     * We erase from position 0 to bytes_sent, removing the sent data.
-     * 
-     * Example:
-     * - Before: write_buffer = "HTTP/1.0 200 OK\r\n..."
-     * - bytes_sent = 10
-     * - After: write_buffer = "200 OK\r\n..."
-     */
+    // STEP 5: Remove sent data from buffer
     conn->write_buffer.erase(0, bytes_sent);
     
-    /**
-     * ========================================================================
-     * STEP 6: Check if all data sent
-     * ========================================================================
-     */
+    // STEP 6: Check if all data sent
     if (conn->write_buffer.empty()) {
         std::cout << "All data sent to client fd " << conn->fd << std::endl;
         
@@ -480,14 +321,6 @@ bool ConnectionManager::handleWrite(int fd, pollfd* poll_fd)
 /**
  * handleError() - Handles socket errors and hangups
  * 
- * WHAT THIS DOES:
- * Checks if POLLERR or POLLHUP flags are set in revents, indicating
- * the connection is broken and should be closed.
- * 
- * PARAMETERS:
- * - fd: File descriptor (used for logging)
- * - revents: The revents field from pollfd struct
- * 
  * RETURNS:
  * - true if connection is healthy (no error flags)
  * - false if connection has errors (should be closed)
@@ -495,8 +328,6 @@ bool ConnectionManager::handleWrite(int fd, pollfd* poll_fd)
 bool ConnectionManager::handleError(int fd, short revents)
 {
     /**
-     * Check for POLLERR flag
-     * 
      * POLLERR indicates an error condition on the socket. This is rare
      * and usually indicates a serious problem (socket closed unexpectedly,
      * network failure, etc.).
@@ -507,8 +338,6 @@ bool ConnectionManager::handleError(int fd, short revents)
     }
     
     /**
-     * Check for POLLHUP flag
-     * 
      * POLLHUP indicates the peer closed the connection (hang up). This is
      * normal behavior - clients close connections when they're done. Log
      * it but don't treat it as an error.
@@ -519,9 +348,7 @@ bool ConnectionManager::handleError(int fd, short revents)
         return false;
     }
     
-    /**
-     * No error flags set - connection is healthy
-     */
+    // connection is healthy
     return true;
 }
 
@@ -535,53 +362,27 @@ size_t ConnectionManager::getConnectionCount() const
 
 /**
  * populatePollFds() - Adds all client sockets to poll_fds vector
- * 
- * WHAT THIS DOES:
- * Iterates through _connections map and creates a pollfd structure
- * for each client socket, adding it to the provided vector.
- * 
- * PARAMETERS:
- * - poll_fds: Reference to vector where pollfd structures are added
  */
 void ConnectionManager::populatePollFds(std::vector<pollfd>& poll_fds)
 {
-    /**
-     * Iterate through all connections
-     */
+    // Iterate through all connections
     for (std::map<int, Connection*>::iterator it = _connections.begin();
          it != _connections.end();
          ++it)
     {
-        /**
-         * Create pollfd structure for this connection
-         */
+        // Create pollfd structure for this connection
         pollfd pfd;
         std::memset(&pfd, 0, sizeof(pfd));
         
-        /**
-         * Set file descriptor
-         */
+        // Set file descriptor
         pfd.fd = it->second->fd;
         
-        /**
-         * Set events to monitor
-         * 
-         * POLLIN: Notify when data available to read
-         * POLLOUT: Notify when socket ready for writing
-         * 
-         * We monitor both events. POLLOUT will be cleared by handleWrite()
-         * when write_buffer is empty (CPU optimization).
-         */
+        // Set events to monitor
         pfd.events = POLLIN | POLLOUT;
         
-        /**
-         * Initialize revents (will be set by poll())
-         */
+        // Initialize revents (will be set by poll())
         pfd.revents = 0;
         
-        /**
-         * Add to poll_fds vector
-         */
         poll_fds.push_back(pfd);
     }
 }
