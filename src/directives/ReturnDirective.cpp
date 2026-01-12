@@ -1,72 +1,56 @@
-#include "ReturnDirective.hpp"
-#include "ServerDirective.hpp"
-#include "LocationDirective.hpp"
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
+#include "Config/CommonConfig.hpp"
 #include <cstdlib>
 
-namespace Config
+/**
+ * @brief Parses the 'return' directive
+ * Syntax: return code [text];
+ *         return code URL;
+ *         return URL;
+ * Example: return 301 https://example.com;
+ *          return 404;
+ *          return 200 'OK';
+ */
+struct Config *parseReturnDirective(const std::vector<std::string> &args, Config *parent)
 {
-	// Register directive: return allowed in ServerDirective and LocationDirective
-	DEFINE_DIRECTIVE(ReturnDirective, "return", ServerDirective, LocationDirective)
+	// Cast parent to config
+	CommonConfigServerLocation *config = dynamic_cast<CommonConfigServerLocation *>(parent);
+	if (!config)
+		throw Directive::InvalidNesting("return", "can only be used in server or location context");
 
-	ReturnDirective* ReturnDirective::initReturnDirective(const std::vector<std::string>& args)
+	// Parse value
+	if (args.size() < 2)
+		throw Directive::ArgumentException("return", "requires at least 1 argument");
+
+	if (args.size() == 2)
 	{
-		// return requires: return code [text|URL]
-		if (args.size() < 2)
-		{
-			throw ArgumentException("return", "requires at least status code");
-		}
-
+		// Could be: return code; or return URL;
 		int code = std::atoi(args[1].c_str());
-		
-		// Validate HTTP status code range
-		if (code < 100 || code > 599)
+		if (code >= 100 && code <= 599)
 		{
-			throw ArgumentException("return", "invalid HTTP status code");
+			config->return_code = code;
 		}
-
-		// Optional text/URL
-		std::string text = "";
-		if (args.size() > 2)
+		else
 		{
-			text = args[2];
+			// It's a URL with implicit 302
+			config->return_code = 302;
+			config->return_url = args[1];
 		}
-
-		return new ReturnDirective(code, text);
 	}
-
-	// Default constructor
-	ReturnDirective::ReturnDirective()
-		: IDirective(), code(200), text("")
+	else // args.size() >= 3
 	{
-	}
-
-	// Parameterized constructor
-	ReturnDirective::ReturnDirective(int code, const std::string& text)
-		: IDirective(), code(code), text(text)
-	{
-	}
-
-	// Copy constructor
-	ReturnDirective::ReturnDirective(const ReturnDirective& other)
-		: IDirective(other), code(other.code), text(other.text)
-	{
-	}
-
-	// Assignment operator
-	ReturnDirective& ReturnDirective::operator=(const ReturnDirective& other)
-	{
-		if (this != &other)
+		config->return_code = std::atoi(args[1].c_str());
+		// Join remaining arguments as the URL/text
+		config->return_url = args[2];
+		for (size_t i = 3; i < args.size(); i++)
 		{
-			IDirective::operator=(other);
-			// code and text are const, cannot reassign
+			config->return_url += " " + args[i];
 		}
-		return *this;
 	}
 
-	// Destructor
-	ReturnDirective::~ReturnDirective()
-	{
-	}
+	// Return no new config
+	return NULL;
 }
+
+DEFINE_DIRECTIVE("return", parseReturnDirective);

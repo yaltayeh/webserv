@@ -1,17 +1,14 @@
 #include "../include/EventLoop.hpp"
 #include "../include/Server.hpp"
-#include "../include/config.hpp"
+#include "../include/Config/ServerConfig.hpp"
 #include <iostream>
 
 #include "libdir/include/Parser.hpp"
 #include "libdir/include/Config.hpp"
-#include "HttpDirective.hpp"
-#include "ClientBodyTempPathDirective.hpp"
-#include "ServerDirective.hpp"
-#include "ListenDirective.hpp"
+#include "Config/GlobalConfig.hpp"
+#include "Config/ServerConfig.hpp"
 
-
-void printUsage(const char* progName)
+void printUsage(const char *progName)
 {
     std::cout << "Usage: " << progName << " <config-file>" << std::endl;
 }
@@ -20,7 +17,7 @@ void printUsage(const char* progName)
  * ============================================================================
  * main() - Program entry point
  * ============================================================================
- * 
+ *
  * EXECUTION FLOW:
  * 0. Parse configuration file into directive tree
  * 1. Create EventLoop instance
@@ -28,72 +25,74 @@ void printUsage(const char* progName)
  * 3. Initialize each Server (creates listening sockets)
  * 4. Add each Server to EventLoop
  * 5. Start EventLoop (never returns - runs until killed)
- * 
+ *
  */
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     // Validate command line arguments
-	if (argc != 2) { printUsage(argv[0]); return 1; }
-	
-    // STEP 0: Parse configuration file
-	try {
-		Config::Parser parser = Config::Parser::openConfigFile(argv[1]);
+    if (argc != 2)
+    {
+        printUsage(argv[0]);
+        return 1;
+    }
 
-		while (parser.getNextDirectives()) {
-			std::string directive = parser.copyDirective();
-			if (!Config::IDirective::parseDirective(Config::global, directive)) { 
-				std::cerr << "Failed to parse directive" << std::endl;
-				return 1; 
-			}
-		}
-		
-		std::cout << "Configuration parsed successfully" << std::endl;
-	}
-	catch (const std::exception& e) {
-		std::cerr << "Error parsing configuration: " << e.what() << std::endl;
-		return 1;
-	}
-    
+    // STEP 0: Parse configuration file
+    GlobalConfig config = GlobalConfig();
+    try
+    {
+
+        Directive::Parser parser = Directive::Parser::openConfigFile(argv[1]);
+        Directive::Parser::loadConfigFile(argv[1], config);
+        std::cout << "Configuration parsed successfully" << std::endl;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error parsing configuration: " << e.what() << std::endl;
+        return 1;
+    }
+
     /**
      * ========================================================================
      * STEP 1: Create EventLoop
      * ========================================================================
-     * 
+     *
      * The EventLoop will own all Server instances and coordinate their
      * I/O operations through a single poll() call.
      */
     EventLoop eventLoop;
-    
-    // STEP 2: Create Servers from Configuration
-    const Config::ListDirectives<Config::ServerDirective> servers = Config::global
-        ->getOne<Config::HttpDirective>()
-        ->getMany<Config::ServerDirective>();
 
-    std::cout << "Found " << servers.size() << " server(s) in configuration" << std::endl;
+    for (size_t i = 0; i < config.https.size(); i++)
+    {
+        std::vector<ServerConfig *> servers = config.https[i]->servers;
+        for (size_t j = 0; j < servers.size(); j++)
+        {
+            std::cout << "listenAddresses: " 
+                << servers[j]->listenAddresses.size()
+                << std::endl;
+            Server *server = new Server(*servers[j]);
 
-    for (size_t i = 0; i < servers.size(); ++i) {
-        Server* server = new Server(
-            servers[i]->toServerConfig()
-        );
-        
-        if (server->initialize() == -1) {
-            std::cerr << "Failed to initialize server on port "
-                      << server->getConfig().port << std::endl;
-            delete server;
-            return 1;
+            if (server->initialize() == -1)
+            {
+                std::cerr << "Failed to initialize server on port "
+                        //   << server->getConfig().port 
+                          << std::endl; // FIX
+                delete server;
+                return 1;
+            }
+
+            eventLoop.addServer(server);
         }
-        
-        eventLoop.addServer(server);
     }
 
     // STEP 3: Verify we have at least one server
-    if (eventLoop.getServerCount() == 0) {
+    if (eventLoop.getServerCount() == 0)
+    {
         std::cerr << "Error: No servers initialized successfully" << std::endl;
         return 1;
     }
-    
+
     // STEP 4: Start the event loop
     eventLoop.run();
-    
+
     return 0;
 }

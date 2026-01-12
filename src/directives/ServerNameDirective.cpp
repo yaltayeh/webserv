@@ -1,67 +1,29 @@
-#include "ServerNameDirective.hpp"
-#include "ServerDirective.hpp"
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
+#include "Config/ServerConfig.hpp"
 
-namespace Config
+/**
+ * @brief Parses the 'server_name' directive
+ * Syntax: server_name name [...];
+ * Example: server_name example.com www.example.com;
+ */
+struct Config *parseServerNameDirective(const std::vector<std::string> &args, Config *parent)
 {
-	// Register directive: server_name allowed in ServerDirective
-	DEFINE_DIRECTIVE(ServerNameDirective, "server_name", ServerDirective)
+	// Cast parent to config
+	ServerConfig *config = dynamic_cast<ServerConfig *>(parent);
+	if (!config)
+		throw Directive::InvalidNesting("server_name", "can only be used in server context");
 
-	ServerNameDirective* ServerNameDirective::initServerNameDirective(const std::vector<std::string>& args)
-	{
-		// server_name requires at least one argument (domain name)
-		if (args.size() < 2)
-		{
-			throw ArgumentException("server_name", "requires at least one domain name");
-		}
+	// Parse value
+	if (args.size() < 2)
+		throw Directive::ArgumentException("server_name", "requires at least one argument");
 
-		// Collect all domain names (skip first arg which is "server_name")
-		std::vector<std::string> names;
-		for (size_t i = 1; i < args.size(); i++)
-		{
-			if (args[i].empty())
-			{
-				throw ArgumentException("server_name", "domain name cannot be empty");
-			}
-			names.push_back(args[i]);
-		}
+	// Set value to config
+	for (size_t i = 1; i < args.size(); i++)
+		config->server_names.push_back(args[i]);
 
-		return new ServerNameDirective(names);
-	}
-
-	// Default constructor
-	ServerNameDirective::ServerNameDirective()
-		: IDirective(), names()
-	{
-	}
-
-	// Parameterized constructor
-	ServerNameDirective::ServerNameDirective(const std::vector<std::string>& names)
-		: IDirective(), names(names)
-	{
-	}
-
-	// Copy constructor
-	ServerNameDirective::ServerNameDirective(const ServerNameDirective& other)
-		: IDirective(other), names(other.names)
-	{
-	}
-
-	// Assignment operator
-	ServerNameDirective& ServerNameDirective::operator=(const ServerNameDirective& other)
-	{
-		if (this != &other)
-		{
-			IDirective::operator=(other);
-			// names is const, cannot reassign
-			// This is intentional - directives are immutable after construction
-		}
-		return *this;
-	}
-
-	// Destructor
-	ServerNameDirective::~ServerNameDirective()
-	{
-	}
+	// Return no new config
+	return NULL;
 }
+
+DEFINE_DIRECTIVE("server_name", parseServerNameDirective);

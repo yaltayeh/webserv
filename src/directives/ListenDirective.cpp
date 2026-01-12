@@ -1,89 +1,91 @@
-#include "ListenDirective.hpp"
-#include "ServerDirective.hpp"
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
+#include "Config/ServerConfig.hpp"
+
+#include <string>
 #include <cstdlib>
+#include <cstring>
+#include <arpa/inet.h>
+#include <netdb.h>
 
-namespace Config
+ServerConfig::ListenAddr parse_listen(const std::string &input)
 {
-	// Register directive: listen allowed in ServerDirective
-	DEFINE_DIRECTIVE(ListenDirective, "listen", ServerDirective)
+	ServerConfig::ListenAddr out;
 
-	ListenDirective* ListenDirective::initListenDirective(const std::vector<std::string>& args)
+	std::string host;
+	std::string port_str;
+
+	size_t colon = input.find(':');
+
+	// Case: "80"
+	if (colon == std::string::npos)
 	{
-		// listen requires at least port argument
-		if (args.size() < 2)
-		{
-			throw ArgumentException("listen", "requires at least port number");
-		}
-
-		// Parse port (can be just port number or host:port)
-		int port = 0;
-		std::string host = "0.0.0.0";
-		
-		// Check if arg contains ':' for host:port format
-		std::string firstArg = args[1];
-		size_t colonPos = firstArg.find(':');
-		
-		if (colonPos != std::string::npos)
-		{
-			// Format: host:port
-			host = firstArg.substr(0, colonPos);
-			std::string portStr = firstArg.substr(colonPos + 1);
-			port = std::atoi(portStr.c_str());
-		}
-		else
-		{
-			// Just port number
-			port = std::atoi(firstArg.c_str());
-			
-			// Optional host as second argument
-			if (args.size() > 2)
-			{
-				host = args[2];
-			}
-		}
-		
-		// Validate port range
-		if (port < 1 || port > 65535)
-		{
-			throw ArgumentException("listen", "port must be between 1-65535");
-		}
-
-		return new ListenDirective(port, host);
+		host = "*";
+		port_str = input;
+	}
+	else
+	{
+		host = input.substr(0, colon);
+		port_str = input.substr(colon + 1);
 	}
 
-	// Default constructor
-	ListenDirective::ListenDirective()
-		: IDirective(), port(80), host("0.0.0.0")
+	// ---- parse port ----
+	char *end;
+	long port = std::strtol(port_str.c_str(), &end, 10);
+	if (*end != '\0' || port <= 0 || port > 65535)
+		throw Directive::ArgumentException("listen", "Invalid port: " + port_str);
+
+	out.port = static_cast<uint16_t>(port);
+
+	// ---- parse address ----
+	if (host.empty() || host == "*" || host == "0.0.0.0")
 	{
+		out.ip = htonl(INADDR_ANY);
+		return out;
 	}
 
-	// Parameterized constructor
-	ListenDirective::ListenDirective(int port, const std::string& host)
-		: IDirective(), port(port), host(host)
-	{
-	}
+	// IPv4 literal
+	if (inet_pton(AF_INET, host.c_str(), &out.ip) == 1)
+		return out;
 
-	// Copy constructor
-	ListenDirective::ListenDirective(const ListenDirective& other)
-		: IDirective(other), port(other.port), host(other.host)
-	{
-	}
+	// Hostname
+	struct hostent *he = gethostbyname(host.c_str());
+	if (!he || he->h_addrtype != AF_INET)
+		throw Directive::ArgumentException("listen", "Invalid address or hostname: " + host);
 
-	// Assignment operator
-	ListenDirective& ListenDirective::operator=(const ListenDirective& other)
-	{
-		if (this != &other)
-		{
-			IDirective::operator=(other);
-			// port and host are const, cannot reassign
-		}
-		return *this;
-	}
-
-	// Destructor
-	ListenDirective::~ListenDirective()
-	{
-	}
+	std::memcpy(&out.ip, he->h_addr, sizeof(out.ip));
+	return out;
 }
+
+/**
+ * @brief Parses the 'listen' directive
+ * Syntax: listen address[:port] [default_server];
+ * Example: listen 80;
+ *          listen 127.0.0.1:8080;
+ *          listen [::]:8080;
+ */
+struct Config *parseListenDirective(const std::vector<std::string> &args, Config *parent)
+{
+	// Cast parent to config
+	ServerConfig *config = dynamic_cast<ServerConfig *>(parent);
+	if (!config)
+		throw Directive::InvalidNesting("listen", "can only be used in server context");
+
+	// Parse value
+	if (args.size() != 2)
+		throw Directive::ArgumentException("listen", "requires only one argument");
+
+	// Set value to config
+	ServerConfig::ListenAddr addr = parse_listen(args[1]);
+	if (config->is_new_listen == false)
+	{
+		config->listenAddresses.clear();
+		config->is_new_listen = true;
+	}
+	config->listenAddresses.push_back(addr);
+
+	// Return no new config
+	return NULL;
+}
+
+DEFINE_DIRECTIVE("listen", parseListenDirective);

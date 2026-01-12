@@ -18,36 +18,32 @@ endif
 
 INCLUDE_FLAGS	   		= -Iinclude -Iinclude/directives -Idependencies $(foreach lib,$(DEPENDENCIES),-I$(DEPENDENCIES_DIR)/$(lib)/include)
 
-SRCS		    		=   src/main.cpp \
-							src/Server.cpp \
-							src/ConnectionManager.cpp \
-							src/EventLoop.cpp		\
-							src/directives/HttpDirective.cpp	\
-							src/directives/ServerDirective.cpp	\
-							src/directives/LocationDirective.cpp	\
-							src/directives/ServerNameDirective.cpp	\
-							src/directives/ListenDirective.cpp	\
-							src/directives/RootDirective.cpp	\
-							src/directives/ErrorPageDirective.cpp	\
-							src/directives/ClientMaxBodySizeDirective.cpp	\
-							src/directives/KeepaliveTimeoutDirective.cpp	\
-							src/directives/AllowedMethodsDirective.cpp	\
-							src/directives/ReturnDirective.cpp	\
-							src/directives/AutoindexDirective.cpp	\
-							src/directives/AutoindexFormatDirective.cpp	\
-							src/directives/AutoindexLocaltimeDirective.cpp	\
-							src/directives/AutoindexExactSizeDirective.cpp	\
-							src/directives/IndexDirective.cpp	\
-							src/directives/UploadEnableDirective.cpp	\
-							src/directives/UploadStoreDirective.cpp	\
-							src/directives/CgiPassDirective.cpp	\
-							src/directives/CgiParamDirective.cpp	\
-							src/directives/CgiExtensionDirective.cpp	\
-							src/directives/DenyDirective.cpp	\
-							src/directives/LimitExceptDirective.cpp	\
-							src/directives/ClientBodyTempPathDirective.cpp	\
-							src/directives/ProxyRequestBufferingDirective.cpp	\
-							src/directives/AliasDirective.cpp	\
+SRCS		    		=   src/main.cpp 										\
+							src/Server.cpp 										\
+							src/ConnectionManager.cpp 							\
+							src/EventLoop.cpp									\
+							src/directives/AutoindexExactSizeDirective.cpp		\
+							src/directives/ErrorPageDirective.cpp				\
+							src/directives/Core/LocationDirective.cpp			\
+							src/directives/Core/ServerDirective.cpp				\
+							src/directives/Core/HttpDirective.cpp				\
+							src/directives/ClientBodyTempPathDirective.cpp		\
+							src/directives/RewriteDirective.cpp					\
+							src/directives/AutoindexFormatDirective.cpp			\
+							src/directives/CreateFullPutPathDirective.cpp		\
+							src/directives/FastcgiPassDirective.cpp				\
+							src/directives/RootDirective.cpp					\
+							src/directives/ServerNameDirective.cpp				\
+							src/directives/IncludeDirective.cpp					\
+							src/directives/FastcgiParamDirective.cpp			\
+							src/directives/IndexDirective.cpp					\
+							src/directives/ClientMaxBodySizeDirective.cpp		\
+							src/directives/ListenDirective.cpp					\
+							src/directives/FastcgiSplitPathInfoDirective.cpp	\
+							src/directives/AutoindexDirective.cpp				\
+							src/directives/FastcgiIndexDirective.cpp			\
+							src/directives/ReturnDirective.cpp					\
+							src/directives/AliasDirective.cpp					\
 
 OBJS		   			 = $(SRCS:src/%.cpp=$(BUILD_PATH)/obj/%.o)
 

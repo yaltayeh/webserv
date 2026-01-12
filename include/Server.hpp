@@ -42,7 +42,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "config.hpp"
+#include "Config/ServerConfig.hpp"
 #include <string>
 
 /**
