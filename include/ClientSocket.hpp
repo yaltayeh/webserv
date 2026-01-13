@@ -3,7 +3,6 @@
 #include "Socket.hpp"
 #include <netinet/in.h>
 #include "ListenSocket.hpp"
-#include "VirtualServer.hpp"
 #include "libhttp/include/Parser.hpp"
 
 class ListenSocket;
@@ -20,6 +19,8 @@ private:
 	std::string write_buffer;
 	libhttp::Parser parser;
 
+	int complateResponse;
+
 public:
 	ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen);
 	~ClientSocket();
@@ -27,5 +28,5 @@ public:
 	const char *getHost();
 	bool handleRead();
 	bool handleWrite();
-
+	bool isComplateResponse();
 };

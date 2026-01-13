@@ -200,3 +200,8 @@ void ListenSocket::addVirtualServer(VirtualServer *virtualServer)
 {
 	servers.push_back(virtualServer);
 }
+
+const std::vector<VirtualServer *> &ListenSocket::getVirtualServer() const
+{
+	return (servers);
+}

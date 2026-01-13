@@ -12,3 +12,8 @@ VirtualServer::VirtualServer(const ServerConfig &config)
 VirtualServer::~VirtualServer()
 {
 }
+
+const ServerConfig &VirtualServer::getConfig() const
+{
+	return _config;
+}

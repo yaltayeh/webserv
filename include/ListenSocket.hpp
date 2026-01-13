@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Socket.hpp"
+#include "VirtualServer.hpp"
 #include "ClientSocket.hpp"
 
 class ClientSocket;
@@ -24,4 +25,5 @@ public:
 	int listen();
 
 	void addVirtualServer(VirtualServer *virtualServer);
+	const std::vector<VirtualServer *> &getVirtualServer() const;
 };
