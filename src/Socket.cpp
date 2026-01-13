@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include "Socket.hpp"
 #include <fcntl.h>
+#include <cerrno>
+#include <cstring>
 
 Socket::Socket(unsigned int type, int socketfd)
 	: type(type), _socketfd(socketfd)

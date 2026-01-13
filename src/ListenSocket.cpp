@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <cstring>
 #include <unistd.h>
+#include <cerrno>
 #include "ClientSocket.hpp"
 #include "ListenSocket.hpp"
 
