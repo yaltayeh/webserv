@@ -41,6 +41,20 @@ struct CommonConfig : Config
 	std::map<std::string, std::string> fastcgi_params;
 	std::string fastcgi_index;
 
+	// CGI configuration
+	std::string cgi_pass;
+	std::vector<std::string> cgi_extensions;
+
+	// Upload configuration
+	bool upload_enable;
+	std::string upload_store;
+
+	// Allowed HTTP methods (empty = all allowed)
+	std::set<std::string> allowed_methods;
+
+	// Access control
+	bool deny_all;
+
 	CommonConfig()
 		: Config(),
 		  autoindex(false),
@@ -53,19 +67,31 @@ struct CommonConfig : Config
 		  client_body_temp_path("client_body_temp"),
 		  dav_methods(),
 		  dav_access("user:rw"),
-		  create_full_put_path(false)
+		  create_full_put_path(false),
+		  cgi_pass(""),
+		  cgi_extensions(),
+		  upload_enable(false),
+		  upload_store(""),
+		  allowed_methods(),
+		  deny_all(false)
 	{
 		index.push_back("index.html");
 	}
 
 	CommonConfig(const CommonConfig &config)
+		: Config(config)
 	{
-		Config(other);
 		this->autoindex = config.autoindex;
 		this->autoindex_exact_size = config.autoindex_exact_size;
 		this->autoindex_format = config.autoindex_format;
 		this->error_pages = config.error_pages;
 		this->root = config.root;
+		this->cgi_pass = config.cgi_pass;
+		this->cgi_extensions = config.cgi_extensions;
+		this->upload_enable = config.upload_enable;
+		this->upload_store = config.upload_store;
+		this->allowed_methods = config.allowed_methods;
+		this->deny_all = config.deny_all;
 		this->index = config.index;
 		this->client_max_body_size = config.client_max_body_size;
 		this->client_body_temp_path = config.client_body_temp_path;
@@ -97,8 +123,8 @@ struct CommonConfigServerLocation : CommonConfig
 		  is_return(false) {}
 
 	CommonConfigServerLocation(const CommonConfigServerLocation &other)
+		: CommonConfig(other)
 	{
-		CommonConfig(varname);
 		this->locations = other.locations;
 		this->is_return = other.is_return;
 		this->return_code = other.return_code;

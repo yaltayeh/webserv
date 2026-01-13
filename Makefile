@@ -26,6 +26,7 @@ SRCS		    		=   src/main.cpp 										\
 							src/Server.cpp 										\
 							src/ConnectionManager.cpp 							\
 							src/EventLoop.cpp									\
+							src/RequestRouter.cpp								\
 							src/directives/AutoindexExactSizeDirective.cpp		\
 							src/directives/ErrorPageDirective.cpp				\
 							src/directives/Core/LocationDirective.cpp			\
@@ -48,6 +49,12 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/FastcgiIndexDirective.cpp			\
 							src/directives/ReturnDirective.cpp					\
 							src/directives/AliasDirective.cpp					\
+							src/directives/AllowedMethodsDirective.cpp			\
+							src/directives/UploadEnableDirective.cpp			\
+							src/directives/UploadStoreDirective.cpp				\
+							src/directives/CgiPassDirective.cpp					\
+							src/directives/CgiExtensionDirective.cpp			\
+							src/directives/DenyDirective.cpp					\
 
 OBJS		   			 = $(SRCS:src/%.cpp=$(BUILD_PATH)/obj/%.o)
 

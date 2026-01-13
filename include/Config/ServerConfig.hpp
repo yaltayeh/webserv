@@ -38,8 +38,8 @@ struct ServerConfig : public CommonConfigServerLocation
 	};
 
 	ServerConfig(const ServerConfig &other)
+		: CommonConfigServerLocation(other)
 	{
-		CommonConfigServerLocation(varname);
 		this->listenAddresses = other.listenAddresses;
 		this->server_names = other.server_names;
 	};

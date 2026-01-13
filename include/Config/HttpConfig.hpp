@@ -14,8 +14,8 @@ struct HttpConfig : public CommonConfig
 		: CommonConfig() {};
 
 	HttpConfig(const HttpConfig &other)
+		: CommonConfig(other)
 	{
-		CommonConfig(varname);
 		this->servers = other.servers;
 	}
 };

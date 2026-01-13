@@ -27,6 +27,7 @@ struct LocationConfig : public CommonConfigServerLocation
 		  path("") {};
 
 	LocationConfig(const LocationConfig &other)
+		: CommonConfigServerLocation(other)
 	{
 		this->path = other.path;
 		this->alias = other.alias;
