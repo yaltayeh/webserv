@@ -14,7 +14,8 @@ struct ServerConfig : public CommonConfigServerLocation
 	{
 		uint32_t ip;   // network byte order
 		uint16_t port; // host byte order
-		operator uint64_t() {
+		operator uint64_t()
+		{
 			return ((uint64_t)ip << 16) | port;
 		}
 	};
@@ -41,6 +42,21 @@ struct ServerConfig : public CommonConfigServerLocation
 		: CommonConfigServerLocation(other)
 	{
 		this->listenAddresses = other.listenAddresses;
+		this->is_new_listen = other.is_new_listen;
 		this->server_names = other.server_names;
 	};
+
+	ServerConfig& operator=(const ServerConfig &other)
+	{
+		if (this != &other)
+		{
+			CommonConfigServerLocation::operator=(other);
+			this->listenAddresses = other.listenAddresses;
+			this->is_new_listen = other.is_new_listen;
+			this->server_names = other.server_names;
+		}
+		return *this;
+	}
+
+	~ServerConfig() {}
 };

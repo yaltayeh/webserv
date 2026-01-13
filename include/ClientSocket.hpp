@@ -20,6 +20,7 @@ private:
 	libhttp::Parser parser;
 
 	int complateResponse;
+	int sendResponse;
 
 public:
 	ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen);
@@ -29,4 +30,5 @@ public:
 	bool handleRead();
 	bool handleWrite();
 	bool isComplateResponse();
+	bool isSendResponse();
 };

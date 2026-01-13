@@ -8,7 +8,7 @@
 
 struct HttpConfig : public CommonConfig
 {
-	std::vector<struct ServerConfig *> servers;
+	std::vector<struct ServerConfig> servers;
 
 	HttpConfig()
 		: CommonConfig() {};
@@ -18,4 +18,16 @@ struct HttpConfig : public CommonConfig
 	{
 		this->servers = other.servers;
 	}
+
+	HttpConfig& operator=(const HttpConfig &other)
+	{
+		if (this != &other)
+		{
+			CommonConfig::operator=(other);
+			this->servers = other.servers;
+		}
+		return *this;
+	}
+
+	~HttpConfig() {}
 };

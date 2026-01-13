@@ -24,10 +24,10 @@ struct Config *initServerConfig(const std::vector<std::string> &args, Config *pa
 		throw Directive::ArgumentException("server", "takes no arguments");
 
 	// Create new server config block
-	ServerConfig *server = new ServerConfig();
+	ServerConfig server = ServerConfig();
 	http->servers.push_back(server);
 
-	return server;
+	return &http->servers[http->servers.size() - 1];
 }
 
 DEFINE_DIRECTIVE("server", initServerConfig);

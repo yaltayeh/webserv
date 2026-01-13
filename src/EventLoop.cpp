@@ -1,218 +1,222 @@
-#include "../include/EventLoop.hpp"
 #include <iostream>
 #include <cerrno>
 #include <cstring>
+#include "EventLoop.hpp"
 
+#if defined(__linux__)
+#define EVENT_READ EPOLLIN
+#define EVENT_WRITE EPOLLOUT
+#define EVENT_EDGE EPOLLET
+#elif defined(__APPLE__) && defined(__MACH__)
+#include <sys/event.h>
+#define EVENT_READ EVFILT_READ
+#define EVENT_WRITE EVFILT_WRITE
+#endif
 
-EventLoop::EventLoop() {}
+EventLoop::EventLoop(const GlobalConfig &config)
+    : _config(config), _workerFd(-1) {}
 
-/**
- * Destructor - Cleans up all resources
- * 
- * DESTRUCTION ORDER (automatic, reverse of declaration):
- * 1. ~_connection_manager (Connections destroyed)
- * 2. ~_poll_fds (vector cleanup)
- * 3. ~_listening_sockets (map cleanup)
- * 4. ~_servers (manually delete Server* pointers here)
- */
 EventLoop::~EventLoop()
 {
-    for (std::vector<Server*>::iterator it = _servers.begin();
-         it != _servers.end();
+    for (std::map<uint64_t, ListenSocket *>::iterator it = _listeningSockets.begin();
+         it != _listeningSockets.end();
          ++it)
     {
-        // Delete each Server (closes listening socket in ~Server())
-        delete *it;
+        (*it).second->close();
+        delete (*it).second;
     }
+    for (std::vector<VirtualServer *>::iterator it = _virtualServers.begin();
+         it != _virtualServers.end();
+         ++it)
+    {
+        delete (*it);
+    }
+    _virtualServers.clear();
+    _listeningSockets.clear();
 }
 
-/**
- * addServer() - Registers a new server instance
- */
-void EventLoop::addServer(Server* server)
+EventLoop::EventLoop(const EventLoop &other)
 {
-    // Validate server pointer
-    if (server == NULL)
-        {std::cerr << "Error: Attempted to add NULL server" << std::endl; return; }
-    
-    // Validate server is initialized (has valid listening socket)
-    int listen_fd = server->getListenFd();
-    if (listen_fd < 0)
-        { std::cerr << "Error: Attempted to add uninitialized server" << std::endl; return; }
-    
-    // Check for duplicate listening fd
-    if (_listening_sockets.count(listen_fd) > 0) {
-        std::cerr << "Error: Duplicate listening socket fd " << listen_fd
-                  << std::endl;
-        return;
-    }
-    
-    _servers.push_back(server);
-    _listening_sockets[listen_fd] = server;
+    this->_config = other._config;
 }
 
-/**
- * run() - Starts the main event loop (NEVER RETURNS)
- * 
- * WHAT THIS DOES:
- * Enters an infinite loop that polls all sockets for I/O activity and
- * dispatches events to appropriate handlers.
- * 
- * THIS FUNCTION NEVER RETURNS - it runs until the process is killed.
- */
-void EventLoop::run() {
-    std::cout << "\n========================================" << std::endl;
-    std::cout << "Event loop starting with " << _servers.size()
-              << " server(s)" << std::endl;
-    std::cout << "========================================\n" << std::endl;
-    
-    /**
-     * INFINITE EVENT LOOP
-     * 
-     * This loop processes network events until the process is killed.
-     * Standard web server behavior - run continuously, handle requests.
-     * 
-     * To stop the server: Ctrl+C (sends SIGINT) or kill command (SIGTERM)
-     * 
-     * TODO: FUTURE ENHANCEMENT:
-     * Add signal handler to catch SIGINT/SIGTERM and set a "running" flag,
-     * allowing graceful shutdown:
-     *   while (running) { ... }
-     */
-    while (true) {
-        
-        /**
-         * STEP 1: Rebuild poll_fds array from current socket state
-         * Before each poll() call, we reconstruct the poll_fds array to
-         * reflect all currently active sockets (listening + clients).
-         */
-        rebuildPollFds();
-        
-        /**
-         * STEP 2: Wait for I/O activity on any socket
-         * 
-         * poll() system call monitors multiple file descriptors, waiting
-         * for at least one to become ready for I/O.
-         * 
-         * The kernel wakes us only when I/O is ready.
-         */
-        int ready = poll(&_poll_fds[0], _poll_fds.size(), -1);
-        
-        // STEP 3: Handle poll() errors
-        // NOTE: We don't check errno per 42 subject rules
-        if (ready < 0)
-            { std::cerr << "poll() error, continuing..." << std::endl; continue; }
-        
-        // STEP 4: Iterate through all sockets, checking for activity
-        for (size_t i = 0; i < _poll_fds.size(); ++i) {
-            
-            int fd = _poll_fds[i].fd;
-            short revents = _poll_fds[i].revents;
-            
-            // Skip if no events
-            if (revents == 0) { continue; }
-            
-            // We need to distinguish between:
-            // 1. Listening sockets (accept new connections)
-            // 2. Client sockets (read/write data)
+EventLoop &EventLoop::operator=(const EventLoop &other)
+{
+    if (this != &other)
+    {
+        this->_config = other._config;
+    }
+    return (*this);
+}
 
-            // CASE 1: Listening socket (new connection pending)
-            if (_listening_sockets.count(fd) > 0) {
+int EventLoop::init()
+{
+    ListenSocket *socket = NULL;
+    VirtualServer *virtualServer = NULL;
 
-                Server* server = _listening_sockets[fd];
-                int client_fd = server->acceptConnection();
-                
-                // acceptConnection() returns -1 if accept() failed
-                if (client_fd >= 0)
-                    _connection_manager.addConnection(client_fd, server);
-                
-                continue;
+    for (size_t i = 0; i < _config.https.size(); i++)
+    {
+        const std::vector<ServerConfig> &servers = _config.https[i].servers;
+        for (size_t j = 0; j < servers.size(); j++)
+        {
+            virtualServer = new VirtualServer(servers[j]);
+            _virtualServers.push_back(virtualServer);
 
-            }
-            
-            // CASE 2: Client socket (I/O activity)
-            if (_connection_manager.hasConnection(fd)) {
-                // This is a client socket - check what events occurred
-                
-                // Sub-step 1: Check for socket errors (POLLERR, POLLHUP)
-                if (!_connection_manager.handleError(fd, revents))
-                    { _connection_manager.removeConnection(fd); continue; }
-                
-                // Sub-step 2: Handle readable socket (POLLIN)
-                if (revents & POLLIN) {
-                    /**
-                     * Socket has data to read
-                     * 
-                     * handleRead() reads data, feeds to parser, generates
-                     * response when request is complete.
-                     */
-                    if (!_connection_manager.handleRead(fd, &_poll_fds[i]))
-                        { _connection_manager.removeConnection(fd); continue; }
+            const std::vector<ServerConfig::ListenAddr> &addrs = servers[j].listenAddresses;
+            for (size_t l = 0; l < addrs.size(); l++)
+            {
+                ServerConfig::ListenAddr addr = addrs[l];
+                if (_listeningSockets.find(addr) == _listeningSockets.end())
+                {
+                    socket = new ListenSocket(addr.ip, addr.port);
+                    if (socket->getSocketfd() < 0)
+                    {
+                        delete socket;
+                        return (-1);
+                    }
+                    _listeningSockets[(uint64_t)addr] = socket;
                 }
-                
-                // Sub-step 3: Handle writable socket (POLLOUT)
-                if (revents & POLLOUT) {
-                    /**
-                     * Socket is ready for writing
-                     * 
-                     * handleWrite() writes data from write_buffer, erasing
-                     * sent bytes and clearing POLLOUT when buffer is empty.
-                     */
-                    if (!_connection_manager.handleWrite(fd, &_poll_fds[i]))
-                        { _connection_manager.removeConnection(fd); continue; }
+                else
+                {
+                    socket = _listeningSockets[(uint64_t)addr];
                 }
-                
-                continue;
-
+                socket->addVirtualServer(virtualServer);
             }
-            
         }
-        
     }
-    
-    /**
-     * TODO: If we add graceful shutdown in the future, cleanup code would go here:
-     * - Close all connections
-     * - Close all listening sockets
-     * - Log shutdown message
-     */
+    return (0);
 }
 
-/**
- * rebuildPollFds() - Rebuilds poll_fds array from current sockets
- * 
- * Clears poll_fds and repopulates it with:
- * 1. All listening sockets (from _listening_sockets)
- * 2. All client sockets (from _connection_manager)
- * 
- */
-void EventLoop::rebuildPollFds()
+int EventLoop::addEvent(int fd, int event, void *udata)
 {
-    _poll_fds.clear();
-    
-    // STEP 1: Add all listening sockets
-    for (std::map<int, Server*>::iterator it = _listening_sockets.begin();
-         it != _listening_sockets.end();
+    if (_workerFd < 0)
+        return (-1);
+
+#if defined(__linux__)
+    struct epoll_event ev;
+    ev.events = event | EPOLLET;
+    ev.data.ptr = udata;
+    if (epoll_ctl(_workerFd, EPOLL_CTL_ADD, fd, &ev) == -1)
+        perror("epoll_ctl ADD");
+
+#elif defined(__APPLE__) && defined(__MACH__)
+    struct kevent kev;
+    EV_SET(&kev, fd, event,
+           EV_ADD | EV_ENABLE | EV_CLEAR,
+           0, 0, udata);
+    if (kevent(_workerFd, &kev, 1, NULL, 0, NULL) == -1)
+        perror("kevent ADD");
+#endif
+
+    return 0;
+}
+
+int EventLoop::deleteEvent(int fd, int event)
+{
+    if (_workerFd < 0)
+        return (-1);
+
+#if defined(__linux__)
+    if (epoll_ctl(_workerFd, EPOLL_CTL_DEL, fd, NULL) == -1)
+        perror("epoll_ctl DELL");
+        
+#elif defined(__APPLE__) && defined(__MACH__)
+    struct kevent kev;
+    EV_SET(&kev, fd,
+           event,
+           EV_DELETE, 0, 0,
+           NULL);
+    if (kevent(_workerFd, &kev, 1, NULL, 0, NULL) == -1)
+        perror("kevent DELL");
+#endif
+
+    return 0;
+}
+
+int EventLoop::run()
+{
+    _workerFd = kqueue();
+    if (_workerFd < 0)
+    {
+        perror("kqueue");
+        return (-1);
+    }
+
+    // add listen sockets to kqueue
+    for (std::map<uint64_t, ListenSocket *>::iterator it = _listeningSockets.begin();
+         it != _listeningSockets.end();
          ++it)
     {
-        pollfd pfd;
-        std::memset(&pfd, 0, sizeof(pfd));
-        
-        pfd.fd = it->first;          /** Listening socket fd */
-        pfd.events = POLLIN;         /** Monitor for new connections */
-        pfd.revents = 0;             /** Will be set by poll() */
-        
-        _poll_fds.push_back(pfd);
+        addEvent((*it).second->getSocketfd(),
+                 EVENT_READ,
+                 (*it).second);
     }
-    
-    // STEP 2: Add all client sockets
-    _connection_manager.populatePollFds(_poll_fds);
-}
 
-/**
- * getServerCount() - Returns number of registered servers
- */
-size_t EventLoop::getServerCount() const
-{
-    return _servers.size();
+    struct kevent events[32];
+
+    while (1)
+    {
+        int n = kevent(_workerFd, NULL, 0, events, sizeof(events) / sizeof(events[0]), NULL);
+        for (int i = 0; i < n; i++)
+        {
+            Socket *socket = (Socket *)events[i].udata;
+            if (socket && socket->getType() == LISTEN_ID)
+            {
+                ListenSocket *listen = dynamic_cast<ListenSocket *>(socket);
+                while (1)
+                {
+                    ClientSocket *clientSocket = listen->accept();
+                    if (!clientSocket)
+                    {
+                        if (errno == EAGAIN)
+                            break;
+                        perror("accept");
+                        return -1;
+                        break;
+                    }
+                    addEvent(clientSocket->getSocketfd(),
+                             EVFILT_READ,
+                             clientSocket);
+                    std::cout << "add client " << clientSocket->getHost() << std::endl;
+                }
+                continue;
+            }
+            else if (socket && socket->getType() == CLIENT_ID)
+            {
+                ClientSocket *client = dynamic_cast<ClientSocket *>(socket);
+                /* Client disconnected */
+                if (events[i].flags & EV_EOF)
+                {
+                    std::cout << "client [" << client->getHost() << "]: disconnected" << std::endl;
+                    deleteEvent(client->getSocketfd(), EVFILT_READ);
+                    delete client;
+                    continue;
+                }
+                if (events[i].filter == EVFILT_READ)
+                {
+                    if (client->handleRead() == false)
+                    {
+                        deleteEvent(client->getSocketfd(), EVFILT_READ);
+                        delete client;
+                    }
+                    if (client->isComplateResponse())
+                    {
+                        deleteEvent(client->getSocketfd(), EVFILT_READ);
+                        addEvent(client->getSocketfd(), EVFILT_WRITE, client);
+                    }
+                }
+                else if (events[i].filter == EVFILT_WRITE)
+                {
+                    // std::cout << "---- EVFILT_WRITE ----" << std::endl;
+                    client->handleWrite();
+                    if (client->isSendResponse())
+                    {
+                        deleteEvent(client->getSocketfd(), EVFILT_WRITE);
+                        delete client;
+                    }
+                }
+            }
+        }
+    }
+    return (0);
 }

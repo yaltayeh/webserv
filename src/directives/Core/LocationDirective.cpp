@@ -20,10 +20,10 @@ struct Config *parseLocationDirective(const std::vector<std::string> &args, Conf
 		throw Directive::ArgumentException("location", "requires exactly one argument (path)");
 	
 	// Create new location config
-	LocationConfig *loc = new LocationConfig();
-	loc->path = args[1];
+	LocationConfig loc = LocationConfig();
+	loc.path = args[1];
 	config->locations.push_back(loc);
-	return loc;
+	return &config->locations[config->locations.size() - 1];
 }
 
 DEFINE_DIRECTIVE("location", parseLocationDirective);

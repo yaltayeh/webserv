@@ -23,10 +23,10 @@ SRCS		    		=   src/main.cpp 										\
 							src/ClientSocket.cpp 								\
 							src/ListenSocket.cpp 								\
 							src/VirtualServer.cpp 								\
-							src/Server.cpp 										\
-							src/ConnectionManager.cpp 							\
 							src/EventLoop.cpp									\
 							src/RequestRouter.cpp								\
+							src/RegEx.cpp										\
+							\
 							src/directives/AutoindexExactSizeDirective.cpp		\
 							src/directives/ErrorPageDirective.cpp				\
 							src/directives/Core/LocationDirective.cpp			\
@@ -55,6 +55,7 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/CgiPassDirective.cpp					\
 							src/directives/CgiExtensionDirective.cpp			\
 							src/directives/DenyDirective.cpp					\
+
 
 OBJS		   			 = $(SRCS:src/%.cpp=$(BUILD_PATH)/obj/%.o)
 

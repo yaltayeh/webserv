@@ -9,7 +9,8 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
     : Socket(CLIENT_ID, client_fd),
       addr(addr),
       listenSocket(listen),
-      complateResponse(false)
+      complateResponse(false),
+      sendResponse(false)
 {
 }
 
@@ -79,7 +80,6 @@ bool ClientSocket::handleRead()
         std::cout << "Request complete for client " << getHost() << std::endl;
 
         // Route the request and generate response
-        RequestRouter router;
         libhttp::Request request = parser.getRequest();
         const std::vector<VirtualServer *> &servers = listenSocket->getVirtualServer();
         if (servers.empty())
@@ -88,12 +88,23 @@ bool ClientSocket::handleRead()
             return false;
         }
 
-        const ServerConfig &server_config = servers[0]->getConfig();
-
-        libhttp::Response response = router.route(request, server_config);
+        libhttp::Response response;
+        std::vector<VirtualServer *>::const_iterator it;
+        for (it = servers.begin();
+             it != servers.end();
+             it++)
+        {
+            // check server_name is equal host
+            if ((*it)->checkRequest(request))
+            {
+                response = (*it)->handleRequest(request);
+                break;
+            }
+        }
+        if (it != servers.end())
+            response = servers[0]->handleRequest(request);
 
         write_buffer = response.toString();
-        handleWrite();
         complateResponse = 1;
         std::cout << "Response ready, waiting for socket to be writable"
                   << std::endl;
@@ -132,11 +143,17 @@ bool ClientSocket::handleWrite()
     if (write_buffer.empty())
     {
         std::cout << "All data sent to client " << getHost() << std::endl;
+        sendResponse = 1;
     }
     return true;
 }
 
 bool ClientSocket::isComplateResponse()
 {
-	return complateResponse;
+    return complateResponse;
+}
+
+bool ClientSocket::isSendResponse()
+{
+    return sendResponse;
 }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Config/ServerConfig.hpp"
+#include "libhttp/include/Request.hpp"
+#include "libhttp/include/Response.hpp"
 
 class VirtualServer
 {
@@ -12,4 +14,6 @@ public:
 	VirtualServer(const ServerConfig &config);
 	~VirtualServer();
 	const ServerConfig &getConfig() const;
+	int checkRequest(const libhttp::Request &r);
+	libhttp::Response handleRequest(const libhttp::Request &r);
 };

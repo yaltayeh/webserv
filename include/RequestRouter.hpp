@@ -45,20 +45,16 @@ private:
     RequestRouter& operator=(const RequestRouter& other);
     
     
-    const LocationConfig* findMatchingLocation(const std::string& uri,
+    const LocationConfig findMatchingLocation(const std::string& uri,
                                                const ServerConfig& config) const;
-    
-    const CommonConfigServerLocation* getEffectiveConfig(
-        const ServerConfig& server_config,
-        const LocationConfig* location) const;
     
     
     libhttp::Response handleStaticFile(const std::string& uri,
-                                       const CommonConfigServerLocation* config);
+                                       const CommonConfigServerLocation& config);
     
     libhttp::Response handleCGI(const libhttp::Request& request,
                                 const std::string& uri,
-                                const CommonConfigServerLocation* config);
+                                const CommonConfigServerLocation& config);
     
     libhttp::Response handleRedirect(int status_code, const std::string& url);
     
@@ -68,28 +64,28 @@ private:
     // ===== ERROR HANDLING =====
     
     libhttp::Response generateErrorResponse(int status_code,
-                                            const CommonConfigServerLocation* config);
+                                            const CommonConfigServerLocation& config);
     
     libhttp::Response generateDefaultErrorPage(int status_code);
     
     // ===== VALIDATION =====
     
     bool isMethodAllowed(libhttp::Method method,
-                        const CommonConfigServerLocation* config) const;
+                        const CommonConfigServerLocation& config) const;
     
-    bool isAccessDenied(const CommonConfigServerLocation* config) const;
+    bool isAccessDenied(const CommonConfigServerLocation& config) const;
     
     bool exceedsMaxBodySize(const libhttp::Request& request,
-                           const CommonConfigServerLocation* config) const;
+                           const CommonConfigServerLocation& config) const;
     
     // ===== UTILITIES =====
     
     std::string resolvePath(const std::string& uri,
                            const std::string& location_path,
-                           const CommonConfigServerLocation* config) const;
+                           const CommonConfigServerLocation& config) const;
     
     bool isCGIRequest(const std::string& uri,
-                     const CommonConfigServerLocation* config) const;
+                     const CommonConfigServerLocation& config) const;
     
     std::string readFile(const std::string& path) const;
 
@@ -98,7 +94,7 @@ private:
     bool isDirectory(const std::string& path) const;
     
     std::string findIndexFile(const std::string& directory_path,
-                             const CommonConfigServerLocation* config) const;
+                             const CommonConfigServerLocation& config) const;
 };
 
 #endif
