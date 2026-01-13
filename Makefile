@@ -19,6 +19,10 @@ endif
 INCLUDE_FLAGS	   		= -Iinclude -Iinclude/directives -Idependencies $(foreach lib,$(DEPENDENCIES),-I$(DEPENDENCIES_DIR)/$(lib)/include)
 
 SRCS		    		=   src/main.cpp 										\
+							src/Socket.cpp 										\
+							src/ClientSocket.cpp 								\
+							src/ListenSocket.cpp 								\
+							src/VirtualServer.cpp 								\
 							src/Server.cpp 										\
 							src/ConnectionManager.cpp 							\
 							src/EventLoop.cpp									\

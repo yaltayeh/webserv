@@ -14,6 +14,9 @@ struct ServerConfig : public CommonConfigServerLocation
 	{
 		uint32_t ip;   // network byte order
 		uint16_t port; // host byte order
+		operator uint64_t() {
+			return ((uint64_t)ip << 16) | port;
+		}
 	};
 	std::vector<ListenAddr> listenAddresses;
 	bool is_new_listen;
