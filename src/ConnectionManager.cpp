@@ -120,7 +120,7 @@ bool ConnectionManager::handleRead(int fd, pollfd* poll_fd)
     
     // STEP 2: Read data from socket into buffer
     char buffer[READ_BUFFER_SIZE];
-    std::memset(buffer, 0, READ_BUFFER_SIZE);
+    std::memset(buffer, 0, READ_BUFFER_SIZE); // TODO: optimize away memset
     
     ssize_t bytes_read = read(conn->fd, buffer, READ_BUFFER_SIZE);
     

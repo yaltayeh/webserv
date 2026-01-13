@@ -34,7 +34,7 @@ struct Connection {
     libhttp::Parser parser;
     
     // Response data waiting to be sent to client
-    std::string write_buffer;
+    std::string write_buffer; // TODO: switch to send() buffer for efficiency
    
     Server* owner_server;
 };
