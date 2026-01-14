@@ -30,6 +30,8 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/Core/LocationDirective.cpp			\
 							src/directives/Core/ServerDirective.cpp				\
 							src/directives/Core/HttpDirective.cpp				\
+							src/directives/TypesDirective.cpp		\
+							src/directives/DefaultTypeDirective.cpp		\
 							src/directives/AutoindexExactSizeDirective.cpp		\
 							src/directives/ErrorPageDirective.cpp				\
 							src/directives/ClientBodyTempPathDirective.cpp		\

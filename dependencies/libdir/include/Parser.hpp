@@ -39,6 +39,9 @@ namespace Directive
 	 */
 	class Parser
 	{
+	public:
+		typedef Config *(*ParserHandler)(Parser *parser, const std::vector<std::string> &args, Config *parent);
+
 	private:
 		/**
 		 * @brief Full configuration file content
@@ -76,7 +79,9 @@ namespace Directive
 
 		const char *_block_start;
 
-		Config *config;
+		ParserHandler _handler;
+
+		// Config *config;
 
 		/**
 		 * @brief Extracts directive arguments from text
@@ -87,18 +92,6 @@ namespace Directive
 		 * @return Vector of argument strings (first is directive name)
 		 */
 		std::vector<std::string> getArgs();
-
-		const Config *parseConfig(Parser *parser);
-
-		/**
-		 * @brief Recursively parses block directive contents
-		 * @param parent Parent directive containing the block
-		 * @param str Full configuration string
-		 * @param start Pointer to opening brace '{'
-		 * @param end Pointer to end of block
-		 * @throws ParseException on bracket mismatch
-		 */
-		void parseBlockDirective(Config *parent);
 
 	public:
 		/**
@@ -146,9 +139,20 @@ namespace Directive
 		 */
 		static Parser openConfigFile(const std::string &fileName);
 
+		static bool loadConfigFile(const std::string &fileName, Config &config);
 
-		static bool loadConfigFile(const std::string &fileName, Config &config); 
+		void setHandler(ParserHandler handler);
+		ParserHandler getHandler() const;
 
+		/**
+		 * @brief Recursively parses block directive contents
+		 * @param parent Parent directive containing the block
+		 * @param str Full configuration string
+		 * @param start Pointer to opening brace '{'
+		 * @param end Pointer to end of block
+		 * @throws ParseException on bracket mismatch
+		 */
+		void parseBlockDirective(Config *parent);
 
 		/**
 		 * @brief Advances to next directive in configuration

@@ -59,6 +59,10 @@ struct CommonConfig : Config
 	// Access control
 	bool deny_all;
 
+	std::map<std::string, std::string> mimeTypes;
+
+	std::string default_type;
+
 	CommonConfig()
 		: Config(),
 		  autoindex(false),
@@ -77,9 +81,14 @@ struct CommonConfig : Config
 		  upload_enable(false),
 		  upload_store(""),
 		  allowed_methods(),
-		  deny_all(false)
+		  deny_all(false),
+		  mimeTypes(),
+		  default_type("text/plain")
 	{
 		index.push_back("index.html");
+		mimeTypes["html"] = "text/html";
+		mimeTypes["gif"] = "image/gif";
+		mimeTypes["jpg"] = "image/jpeg";
 	}
 
 	CommonConfig(const CommonConfig &config)
@@ -102,6 +111,8 @@ struct CommonConfig : Config
 		this->dav_methods = config.dav_methods;
 		this->dav_access = config.dav_access;
 		this->create_full_put_path = config.create_full_put_path;
+		this->mimeTypes = config.mimeTypes;
+		this->default_type = config.default_type;
 	}
 
 	CommonConfig& operator=(const CommonConfig &config)
@@ -128,6 +139,8 @@ struct CommonConfig : Config
 			this->create_full_put_path = config.create_full_put_path;
 			this->fastcgi_params = config.fastcgi_params;
 			this->fastcgi_index = config.fastcgi_index;
+			this->mimeTypes = config.mimeTypes;
+			this->default_type = config.default_type;
 		}
 		return *this;
 	}

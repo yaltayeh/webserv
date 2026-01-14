@@ -9,6 +9,15 @@
 namespace Directive
 {
 
+	Config *config_handler(Parser *parser, const std::vector<std::string> &args, Config *parent)
+	{
+		if (args.size() == 0)
+			return NULL;
+		DirectiveFactory::ParserFunc parserFunc = DirectiveFactory::getParser(args[0]);
+		Config *config = parserFunc(parser, args, parent);
+		return config;
+	}
+
 	/**
 	 * @brief Constructs parser for entire string
 	 */
@@ -17,7 +26,7 @@ namespace Directive
 		_start = _configString.c_str();
 		_end = _start + _configString.length();
 		_p = _start;
-		config = NULL;
+		_handler = config_handler;
 	}
 
 	/**
@@ -38,6 +47,9 @@ namespace Directive
 		_p = _start + pOffset;
 		_directiveStart = _start + directiveStartOffset;
 		_directiveEnd = _start + directiveEndOffset;
+
+		_block_start = other._block_start;
+		_handler = other._handler;
 	}
 
 	/**
@@ -127,6 +139,16 @@ namespace Directive
 		{
 			return false;
 		}
+	}
+
+	void Parser::setHandler(ParserHandler handler)
+	{
+		_handler = handler;
+	}
+
+	Parser::ParserHandler Parser::getHandler() const
+	{
+		return _handler;
 	}
 
 	/**
@@ -246,11 +268,6 @@ namespace Directive
 		return (args);
 	}
 
-	const Config *Parser::parseConfig(Parser *parser) {
-		(void)parser;
-		return (NULL);
-	}
-
 	/**
 	 * @brief Parses a single directive and adds to parent
 	 * @return Pointer to created directive or NULL on error
@@ -269,9 +286,9 @@ namespace Directive
 		const std::string &name = args[0];
 		try
 		{
-			// parseConfig(this);
-			DirectiveFactory::ParserFunc parserFunc = DirectiveFactory::getParser(name);
-			Config *config = parserFunc(NULL, args, parent);
+			Config *config = NULL;
+			if (_handler)
+				config = _handler(this, args, parent);
 			if (config)
 				config->parent = parent;
 			if (_block_start)
@@ -343,6 +360,7 @@ namespace Directive
 
 		while (parser.getNextDirectives())
 			parser.parseDirective(parent);
+		_block_start = NULL;
 	}
 
 	/**
