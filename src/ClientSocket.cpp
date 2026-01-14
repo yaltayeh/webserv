@@ -101,7 +101,7 @@ bool ClientSocket::handleRead()
                 break;
             }
         }
-        if (it != servers.end())
+        if (it == servers.end())
             response = servers[0]->handleRequest(request);
 
         write_buffer = response.toString();
