@@ -1,5 +1,4 @@
-#ifndef CONSTANTS_HPP
-#define CONSTANTS_HPP
+#pragma once
 
 #include <string>
 #include <map>
@@ -37,5 +36,3 @@ namespace libhttp {
 	extern const std::map<std::string, std::string> MIME_TYPES;
 
 }
-
-#endif

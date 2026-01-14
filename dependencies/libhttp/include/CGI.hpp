@@ -1,5 +1,4 @@
-#ifndef CGI_HPP
-#define CGI_HPP
+#pragma once
 
 #include <string>
 #include <map>
@@ -143,5 +142,3 @@ private:
     CGI(const CGI &);
     CGI &operator=(const CGI &);
 };
-
-#endif

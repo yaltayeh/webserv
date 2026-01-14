@@ -1,5 +1,4 @@
-#ifndef LIBUTILS_STRINGUTILS_HPP
-#define LIBUTILS_STRINGUTILS_HPP
+#pragma once
 
 #include <string>
 
@@ -122,4 +121,3 @@ int stringToInt(const std::string& str, int defaultValue = 0);
 
 } // namespace utils
 
-#endif // LIBUTILS_STRINGUTILS_HPP

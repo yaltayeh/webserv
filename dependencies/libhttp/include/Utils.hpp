@@ -1,5 +1,4 @@
-#ifndef LIBHTTP_UTILS_HPP
-#define LIBHTTP_UTILS_HPP
+#pragma once
 
 #include "../include/Constants.hpp"
 #include <string>
@@ -15,5 +14,3 @@ namespace libhttp {
 	std::string trim(const std::string& str);
 
 }
-
-#endif // LIBHTTP_UTILS_HPP

@@ -1,5 +1,4 @@
-#ifndef RESPONSE_HPP
-#define RESPONSE_HPP
+#pragma once
 
 #include <string>
 #include <map>
@@ -36,5 +35,3 @@ namespace libhttp {
 
 // Stream insertion operator
 std::ostream &operator<<(std::ostream &os, const libhttp::Response &response);
-
-#endif

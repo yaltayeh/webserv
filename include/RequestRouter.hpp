@@ -22,9 +22,7 @@
  * - Delegates to CGI class for script execution
  * 
  */
-
-#ifndef REQUEST_ROUTER_HPP
-#define REQUEST_ROUTER_HPP
+#pragma once
 
 #include "Config/ServerConfig.hpp"
 #include "../dependencies/libhttp/include/Request.hpp"
@@ -96,5 +94,3 @@ private:
     std::string findIndexFile(const std::string& directory_path,
                              const CommonConfigServerLocation& config) const;
 };
-
-#endif
