@@ -19,21 +19,14 @@
  * 
  * For now, this just validates the syntax.
  */
-struct Config *parseIncludeDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseIncludeDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	if (args.size() != 2)
 		throw Directive::ArgumentException("include", "requires exactly one argument (file path)");
+	
+	Directive::Parser::loadConfigFile(args[1], *parent);
 
-	(void)parent; // Include doesn't modify parent config in this simplified version
-
-	// In a full implementation, you would:
-	// 1. std::string filepath = args[1];
-	// 2. Resolve relative paths
-	// 3. Handle wildcards (glob patterns)
-	// 4. Parse included file(s)
-	// 5. Merge directives into current context
-
-	// For now, just accept the directive
 	return NULL;
 }
 

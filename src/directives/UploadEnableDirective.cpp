@@ -7,8 +7,9 @@
  * Syntax: upload_enable on | off;
  * Example: upload_enable on;
  */
-struct Config *parseUploadEnableDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseUploadEnableDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

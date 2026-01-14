@@ -7,8 +7,9 @@
  * Syntax: allowed_methods <method1> <method2> ...;
  * Example: allowed_methods GET POST;
  */
-struct Config *parseAllowedMethodsDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseAllowedMethodsDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

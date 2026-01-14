@@ -8,8 +8,9 @@
  * Example: autoindex_format html;
  *          autoindex_format json;
  */
-struct Config *parseAutoindexFormatDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseAutoindexFormatDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

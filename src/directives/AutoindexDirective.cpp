@@ -8,8 +8,9 @@
  * Syntax: autoindex on | off;
  * Example: autoindex on;
  */
-struct Config *parseAutoindexDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseAutoindexDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

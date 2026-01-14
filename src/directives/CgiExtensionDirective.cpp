@@ -7,8 +7,9 @@
  * Syntax: cgi_extension <ext1> <ext2> ...;
  * Example: cgi_extension .php .py;
  */
-struct Config *parseCgiExtensionDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseCgiExtensionDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

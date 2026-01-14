@@ -8,8 +8,9 @@
  * Example: root /var/www/html;
  *          root /tmp/www;
  */
-struct Config *parseRootDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseRootDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

@@ -7,8 +7,9 @@
  * Syntax: fastcgi_index name;
  * Example: fastcgi_index index.php;
  */
-struct Config *parseFastcgiIndexDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseFastcgiIndexDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

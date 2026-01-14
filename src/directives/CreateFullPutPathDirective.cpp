@@ -8,8 +8,9 @@
  * Example: create_full_put_path on;
  * Automatically creates directories for PUT requests
  */
-struct Config *parseCreateFullPutPathDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseCreateFullPutPathDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

@@ -8,8 +8,9 @@
  * Example: fastcgi_pass 127.0.0.1:9000;
  *          fastcgi_pass unix:/var/run/php-fpm.sock;
  */
-struct Config *parseFastcgiPassDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseFastcgiPassDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	LocationConfig *config = dynamic_cast<LocationConfig *>(parent);
 	if (!config)

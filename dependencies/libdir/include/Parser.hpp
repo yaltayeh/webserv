@@ -74,6 +74,10 @@ namespace Directive
 		 */
 		const char *_directiveEnd;
 
+		const char *_block_start;
+
+		Config *config;
+
 		/**
 		 * @brief Extracts directive arguments from text
 		 * @param str Full configuration string
@@ -82,23 +86,9 @@ namespace Directive
 		 * @param block_start_ptr Output parameter set to block start if present
 		 * @return Vector of argument strings (first is directive name)
 		 */
-		static std::vector<std::string> getArgs(const std::string &str,
-												const char *start,
-												const char *end,
-												const char **block_start_ptr);
+		std::vector<std::string> getArgs();
 
-		/**
-		 * @brief Internal parsing method with pointer parameters
-		 * @param parent Parent directive to add parsed directive to
-		 * @param str Full configuration string
-		 * @param start Pointer to start of directive
-		 * @param end Pointer to end of directive
-		 * @return Pointer to created directive or NULL
-		 */
-		static const Config *parseDirective(Config *parent,
-												const std::string &str,
-												const char *start,
-												const char *end);
+		const Config *parseConfig(Parser *parser);
 
 		/**
 		 * @brief Recursively parses block directive contents
@@ -108,10 +98,7 @@ namespace Directive
 		 * @param end Pointer to end of block
 		 * @throws ParseException on bracket mismatch
 		 */
-		static void parseBlockDirective(Config *parent,
-										const std::string &str,
-										const char *start,
-										const char *end);
+		void parseBlockDirective(Config *parent);
 
 	public:
 		/**
@@ -157,10 +144,10 @@ namespace Directive
 		 * and creates a Parser instance.
 		 *
 		 */
-		static Parser openConfigFile(const char *fileName);
+		static Parser openConfigFile(const std::string &fileName);
 
 
-		static bool loadConfigFile(const char *fileName, Config &config); 
+		static bool loadConfigFile(const std::string &fileName, Config &config); 
 
 
 		/**
@@ -178,14 +165,6 @@ namespace Directive
 		 * Call copyDirective() to get the directive text.
 		 */
 		bool getNextDirectives();
-
-		/**
-		 * @brief Copies current directive as string
-		 * @return String containing the current directive
-		 * @note Call after getNextDirectives() returns true
-		 * @note Includes the terminating ';' or '}' character
-		 */
-		std::string copyDirective() const;
 
 		/**
 		 * @brief Gets pointer to start of current directive
@@ -253,7 +232,7 @@ namespace Directive
 		 * @throws DirectiveNotFound if directive type unknown
 		 * @throws ParseException on syntax errors
 		 */
-		static const Config *parseDirective(Config *parent, const std::string &str);
+		const Config *parseDirective(Config *parent);
 	};
 
 }

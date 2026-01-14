@@ -7,8 +7,9 @@
  * Syntax: deny all;
  * Example: deny all;
  */
-struct Config *parseDenyDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseDenyDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

@@ -4,11 +4,12 @@
 #include <map>
 #include <string>
 #include "Config.hpp"
+#include "Parser.hpp"
 
 class DirectiveFactory
 {
 public:
-	typedef Config *(*ParserFunc)(const std::vector<std::string> &args, Config *parent);
+	typedef Config *(*ParserFunc)(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent);
 	static void registerDirective(const std::string &name,
 								  ParserFunc parser);
 	static ParserFunc getParser(const std::string &name);

@@ -12,8 +12,9 @@
  *          }
  * Creates a virtual server configuration block
  */
-struct Config *initServerConfig(const std::vector<std::string> &args, Config *parent)
+struct Config *initServerConfig(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Validate parent context - must be http
 	HttpConfig *http = dynamic_cast<HttpConfig *>(parent);
 	if (!http)

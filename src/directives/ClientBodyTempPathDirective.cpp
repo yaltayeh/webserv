@@ -8,8 +8,9 @@
  * Example: client_body_temp_path /var/tmp/nginx/client_body;
  * Sets the temporary directory for storing client request bodies
  */
-struct Config *parseClientBodyTempPathDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseClientBodyTempPathDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

@@ -10,8 +10,9 @@
  *          location /api { }
  * Creates a new location context for URL path matching
  */
-struct Config *parseLocationDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseLocationDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	CommonConfigServerLocation *config = dynamic_cast<CommonConfigServerLocation *>(parent);
 	if (!config)
 		throw Directive::InvalidNesting("location", "can only be used in server or location context");

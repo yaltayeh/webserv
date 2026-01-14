@@ -8,8 +8,9 @@
  * Example: fastcgi_split_path_info ^(.+\.php)(/.+)$;
  * Defines a regular expression that captures SCRIPT_NAME and PATH_INFO
  */
-struct Config *parseFastcgiSplitPathInfoDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseFastcgiSplitPathInfoDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	LocationConfig *config = dynamic_cast<LocationConfig *>(parent);
 	if (!config)

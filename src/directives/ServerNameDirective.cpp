@@ -7,8 +7,9 @@
  * Syntax: server_name name [...];
  * Example: server_name example.com www.example.com;
  */
-struct Config *parseServerNameDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseServerNameDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	ServerConfig *config = dynamic_cast<ServerConfig *>(parent);
 	if (!config)

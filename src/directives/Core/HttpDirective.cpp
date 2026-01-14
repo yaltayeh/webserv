@@ -11,8 +11,9 @@
  *          }
  * Creates the main HTTP configuration context
  */
-struct Config *parserHttpDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parserHttpDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// HTTP directive takes no arguments
 	if (args.size() != 1)
 		throw Directive::ArgumentException("http", "takes no arguments");

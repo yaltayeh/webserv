@@ -64,8 +64,9 @@ ServerConfig::ListenAddr parse_listen(const std::string &input)
  *          listen 127.0.0.1:8080;
  *          listen [::]:8080;
  */
-struct Config *parseListenDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseListenDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	ServerConfig *config = dynamic_cast<ServerConfig *>(parent);
 	if (!config)

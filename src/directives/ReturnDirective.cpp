@@ -12,8 +12,9 @@
  *          return 404;
  *          return 200 'OK';
  */
-struct Config *parseReturnDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseReturnDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfigServerLocation *config = dynamic_cast<CommonConfigServerLocation *>(parent);
 	if (!config)

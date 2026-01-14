@@ -1,6 +1,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 #include "Config/LocationConfig.hpp"
+#include "libdir/include/Parser.hpp"
 
 /**
  * @brief Parses the 'alias' directive
@@ -8,8 +9,9 @@
  * Example: alias /var/www/files/;
  * Note: Replaces location path in URI, unlike root which appends
  */
-struct Config *parseAliasDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseAliasDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	LocationConfig *config = dynamic_cast<LocationConfig *>(parent);
 	if (!config)

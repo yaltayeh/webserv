@@ -18,8 +18,9 @@ static int getStatusCode(const char *code_str)
  * Example: error_page 404 /404.html;
  *          error_page 500 502 503 504 /50x.html;
  */
-struct Config *parseErrorPageDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseErrorPageDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

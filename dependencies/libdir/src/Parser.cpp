@@ -17,6 +17,7 @@ namespace Directive
 		_start = _configString.c_str();
 		_end = _start + _configString.length();
 		_p = _start;
+		config = NULL;
 	}
 
 	/**
@@ -96,7 +97,7 @@ namespace Directive
 	 * @brief Opens configuration file and creates parser
 	 * @throws FileException if file cannot be opened
 	 */
-	Parser Parser::openConfigFile(const char *fileName)
+	Parser Parser::openConfigFile(const std::string &fileName)
 	{
 		std::ifstream file(fileName);
 		if (!file)
@@ -110,18 +111,20 @@ namespace Directive
 		return (Parser(str));
 	}
 
-	bool Parser::loadConfigFile(const char *fileName, Config &config)
+	bool Parser::loadConfigFile(const std::string &fileName, Config &config)
 	{
-		try {
+		try
+		{
 
 			Directive::Parser parser = Directive::Parser::openConfigFile(fileName);
 			while (parser.getNextDirectives())
 			{
-				std::string directive = parser.copyDirective();
-				parser.parseDirective(&config, directive);
+				parser.parseDirective(&config);
 			}
 			return true;
-		} catch (...) {
+		}
+		catch (...)
+		{
 			return false;
 		}
 	}
@@ -137,6 +140,7 @@ namespace Directive
 		int bracket_level = 0;
 		const char *slice;
 
+		_block_start = NULL;
 		if (_p >= _end)
 			return false;
 		p = _p;
@@ -165,18 +169,30 @@ namespace Directive
 			if (*p == ';' && bracket_level == 0)
 				break; // Simple directive end
 			if (*p == '{')
+			{
+				if (bracket_level == 0)
+					_block_start = p;
 				bracket_level++;
+			}
 			if (*p == '}')
+			{
 				bracket_level--;
-			if (*p == '}' && bracket_level == 0)
-				break; // Block directive end
+				if (bracket_level == 0)
+					break; // Block directive end
+			}
 			if (bracket_level < 0)
 				throw ParseException("Mismatched closing bracket '}'");
 			p++;
 		}
+		if (bracket_level != 0)
+			throw ParseException("Mismatched closing bracket '}'");
 		_directiveStart = slice;
+		if (*p == '}')
+			p++;
 		_directiveEnd = p;
-		_p = (p < _end) ? p + 1 : p;
+		if (*p == ';')
+			p++;
+		_p = p;
 		return (true);
 	}
 
@@ -197,68 +213,53 @@ namespace Directive
 	}
 
 	/**
-	 * @brief Copies current directive as string
-	 */
-	std::string Parser::copyDirective() const
-	{
-		return _configString.substr(_directiveStart - _configString.c_str(),
-									_directiveEnd - _directiveStart + 1);
-	}
-
-	/**
 	 * @brief Extracts directive name and arguments from text
 	 * @return Vector with directive name as first element, followed by arguments
 	 */
-	std::vector<std::string> Parser::getArgs(const std::string &str,
-											 const char *start,
-											 const char *end,
-											 const char **block_start_ptr)
+	std::vector<std::string> Parser::getArgs()
 	{
-
 		const char *p;
 		const char *slice;
 		std::string name;
 		std::vector<std::string> args;
 
-		p = Directive::Parser::getName(start, end, name);
+		p = Directive::Parser::getName(_directiveStart, _directiveEnd, name);
 		if (p == NULL)
 			return args;
-		start = p;
 
 		// Add name to args
 		args.push_back(name);
 
 		// split args
-		while (p < end)
+		while (p < _directiveEnd)
 		{
-			p = Directive::Parser::skipSpace(p, end);
+			p = Directive::Parser::skipSpace(p, _directiveEnd);
 			slice = p;
-			while (p < end && !std::isspace(*p) && *p != '{' && *p != ';')
+			while (p < _directiveEnd && !std::isspace(*p) && *p != '{' && *p != ';')
 				p++;
 			if (p > slice)
-				args.push_back(str.substr(slice - str.c_str(), p - slice));
-			if (p >= end || *p == '{' || *p == ';')
+				args.push_back(_configString.substr(slice - _configString.c_str(), p - slice));
+			if (p >= _directiveEnd || *p == '{' || *p == ';')
 				break;
 			p++;
 		}
-		if (*p == '{')
-			*block_start_ptr = p;
 		return (args);
+	}
+
+	const Config *Parser::parseConfig(Parser *parser) {
+		(void)parser;
+		return (NULL);
 	}
 
 	/**
 	 * @brief Parses a single directive and adds to parent
 	 * @return Pointer to created directive or NULL on error
 	 */
-	const Config *Parser::parseDirective(Config *parent,
-										 const std::string &str,
-										 const char *start,
-										 const char *end)
+	const Config *Parser::parseDirective(Config *parent)
 	{
 		std::vector<std::string> args;
-		const char *block_start = NULL;
 
-		args = Parser::getArgs(str, start, end, &block_start);
+		args = Parser::getArgs();
 		if (args.size() == 0)
 		{
 			// Empty directive - skip
@@ -268,12 +269,13 @@ namespace Directive
 		const std::string &name = args[0];
 		try
 		{
+			// parseConfig(this);
 			DirectiveFactory::ParserFunc parserFunc = DirectiveFactory::getParser(name);
-			Config *config = parserFunc(args, parent);
+			Config *config = parserFunc(NULL, args, parent);
 			if (config)
 				config->parent = parent;
-			if (block_start)
-				parseBlockDirective(config, str, block_start, end);
+			if (_block_start)
+				parseBlockDirective(config);
 			return config;
 		}
 		catch (const std::out_of_range &e)
@@ -292,14 +294,15 @@ namespace Directive
 	 * @brief Recursively parses block directive (directives inside { })
 	 * @throws ParseException on syntax errors
 	 */
-	void Parser::parseBlockDirective(Config *parent,
-									 const std::string &str,
-									 const char *start,
-									 const char *end)
+	void Parser::parseBlockDirective(Config *parent)
 	{
 		const char *p = NULL;
+		const char *start;
+		const char *end;
 		int bracket_level = 0;
 
+		start = _block_start;
+		end = _directiveEnd;
 		if (*start != '{')
 			throw ParseException("Block directive must start with '{'");
 		start++; // skip first {
@@ -333,23 +336,13 @@ namespace Directive
 			throw ParseException("Missing closing bracket '}' for block directive");
 		end = p - 1;
 
-		std::string block = str.substr(start - str.c_str(), end - start);
+		std::string block = _configString.substr(start - _configString.c_str(), end - start);
 
 		Directive::Parser parser(block);
+		std::cout << "block: " << block << std::endl;
 
 		while (parser.getNextDirectives())
-		{
-			std::string directive = parser.copyDirective();
-			parseDirective(parent, directive);
-		}
-	}
-
-	/**
-	 * @brief Public parsing method with string parameters
-	 */
-	const Config *Parser::parseDirective(Config *parent, const std::string &str)
-	{
-		return (parseDirective(parent, str, str.c_str(), str.c_str() + str.length()));
+			parser.parseDirective(parent);
 	}
 
 	/**

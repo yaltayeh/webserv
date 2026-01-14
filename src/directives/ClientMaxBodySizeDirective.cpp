@@ -11,8 +11,9 @@
  *          client_max_body_size 1024;
  *          client_max_body_size 0; (unlimited)
  */
-struct Config *parseClientMaxBodySizeDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseClientMaxBodySizeDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

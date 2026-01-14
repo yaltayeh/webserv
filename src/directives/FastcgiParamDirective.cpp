@@ -8,8 +8,9 @@
  * Example: fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
  *          fastcgi_param QUERY_STRING $query_string;
  */
-struct Config *parseFastcgiParamDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseFastcgiParamDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

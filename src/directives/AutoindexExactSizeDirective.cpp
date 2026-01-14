@@ -8,8 +8,9 @@
  * Example: autoindex_exact_size off;
  * Controls whether file sizes are shown exactly or in human-readable format
  */
-struct Config *parseAutoindexExactSizeDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseAutoindexExactSizeDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)

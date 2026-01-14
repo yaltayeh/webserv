@@ -9,8 +9,9 @@
  *          rewrite ^/temp /permanent redirect;
  * Flags: permanent (301), redirect (302)
  */
-struct Config *parseRewriteDirective(const std::vector<std::string> &args, Config *parent)
+struct Config *parseRewriteDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
+	(void)parser;
 	// Cast parent to config
 	CommonConfigServerLocation *config = dynamic_cast<CommonConfigServerLocation *>(parent);
 	if (!config)
