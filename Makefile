@@ -19,10 +19,14 @@ endif
 INCLUDE_FLAGS	   		= -Iinclude -Iinclude/directives -Idependencies $(foreach lib,$(DEPENDENCIES),-I$(DEPENDENCIES_DIR)/$(lib)/include)
 
 SRCS		    		=   src/main.cpp 										\
-							src/Server.cpp 										\
-							src/ConnectionManager.cpp 							\
+							src/Socket.cpp 										\
+							src/ClientSocket.cpp 								\
+							src/ListenSocket.cpp 								\
+							src/VirtualServer.cpp 								\
 							src/EventLoop.cpp									\
 							src/RequestRouter.cpp								\
+							src/RegEx.cpp										\
+							\
 							src/directives/AutoindexExactSizeDirective.cpp		\
 							src/directives/ErrorPageDirective.cpp				\
 							src/directives/Core/LocationDirective.cpp			\
@@ -51,6 +55,7 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/CgiPassDirective.cpp					\
 							src/directives/CgiExtensionDirective.cpp			\
 							src/directives/DenyDirective.cpp					\
+
 
 OBJS		   			 = $(SRCS:src/%.cpp=$(BUILD_PATH)/obj/%.o)
 

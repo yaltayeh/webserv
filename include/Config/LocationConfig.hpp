@@ -34,4 +34,19 @@ struct LocationConfig : public CommonConfigServerLocation
 		this->fastcgi_pass = other.fastcgi_pass;
 		this->fastcgi_split_path_info = other.fastcgi_split_path_info;
 	};
+
+	LocationConfig& operator=(const LocationConfig &other)
+	{
+		if (this != &other)
+		{
+			CommonConfigServerLocation::operator=(other);
+			this->path = other.path;
+			this->alias = other.alias;
+			this->fastcgi_pass = other.fastcgi_pass;
+			this->fastcgi_split_path_info = other.fastcgi_split_path_info;
+		}
+		return *this;
+	}
+
+	~LocationConfig() {}
 };

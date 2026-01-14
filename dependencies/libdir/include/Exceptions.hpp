@@ -7,8 +7,7 @@
  * to maintain compatibility with standard C++ exception handling.
  */
 
-#ifndef EXCEPTIONS_HPP
-#define EXCEPTIONS_HPP
+#pragma once
 
 #include <stdexcept>
 #include <string>
@@ -212,5 +211,3 @@ public:
 };
 
 } // namespace Directive
-
-#endif // EXCEPTIONS_HPP

@@ -1,7 +1,7 @@
 #include "../include/RequestRouter.hpp"
-#include "../dependencies/libhttp/include/Utils.hpp"
-#include "../dependencies/libhttp/include/CGI.hpp"
-#include "../dependencies/libutils/include/StringUtils.hpp"
+#include "libhttp/include/Utils.hpp"
+#include "libhttp/include/CGI.hpp"
+#include "libutils/include/StringUtils.hpp"
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -37,40 +37,36 @@ libhttp::Response RequestRouter::route(const libhttp::Request& request,
     std::string uri = request.getUri();
     
     // STEP 1: Find matching location block
-    const LocationConfig* location = findMatchingLocation(uri, config);
-    
-    // STEP 2: Get effective configuration (merged server + location)
-    const CommonConfigServerLocation* effective_config = 
-        getEffectiveConfig(config, location);
-    
+    LocationConfig location = findMatchingLocation(uri, config);
+        
     // STEP 3: Check access control
-    if (isAccessDenied(effective_config)) {
-        return generateErrorResponse(403, effective_config);
+    if (isAccessDenied(location)) {
+        return generateErrorResponse(403, location);
     }
     
     // STEP 4: Validate HTTP method
-    if (!isMethodAllowed(request.getMethod(), effective_config)) {
-        return generateErrorResponse(405, effective_config);
+    if (!isMethodAllowed(request.getMethod(), location)) {
+        return generateErrorResponse(405, location);
     }
     
     // STEP 5: Check request body size
-    if (exceedsMaxBodySize(request, effective_config)) {
-        return generateErrorResponse(413, effective_config);
+    if (exceedsMaxBodySize(request, location)) {
+        return generateErrorResponse(413, location);
     }
     
     // STEP 6: Handle redirects (return directive)
-    if (effective_config->is_return) {
-        return handleRedirect(effective_config->return_code, 
-                            effective_config->return_url);
+    if (location.is_return) {
+        return handleRedirect(location.return_code, 
+                            location.return_url);
     }
     
     // STEP 7: Determine if CGI or static file
-    if (isCGIRequest(uri, effective_config)) {
-        return handleCGI(request, uri, effective_config);
+    if (isCGIRequest(uri, location)) {
+        return handleCGI(request, uri, location);
     }
     
     // STEP 8: Serve static file
-    return handleStaticFile(uri, effective_config);
+    return handleStaticFile(uri, location);
 }
 
 /**
@@ -83,15 +79,15 @@ libhttp::Response RequestRouter::route(const libhttp::Request& request,
  * RETURNS:
  * - Pointer to matching LocationConfig, or NULL if no match
  */
-const LocationConfig* RequestRouter::findMatchingLocation(const std::string& uri,
+const LocationConfig RequestRouter::findMatchingLocation(const std::string& uri,
                                                           const ServerConfig& config) const
 {
-    const LocationConfig* best_match = NULL;
+    const LocationConfig *best_match;
     size_t longest_match = 0;
     
     // Iterate through all location blocks
     for (size_t i = 0; i < config.locations.size(); ++i) {
-        const LocationConfig* loc = config.locations[i];
+        const LocationConfig *loc = &config.locations[i];
         const std::string& loc_path = loc->path;
         
         // Check if URI starts with location path
@@ -104,33 +100,7 @@ const LocationConfig* RequestRouter::findMatchingLocation(const std::string& uri
         }
     }
     
-    return best_match;
-}
-
-/**
- * getEffectiveConfig() - Merges server and location config
- * 
- * Location blocks inherit settings from server block but can override them.
- * This function returns the effective configuration for a matched location.
- * 
- * PARAMETERS:
- * - server_config: Base configuration from server block
- * - location: Matched location block (can be NULL for server-level config)
- * 
- * RETURNS:
- * - Effective CommonConfigServerLocation with merged settings
- */
-const CommonConfigServerLocation* RequestRouter::getEffectiveConfig(
-    const ServerConfig& server_config,
-    const LocationConfig* location) const
-{
-    if (location != NULL) {
-        // Location config inherits and overrides server config
-        return location;
-    }
-    
-    // No location match, use server config directly
-    return &server_config;
+    return *best_match;
 }
 
 /**
@@ -146,16 +116,17 @@ const CommonConfigServerLocation* RequestRouter::getEffectiveConfig(
  * - 403 if not readable
  */
 libhttp::Response RequestRouter::handleStaticFile(const std::string& uri,
-                                                  const CommonConfigServerLocation* config)
+                                                  const CommonConfigServerLocation& config)
 {
     libhttp::Response response;
     
     // Get location path (empty string if server-level config)
     std::string location_path = "";
-    const LocationConfig* loc = dynamic_cast<const LocationConfig*>(config);
-    if (loc != NULL) {
-        location_path = loc->path;
-    }
+    try {
+        const LocationConfig loc = static_cast<const LocationConfig &>(config);
+        location_path = loc.path;
+    } 
+    catch (...) {}
     
     // Resolve URI to filesystem path
     std::string file_path = resolvePath(uri, location_path, config);
@@ -174,13 +145,13 @@ libhttp::Response RequestRouter::handleStaticFile(const std::string& uri,
         
         if (!index_file.empty()) {
             file_path = index_file;
-        } else if (config->autoindex) {
+        } else if (config.autoindex) {
             // Generate directory listing
             std::cout << "Autoindex enabled, generating directory listing" << std::endl;
             return handleAutoindex(file_path, uri);
         } else {
             // No index file and autoindex disabled
-            std::cout << "Autoindex disabled (autoindex=" << config->autoindex << ")" << std::endl;
+            std::cout << "Autoindex disabled (autoindex=" << config.autoindex << ")" << std::endl;
             return generateErrorResponse(403, config);
         }
     }
@@ -217,16 +188,18 @@ libhttp::Response RequestRouter::handleStaticFile(const std::string& uri,
  */
 libhttp::Response RequestRouter::handleCGI(const libhttp::Request& request,
                                            const std::string& uri,
-                                           const CommonConfigServerLocation* config)
+                                           const CommonConfigServerLocation& config)
 {
     libhttp::Response response;
     
     // Get location path
     std::string location_path = "";
-    const LocationConfig* loc = dynamic_cast<const LocationConfig*>(config);
-    if (loc != NULL) {
-        location_path = loc->path;
-    }
+    try {
+
+        LocationConfig loc = static_cast<const LocationConfig &>(config);
+        location_path = loc.path;
+    } 
+    catch (...) { }
     
     // Resolve script path
     std::string script_path = resolvePath(uri, location_path, config);
@@ -240,7 +213,7 @@ libhttp::Response RequestRouter::handleCGI(const libhttp::Request& request,
     
     // Setup CGI execution
     CGI cgi;
-    std::string interpreter = config->cgi_pass;
+    std::string interpreter = config.cgi_pass;
     std::string server_name = "localhost"; // TODO: Get from server config
     int server_port = 8080; // TODO: Get from server config
     
@@ -465,15 +438,15 @@ libhttp::Response RequestRouter::handleAutoindex(const std::string& directory_pa
  * - Complete error response (custom page or default HTML)
  */
 libhttp::Response RequestRouter::generateErrorResponse(int status_code,
-                                                       const CommonConfigServerLocation* config)
+                                                       const CommonConfigServerLocation& config)
 {
     // Check for custom error page
     std::map<int, CommonConfig::ErrorPage>::const_iterator it = 
-        config->error_pages.find(status_code);
+        config.error_pages.find(status_code);
     
-    if (it != config->error_pages.end()) {
+    if (it != config.error_pages.end()) {
         const CommonConfig::ErrorPage& error_page = it->second;
-        std::string error_file_path = config->root + error_page.uri;
+        std::string error_file_path = config.root + error_page.uri;
         
         // Try to serve custom error page
         if (fileExists(error_file_path)) {
@@ -542,16 +515,16 @@ libhttp::Response RequestRouter::generateDefaultErrorPage(int status_code)
  * - false if method is explicitly denied
  */
 bool RequestRouter::isMethodAllowed(libhttp::Method method,
-                                   const CommonConfigServerLocation* config) const
+                                   const CommonConfigServerLocation& config) const
 {
     // If no restrictions configured, all methods are allowed
-    if (config->allowed_methods.empty()) {
+    if (config.allowed_methods.empty()) {
         return true;
     }
     
     std::string method_str = libhttp::methodToString(method);
     
-    return config->allowed_methods.find(method_str) != config->allowed_methods.end();
+    return config.allowed_methods.find(method_str) != config.allowed_methods.end();
 }
 
 /**
@@ -561,9 +534,9 @@ bool RequestRouter::isMethodAllowed(libhttp::Method method,
  * - true if deny_all is enabled
  * - false otherwise
  */
-bool RequestRouter::isAccessDenied(const CommonConfigServerLocation* config) const
+bool RequestRouter::isAccessDenied(const CommonConfigServerLocation& config) const
 {
-    return config->deny_all;
+    return config.deny_all;
 }
 
 /**
@@ -574,7 +547,7 @@ bool RequestRouter::isAccessDenied(const CommonConfigServerLocation* config) con
  * - false otherwise
  */
 bool RequestRouter::exceedsMaxBodySize(const libhttp::Request& request,
-                                      const CommonConfigServerLocation* config) const
+                                      const CommonConfigServerLocation& config) const
 {
     std::string content_length_str = request.getHeader("Content-Length");
     
@@ -585,7 +558,7 @@ bool RequestRouter::exceedsMaxBodySize(const libhttp::Request& request,
     // Parse Content-Length
     size_t content_length = std::atol(content_length_str.c_str());
     
-    return content_length > config->client_max_body_size;
+    return content_length > config.client_max_body_size;
 }
 
 /**
@@ -605,24 +578,27 @@ bool RequestRouter::exceedsMaxBodySize(const libhttp::Request& request,
  */
 std::string RequestRouter::resolvePath(const std::string& uri,
                                       const std::string& location_path,
-                                      const CommonConfigServerLocation* config) const
+                                      const CommonConfigServerLocation& config) const
 {
-    const LocationConfig* loc = dynamic_cast<const LocationConfig*>(config);
-    
-    // Check for alias directive
-    if (loc != NULL && !loc->alias.empty()) {
-        // alias: strip location path from URI and prepend alias
-        // Example: location /photos { alias /data/images; }
-        // URI /photos/cat.jpg -> /data/images/cat.jpg
-        
-        std::string remaining_path = uri.substr(location_path.length());
-        return loc->alias + remaining_path;
+
+    try {
+        const LocationConfig loc = static_cast<const LocationConfig &>(config);
+        // Check for alias directive
+        if (!loc.alias.empty()) {
+            // alias: strip location path from URI and prepend alias
+            // Example: location /photos { alias /data/images; }
+            // URI /photos/cat.jpg -> /data/images/cat.jpg
+            
+            std::string remaining_path = uri.substr(location_path.length());
+            return loc.alias + remaining_path;
+        }
     }
+    catch (...) {}
     
     // Use root directive (default behavior)
     // Example: root /var/www;
     // URI /images/cat.jpg -> /var/www/images/cat.jpg
-    return config->root + uri;
+    return config.root + uri;
 }
 
 /**
@@ -637,16 +613,16 @@ std::string RequestRouter::resolvePath(const std::string& uri,
  * - false for static file serving
  */
 bool RequestRouter::isCGIRequest(const std::string& uri,
-                                const CommonConfigServerLocation* config) const
+                                const CommonConfigServerLocation& config) const
 {
     // Check if CGI is configured
-    if (config->cgi_pass.empty()) {
+    if (config.cgi_pass.empty()) {
         return false;
     }
     
     // Check if URI has CGI extension
-    for (size_t i = 0; i < config->cgi_extensions.size(); ++i) {
-        const std::string& ext = config->cgi_extensions[i];
+    for (size_t i = 0; i < config.cgi_extensions.size(); ++i) {
+        const std::string& ext = config.cgi_extensions[i];
         
         // Check if URI ends with this extension
         if (uri.length() >= ext.length()) {
@@ -721,7 +697,7 @@ bool RequestRouter::isDirectory(const std::string& path) const
  * - Path to first existing index file, or empty string if none found
  */
 std::string RequestRouter::findIndexFile(const std::string& directory_path,
-                                        const CommonConfigServerLocation* config) const
+                                        const CommonConfigServerLocation& config) const
 {
     // Ensure directory path ends with /
     std::string dir = directory_path;
@@ -730,8 +706,8 @@ std::string RequestRouter::findIndexFile(const std::string& directory_path,
     }
     
     // Check each index file in order
-    for (size_t i = 0; i < config->index.size(); ++i) {
-        std::string index_path = dir + config->index[i];
+    for (size_t i = 0; i < config.index.size(); ++i) {
+        std::string index_path = dir + config.index[i];
         
         if (fileExists(index_path) && !isDirectory(index_path)) {
             return index_path;

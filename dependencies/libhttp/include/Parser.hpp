@@ -1,5 +1,4 @@
-#ifndef PARSER_HPP
-#define PARSER_HPP
+#pragma once
 
 #include <string>
 #include "Request.hpp"
@@ -45,5 +44,3 @@ namespace libhttp {
 	};
 
 }
-
-#endif

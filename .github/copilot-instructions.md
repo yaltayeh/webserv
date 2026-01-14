@@ -65,7 +65,7 @@ Must support NGINX-like syntax for:
 ## Code Conventions
 
 ### C++ Style
-- **Headers**: Include guards (e.g., `#ifndef REQUEST_HPP`)
+- **Headers**: Include guards (e.g., `#pragma once`), standard library includes before project headers
 - **Namespaces**: All libhttp code in `libhttp::` namespace
 - **Naming**: PascalCase for classes/enums, camelCase for methods, `_underscore` prefix for private members
 - **Operators**: Implement `operator<<` for stream insertion on Request/Response classes

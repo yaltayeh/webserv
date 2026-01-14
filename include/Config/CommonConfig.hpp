@@ -3,7 +3,11 @@
 #include <string>
 #include <map>
 #include <set>
+#include <vector>
 #include "Config.hpp"
+
+// Forward declaration to break circular dependency
+struct LocationConfig;
 
 struct CommonConfig : Config
 {
@@ -99,11 +103,41 @@ struct CommonConfig : Config
 		this->dav_access = config.dav_access;
 		this->create_full_put_path = config.create_full_put_path;
 	}
+
+	CommonConfig& operator=(const CommonConfig &config)
+	{
+		if (this != &config)
+		{
+			Config::operator=(config);
+			this->autoindex = config.autoindex;
+			this->autoindex_exact_size = config.autoindex_exact_size;
+			this->autoindex_format = config.autoindex_format;
+			this->error_pages = config.error_pages;
+			this->root = config.root;
+			this->cgi_pass = config.cgi_pass;
+			this->cgi_extensions = config.cgi_extensions;
+			this->upload_enable = config.upload_enable;
+			this->upload_store = config.upload_store;
+			this->allowed_methods = config.allowed_methods;
+			this->deny_all = config.deny_all;
+			this->index = config.index;
+			this->client_max_body_size = config.client_max_body_size;
+			this->client_body_temp_path = config.client_body_temp_path;
+			this->dav_methods = config.dav_methods;
+			this->dav_access = config.dav_access;
+			this->create_full_put_path = config.create_full_put_path;
+			this->fastcgi_params = config.fastcgi_params;
+			this->fastcgi_index = config.fastcgi_index;
+		}
+		return *this;
+	}
+
+	~CommonConfig() {}
 };
 
 struct CommonConfigServerLocation : CommonConfig
 {
-	std::vector<struct LocationConfig *> locations;
+	std::vector<struct LocationConfig> locations;
 
 	// HTTP redirection
 	bool is_return;
@@ -131,4 +165,24 @@ struct CommonConfigServerLocation : CommonConfig
 		this->return_url = other.return_url;
 		this->rewrites = other.rewrites;
 	}
+
+	CommonConfigServerLocation& operator=(const CommonConfigServerLocation &other)
+	{
+		if (this != &other)
+		{
+			CommonConfig::operator=(other);
+			this->locations = other.locations;
+			this->is_return = other.is_return;
+			this->return_code = other.return_code;
+			this->return_url = other.return_url;
+			this->rewrites = other.rewrites;
+		}
+		return *this;
+	}
+
+	~CommonConfigServerLocation() {}
 };
+
+// Include LocationConfig after CommonConfigServerLocation is defined
+// to break circular dependency
+#include "LocationConfig.hpp"

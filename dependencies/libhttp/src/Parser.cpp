@@ -51,7 +51,9 @@ namespace libhttp {
 			// parse method, uri, version with spilt
 			std::vector<std::string> request_line_parts = split(request_line, ' ');
 
-			if (request_line_parts.size() != 3 || request_line_parts[2] != HTTP_1_0)
+			if (request_line_parts.size() != 3 
+				// || request_line_parts[2] != HTTP_1_0
+				)
 				{ _state = ERROR; return -1; }
 			_request.setMethod(stringToMethod(request_line_parts[0]));
 			_request.setUri(request_line_parts[1]);

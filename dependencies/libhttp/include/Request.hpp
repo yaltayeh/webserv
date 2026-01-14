@@ -1,5 +1,4 @@
-#ifndef REQUEST_HPP
-#define REQUEST_HPP
+#pragma once
 
 #include <string>
 #include <map>
@@ -41,5 +40,3 @@ namespace libhttp {
 
 // Stream insertion operator
 std::ostream &operator<<(std::ostream &os, const libhttp::Request &request);
-
-#endif

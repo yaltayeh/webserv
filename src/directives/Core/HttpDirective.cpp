@@ -23,10 +23,10 @@ struct Config *parserHttpDirective(const std::vector<std::string> &args, Config 
 		throw Directive::InvalidNesting("http", "can only be used in global context");
 
 	// Create new HTTP config block
-	HttpConfig *http = new HttpConfig();
+	HttpConfig http = HttpConfig();
 	global->https.push_back(http);
 	
-	return http;
+	return &global->https[global->https.size() - 1];
 }
 
 DEFINE_DIRECTIVE("http", parserHttpDirective);
