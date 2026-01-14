@@ -22,6 +22,13 @@ struct Config *parseLocationDirective(Directive::Parser *parser, const std::vect
 	
 	// Create new location config
 	LocationConfig loc = LocationConfig();
+
+	// copy Common config from parent
+	if (dynamic_cast<LocationConfig *>(config))
+		static_cast<LocationConfig &>(loc) = static_cast<LocationConfig &>(*config);
+	else
+		static_cast<CommonConfigServerLocation &>(loc) = *config;
+
 	loc.path = args[1];
 	config->locations.push_back(loc);
 	return &config->locations[config->locations.size() - 1];

@@ -26,6 +26,10 @@ struct Config *initServerConfig(Directive::Parser *parser, const std::vector<std
 
 	// Create new server config block
 	ServerConfig server = ServerConfig();
+
+	// copy Common config from parent
+	static_cast<CommonConfig &>(server) = static_cast<CommonConfig &>(*http);
+
 	http->servers.push_back(server);
 
 	return &http->servers[http->servers.size() - 1];

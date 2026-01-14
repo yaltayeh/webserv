@@ -12,14 +12,12 @@ Config *types_handler(Directive::Parser *parser, const std::vector<std::string> 
 		throw Directive::InvalidNesting("types", "can only be used in http, server or location context");
 	if (args.size() < 2)
 		throw Directive::ArgumentException("types", "takes two MiME type and name extensions");
-
 	const std::string &mimeType = args[0];
-	for (std::vector<std::string>::const_iterator it = args.begin();
-		 it != args.end();
-		 it++)
+	for (size_t i = 1; i < args.size(); i++)
 	{
-		config->mimeTypes[mimeType] = *it;
+		config->mimeTypes[args[i]] = mimeType;
 	}
+	
 	return NULL;
 }
 
@@ -31,10 +29,11 @@ struct Config *parseTypesDirective(Directive::Parser *parser, const std::vector<
 		throw Directive::InvalidNesting("types", "can only be used in http, server or location context");
 	if (args.size() != 1)
 		throw Directive::ArgumentException("types", "takes no arguments");
-	config->mimeTypes.clear();
 
 	Directive::Parser::ParserHandler oldHandler = parser->getHandler();
+
 	parser->setHandler(types_handler);
+	config->mimeTypes.clear();
 	parser->parseBlockDirective(parent);
 	parser->setHandler(oldHandler);
 	return NULL;

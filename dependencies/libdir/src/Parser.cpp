@@ -245,12 +245,7 @@ namespace Directive
 		std::string name;
 		std::vector<std::string> args;
 
-		p = Directive::Parser::getName(_directiveStart, _directiveEnd, name);
-		if (p == NULL)
-			return args;
-
-		// Add name to args
-		args.push_back(name);
+		p = _directiveStart;
 
 		// split args
 		while (p < _directiveEnd)
@@ -356,8 +351,7 @@ namespace Directive
 		std::string block = _configString.substr(start - _configString.c_str(), end - start);
 
 		Directive::Parser parser(block);
-		std::cout << "block: " << block << std::endl;
-
+		parser.setHandler(_handler);
 		while (parser.getNextDirectives())
 			parser.parseDirective(parent);
 		_block_start = NULL;

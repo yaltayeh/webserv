@@ -22,10 +22,6 @@ $(BUILD_PATH)/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(BUILD_PATH)/directives/%.o: directives/src/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
-
 clean:
 	rm -rf $(OFILES) $(DFILES)
 
