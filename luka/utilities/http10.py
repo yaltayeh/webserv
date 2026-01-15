@@ -32,7 +32,7 @@ def send_http10_request(method, url, data=None, headers=None):
     request_headers = {
         'Host': f"{host}:{port}",
         'Connection': 'close',
-        'User-Agent': 'Loka-Test-Framework/1.0',
+        'User-Agent': 'luka-Test-Framework/1.0',
     }
     if headers:
         request_headers.update(headers)

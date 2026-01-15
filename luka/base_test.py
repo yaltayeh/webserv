@@ -1,5 +1,5 @@
 """
-Base test class for loka testing framework.
+Base test class for luka testing framework.
 Provides isolated test environments with dedicated directories and resources.
 """
 import os

@@ -13,8 +13,8 @@ from luka import logger, assertions
 from luka.utilities import process, network, http
 from luka.base_test import BaseTest
 
-TESTS_DIR = os.path.join(WEBSERV_PATH, "loka", "tests")
-TEST_RUNS_DIR = os.path.join(WEBSERV_PATH, "loka", "test_runs")
+TESTS_DIR = os.path.join(WEBSERV_PATH, "luka", "tests")
+TEST_RUNS_DIR = os.path.join(WEBSERV_PATH, "luka", "test_runs")
 WEBSERV_BIN = os.path.join(WEBSERV_PATH, "build/webserv")
 SERVER_START_TIMEOUT = 5  # seconds
 
