@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 #include <csignal>
 #include <cstring>
 #include <cstdlib>
@@ -61,17 +62,19 @@ CGI::SetupResult CGI::setup(const libhttp::Request &request,
     return SETUP_OK;
 }
 
-pid_t CGI::execute(int &readPipeFd, int &writePipeFd) {
+pid_t CGI::execute(int &socketFd) {
     // Ensure setup was called successfully
     if (!_isSetup) {
         _error = "CGI::execute() called without successful setup()";
         return -1;
     }
 
-    int pipeToChild[2];
-    int pipeFromChild[2];
+    int sv[2];  // Single bidirectional socketpair
 
-    if (!createPipes(pipeToChild, pipeFromChild)) {
+
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == -1) {
+        _error = "Failed to create socketpair: ";
+        _error += strerror(errno);
         return -1;
     }
 
@@ -79,38 +82,32 @@ pid_t CGI::execute(int &readPipeFd, int &writePipeFd) {
     if (pid == -1) {
         _error = "Failed to fork: ";
         _error += strerror(errno);
-        closePipes(pipeToChild, pipeFromChild);
+        close(sv[0]);
+        close(sv[1]);
         return -1;
     }
 
     if (pid == 0) {
         // Child process - this function does not return
-        setupChildProcess(pipeToChild, pipeFromChild);
+        setupChildProcess(sv);
         _exit(1); // Only reached if setupChildProcess fails
     }
 
     // Parent process
-    close(pipeToChild[0]);   // Close read end of input pipe
-    close(pipeFromChild[1]); // Close write end of output pipe
+    close(sv[1]);   // Close child's end of socketpair
 
-    // Set both pipes to non-blocking mode for non-blocking I/O
+    // Set socket to non-blocking mode for non-blocking I/O
     // Note: fcntl errors are not critical - CGI will still work in blocking mode
     // Warnings are stored for debugging purposes
-    if (fcntl(pipeFromChild[0], F_SETFL, O_NONBLOCK) == -1) {
+    if (fcntl(sv[0], F_SETFL, O_NONBLOCK) == -1) {
         if (!_error.empty()) {
             _error += " ; ";
         }
-        _error += "Warning: failed to set non-blocking mode on CGI read pipe";
-    }
-    if (fcntl(pipeToChild[1], F_SETFL, O_NONBLOCK) == -1) {
-        if (!_error.empty()) {
-            _error += " ; ";
-        }
-        _error += "Warning: failed to set non-blocking mode on CGI write pipe";
+        _error += "Warning: failed to set non-blocking mode on CGI socket";
     }
 
-    writePipeFd = pipeToChild[1];
-    readPipeFd = pipeFromChild[0];
+    // Parent uses sv[0] for both reading and writing
+    socketFd = sv[0];
 
     return pid;
 }
@@ -453,50 +450,23 @@ std::string CGI::extractPathInfo(const std::string &uri, const std::string &scri
 }
 
 // ============================================================================
-// Pipe Management (SRP)
+// Socketpair Management (SRP)
 // ============================================================================
 
-bool CGI::createPipes(int pipeToChild[2], int pipeFromChild[2]) {
-    if (pipe(pipeToChild) == -1) {
-        _error = "Failed to create pipe to child: ";
-        _error += strerror(errno);
-        return false;
-    }
+void CGI::setupChildProcess(int sv[2]) {
+    // Close parent's end
+    close(sv[0]);
 
-    if (pipe(pipeFromChild) == -1) {
-        _error = "Failed to create pipe from child: ";
-        _error += strerror(errno);
-        close(pipeToChild[0]);
-        close(pipeToChild[1]);
-        return false;
-    }
-
-    return true;
-}
-
-void CGI::closePipes(int pipeToChild[2], int pipeFromChild[2]) {
-    close(pipeToChild[0]);
-    close(pipeToChild[1]);
-    close(pipeFromChild[0]);
-    close(pipeFromChild[1]);
-}
-
-void CGI::setupChildProcess(int pipeToChild[2], int pipeFromChild[2]) {
-    // Close unused pipe ends
-    close(pipeToChild[1]);
-    close(pipeFromChild[0]);
-
-    // Redirect stdin
-    if (dup2(pipeToChild[0], STDIN_FILENO) == -1) {
+    // Redirect stdin to socketpair
+    if (dup2(sv[1], STDIN_FILENO) == -1) {
         _exit(1);
     }
-    close(pipeToChild[0]);
 
-    // Redirect stdout
-    if (dup2(pipeFromChild[1], STDOUT_FILENO) == -1) {
+    // Redirect stdout to socketpair
+    if (dup2(sv[1], STDOUT_FILENO) == -1) {
         _exit(1);
     }
-    close(pipeFromChild[1]);
+    close(sv[1]);
     
     // NOTE: stderr is not redirected per RFC 3875 section 6.2
     // CGI script errors will go to the server's stderr

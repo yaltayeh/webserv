@@ -227,10 +227,9 @@ libhttp::Response RequestRouter::handleCGI(const libhttp::Request& request,
     }
     
     // Execute CGI script
-    int read_pipe_fd = -1;
-    int write_pipe_fd = -1;
+    int socketFd = -1;
     
-    pid_t pid = cgi.execute(read_pipe_fd, write_pipe_fd);
+    pid_t pid = cgi.execute(socketFd);
     
     if (pid == -1) {
         std::cerr << "CGI execution failed: " << cgi.getError() << std::endl;
@@ -239,17 +238,12 @@ libhttp::Response RequestRouter::handleCGI(const libhttp::Request& request,
     
     // Write request body to CGI script (for POST requests)
     std::string request_body = request.getBody();
-    if (!request_body.empty() && write_pipe_fd != -1) {
-        ssize_t written = write(write_pipe_fd, request_body.c_str(), 
+    if (!request_body.empty() && socketFd != -1) {
+        ssize_t written = write(socketFd, request_body.c_str(), 
                                request_body.size());
         if (written < 0) {
             std::cerr << "Failed to write to CGI script" << std::endl;
         }
-    }
-    
-    // CRITICAL: Close write pipe to signal EOF to CGI script
-    if (write_pipe_fd != -1) {
-        close(write_pipe_fd);
     }
     
     // Read CGI output
@@ -257,11 +251,11 @@ libhttp::Response RequestRouter::handleCGI(const libhttp::Request& request,
     char buffer[4096];
     ssize_t bytes_read;
     
-    while ((bytes_read = read(read_pipe_fd, buffer, sizeof(buffer))) > 0) {
+    while ((bytes_read = read(socketFd, buffer, sizeof(buffer))) > 0) {
         cgi_output.append(buffer, bytes_read);
     }
     
-    close(read_pipe_fd);
+    close(socketFd);
     
     // Wait for CGI script to finish
     int status;

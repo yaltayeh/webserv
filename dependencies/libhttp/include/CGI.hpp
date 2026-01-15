@@ -59,19 +59,19 @@ public:
      * @brief Execute the CGI script (fork and exec)
      * 
      * Must be called after successful setup().
-     * Creates pipes for bidirectional communication with CGI script.
+     * Creates a single bidirectional socketpair for communication with CGI script.
      * 
-     * @param readPipeFd Output: pipe fd to read CGI output from
-     * @param writePipeFd Output: pipe fd to write request body to (if POST)
+     * @param readPipeFd Output: socket fd to read CGI output from (same as writePipeFd)
+     * @param writePipeFd Output: socket fd to write request body to (same as readPipeFd)
      * @return PID of child process, or -1 on error
      * 
-     * @note CRITICAL: The caller MUST close writePipeFd after writing the
-     *       request body to signal EOF to the CGI script. Failing to close
-     *       writePipeFd will cause the CGI script to hang waiting for more
-     *       input. For POST requests, write the body then immediately close
-     *       writePipeFd. For GET requests, close writePipeFd immediately.
+     * @note CRITICAL: The caller MUST close the socket fd after writing the
+     *       request body to signal EOF to the CGI script. Since readPipeFd and
+     *       writePipeFd are the same bidirectional socket, closing either will
+     *       close both. For POST requests, write the body then close. For GET
+     *       requests, close immediately after reading the response.
      */
-    pid_t execute(int &readPipeFd, int &writePipeFd);
+    pid_t execute(int &socketFd);
 
     /**
      * @brief Get the error message if setup() or execute() failed
@@ -133,10 +133,7 @@ private:
     std::string extractQueryString(const std::string &uri) const;
     std::string extractPathInfo(const std::string &uri, const std::string &scriptName) const;
 
-    // Pipe management (SRP: separate pipe logic)
-    bool createPipes(int pipeToChild[2], int pipeFromChild[2]);
-    void closePipes(int pipeToChild[2], int pipeFromChild[2]);
-    void setupChildProcess(int pipeToChild[2], int pipeFromChild[2]);
+    void setupChildProcess(int sv[2]);
 
     // Disabled copy operations
     CGI(const CGI &);
