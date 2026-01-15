@@ -98,4 +98,8 @@ $(BUILD_PATH)/obj/tests/%.o: tests/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
-.PHONY: all clean re fclean test
+# New framework tests
+tests_framework:
+	python3 framework/run_tests.py
+
+.PHONY: all clean re fclean test tests_framework
