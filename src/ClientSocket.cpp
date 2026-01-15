@@ -10,8 +10,8 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
     : Socket(client_fd),
       addr(addr),
       listenSocket(listen),
-      complateResponse(false),
-      sendResponse(false)
+      isRequestRead(false),
+      isResponseSent(false)
 {
 }
 
@@ -48,7 +48,7 @@ int ClientSocket::EventHandler(EventLoop *el)
         }
 
         // If HTTP request is complete and response is ready
-        if (isComplateResponse())
+        if (isRequestRead)
         {
             // Switch from reading to writing
             // (Stop monitoring reads, start monitoring writes)
@@ -64,7 +64,7 @@ int ClientSocket::EventHandler(EventLoop *el)
         handleWrite();
 
         // If entire response has been sent
-        if (isSendResponse())
+        if (isResponseSent)
         {
             // Clean up: close connection and free memory
             el->deleteEvent(_socketfd, EVENT_WRITE);
@@ -161,7 +161,7 @@ bool ClientSocket::handleRead()
             response = servers[0]->handleRequest(request);
 
         write_buffer = response.toString();
-        complateResponse = 1;
+        isRequestRead = 1;
         std::cout << "Response ready, waiting for socket to be writable"
                   << std::endl;
     }
@@ -172,11 +172,7 @@ bool ClientSocket::handleRead()
 bool ClientSocket::handleWrite()
 {
     if (write_buffer.empty())
-    {
         return true;
-    }
-
-    complateResponse = 0;
 
     ssize_t bytes_sent = send(write_buffer.c_str(), write_buffer.size());
 
@@ -187,9 +183,7 @@ bool ClientSocket::handleWrite()
     }
 
     if (bytes_sent == 0)
-    {
         return true;
-    }
 
     std::cout << "Sent " << bytes_sent << " bytes to client " << getHost() << std::endl;
 
@@ -199,17 +193,7 @@ bool ClientSocket::handleWrite()
     if (write_buffer.empty())
     {
         std::cout << "All data sent to client " << getHost() << std::endl;
-        sendResponse = 1;
+        isResponseSent = 1;
     }
     return true;
-}
-
-bool ClientSocket::isComplateResponse()
-{
-    return complateResponse;
-}
-
-bool ClientSocket::isSendResponse()
-{
-    return sendResponse;
 }

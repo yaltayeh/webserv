@@ -18,8 +18,8 @@ private:
 	std::string write_buffer;
 	libhttp::Parser parser;
 
-	int complateResponse;
-	int sendResponse;
+	int isRequestRead;
+	int isResponseSent;
 
 public:
 	ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen);
@@ -30,6 +30,4 @@ public:
 	const char *getHost();
 	bool handleRead();
 	bool handleWrite();
-	bool isComplateResponse();
-	bool isSendResponse();
 };
