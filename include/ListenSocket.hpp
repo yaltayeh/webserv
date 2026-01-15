@@ -1,14 +1,15 @@
 #pragma once
 
+class ListenSocket;
+
 #include "Socket.hpp"
 #include "VirtualServer.hpp"
 #include "ClientSocket.hpp"
+#include "EventData.hpp"
 
 class ClientSocket;
 
-#define LISTEN_ID SOCKET_TYPE('L', 'S', 'T', 'N')
-
-class ListenSocket : public Socket
+class ListenSocket : public Socket, public EventData
 {
 private:
 	uint32_t _ip;
@@ -18,6 +19,7 @@ private:
 public:
 	ListenSocket(uint32_t ip, uint16_t port);
 	~ListenSocket();
+	int EventHandler(EventLoop *el);
 
 	int setOptions();
 	ClientSocket *accept();

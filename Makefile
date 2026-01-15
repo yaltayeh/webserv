@@ -26,6 +26,7 @@ SRCS		    		=   src/main.cpp 										\
 							src/EventLoop.cpp									\
 							src/RequestRouter.cpp								\
 							src/RegEx.cpp										\
+							src/EventData.cpp									\
 							\
 							src/directives/Core/LocationDirective.cpp			\
 							src/directives/Core/ServerDirective.cpp				\

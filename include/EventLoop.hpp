@@ -1,5 +1,7 @@
 #pragma once
 
+class EventLoop;
+
 #include <vector>
 #include <map>
 #include "ListenSocket.hpp"
@@ -7,10 +9,10 @@
 
 // Platform-specific includes
 #if defined(__linux__)
-    #include <sys/epoll.h>
+#include <sys/epoll.h>
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-    #include <sys/event.h>
-    #include <sys/time.h>
+#include <sys/event.h>
+#include <sys/time.h>
 #endif
 
 /**
@@ -25,16 +27,17 @@ private:
     std::vector<VirtualServer *> _virtualServers;
     std::map<uint64_t, ListenSocket *> _listeningSockets;
 
-    int _eventFd;  // epoll fd (Linux) or kqueue fd (macOS/BSD)
+    int _eventFd; // epoll fd (Linux) or kqueue fd (macOS/BSD)
 
     // Internal event management methods
-    int addEvent(int fd, int event, void *udata);
-    int deleteEvent(int fd, int event);
 
 public:
     EventLoop(const GlobalConfig &config);
     ~EventLoop();
     EventLoop(const EventLoop &other);
+
+    int addEvent(int fd, int event, EventData *udata);
+    int deleteEvent(int fd, int event);
     EventLoop &operator=(const EventLoop &other);
 
     // Main event loop

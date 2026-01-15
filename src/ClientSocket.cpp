@@ -2,11 +2,12 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include <RequestRouter.hpp>
+#include "EventLoop.hpp"
 
 #define READ_BUFFER_SIZE 4096
 
 ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen)
-    : Socket(CLIENT_ID, client_fd),
+    : Socket(client_fd),
       addr(addr),
       listenSocket(listen),
       complateResponse(false),
@@ -17,6 +18,58 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
 ClientSocket::~ClientSocket()
 {
     (void)listenSocket;
+}
+
+int ClientSocket::EventHandler(EventLoop *el)
+{
+    // --- Sub-case A: Client Disconnected ---
+    if (isEOF)
+    {
+        std::cout << "client [" << getHost() << "]: disconnected" << std::endl;
+
+        // Clean up: remove from event loop and free memory
+        el->deleteEvent(_socketfd, EVENT_READ);
+        // delete client;
+        return 0;
+    }
+
+    // --- Sub-case B: Data Ready to Read (HTTP Request) ---
+    if (isRead)
+    {
+        // Read data and parse HTTP request
+        if (handleRead() == false) // Returns false on error
+        {
+            // Error occurred, close connection
+            el->deleteEvent(_socketfd, EVENT_READ);
+            // delete client;
+            return (0);
+        }
+
+        // If HTTP request is complete and response is ready
+        if (isComplateResponse())
+        {
+            // Switch from reading to writing
+            // (Stop monitoring reads, start monitoring writes)
+            el->deleteEvent(_socketfd, EVENT_READ);
+            el->addEvent(_socketfd, EVENT_WRITE, this);
+        }
+    }
+
+    // --- Sub-case C: Socket Ready to Write (HTTP Response) ---
+    else if (isWrite)
+    {
+        // Send HTTP response data
+        handleWrite();
+
+        // If entire response has been sent
+        if (isSendResponse())
+        {
+            // Clean up: close connection and free memory
+            el->deleteEvent(_socketfd, EVENT_WRITE);
+            // delete client;
+        }
+    }
+    return (0);
 }
 
 sockaddr_in ClientSocket::getAddress()

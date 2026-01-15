@@ -5,8 +5,8 @@
 #include <cerrno>
 #include <cstring>
 
-Socket::Socket(unsigned int type, int socketfd)
-	: type(type), _socketfd(socketfd)
+Socket::Socket(int socketfd)
+	: _socketfd(socketfd)
 {
 	/**
 	 * ========================================================================
@@ -53,11 +53,6 @@ Socket::Socket(unsigned int type, int socketfd)
 Socket::~Socket()
 {
 	Socket::close();
-}
-
-unsigned int Socket::getType() const
-{
-	return type;
 }
 
 /**

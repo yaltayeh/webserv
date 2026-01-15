@@ -10,9 +10,10 @@
 #include <cerrno>
 #include "ClientSocket.hpp"
 #include "ListenSocket.hpp"
+#include "EventLoop.hpp"
 
 ListenSocket::ListenSocket(uint32_t ip, uint16_t port)
-	: Socket(LISTEN_ID, -1), _ip(ip), _port(port)
+	: Socket(-1), _ip(ip), _port(port)
 {
 	if (setOptions())
 	{
@@ -33,6 +34,32 @@ ListenSocket::ListenSocket(uint32_t ip, uint16_t port)
 
 ListenSocket::~ListenSocket()
 {
+}
+
+int ListenSocket::EventHandler(EventLoop *el)
+{
+	// Accept ALL pending connections (important for edge-triggered mode)
+	// We must accept until EAGAIN, otherwise we might miss connections
+	while (1)
+	{
+		// Try to accept a new client connection
+		ClientSocket *clientSocket = accept();
+
+		if (!clientSocket)
+		{
+			// EAGAIN/EWOULDBLOCK means no more connections (normal)
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				break;
+
+			perror("accept");
+			break;
+		}
+
+		// Add new client to event loop (start monitoring for HTTP request)
+		el->addEvent(clientSocket->getSocketfd(), EVENT_READ, clientSocket);
+		std::cout << "add client " << clientSocket->getHost() << std::endl;
+	}
+	return 0;
 }
 
 int ListenSocket::setOptions()
