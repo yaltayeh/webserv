@@ -111,7 +111,7 @@ namespace Directive
 	 */
 	Parser Parser::openConfigFile(const std::string &fileName)
 	{
-		std::ifstream file(fileName);
+		std::ifstream file(fileName.c_str());
 		if (!file)
 			throw FileException(fileName, "Cannot open configuration file");
 
