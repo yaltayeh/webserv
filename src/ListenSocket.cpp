@@ -40,26 +40,24 @@ int ListenSocket::EventHandler(EventLoop *el)
 {
 	// Accept ALL pending connections (important for edge-triggered mode)
 	// We must accept until EAGAIN, otherwise we might miss connections
-	while (1)
+	
+	// Try to accept a new client connection
+	ClientSocket *clientSocket = accept();
+
+	if (!clientSocket)
 	{
-		// Try to accept a new client connection
-		ClientSocket *clientSocket = accept();
+		// EAGAIN/EWOULDBLOCK means no more connections (normal)
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return 0;
 
-		if (!clientSocket)
-		{
-			// EAGAIN/EWOULDBLOCK means no more connections (normal)
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				break;
-
-			std::cerr << "Error: accept() failed: "
-					  << strerror(errno) << std::endl;
-			break;
-		}
-
-		// Add new client to event loop (start monitoring for HTTP request)
-		el->addEvent(clientSocket->getSocketfd(), EVENT_READ, clientSocket);
-		std::cout << "add client " << clientSocket->getHost() << std::endl;
+		std::cerr << "Error: accept() failed: "
+					<< strerror(errno) << std::endl;
+		return 1;
 	}
+
+	// Add new client to event loop (start monitoring for HTTP request)
+	el->addEvent(clientSocket->getSocketfd(), EVENT_READ, clientSocket);
+	std::cout << "add client " << clientSocket->getHost() << std::endl;
 	return 0;
 }
 
