@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <sstream>
 #include <unistd.h>
+#include <fcntl.h>
 #include "EventLoop.hpp"
 
 /**
@@ -210,16 +211,23 @@ void EventLoop::run()
 {
 #if defined(__linux__)
 	// Linux: Create epoll instance (event notification facility)
-	_eventFd = epoll_create1(0); // TODO: use EPOLL_CLOEXEC flag. // TODO: fix this please should be epoll (epoll_create, epoll_ctl, epoll_wait)
+	_eventFd = epoll_create(1);
 	if (_eventFd < 0)
 		throw std::runtime_error("Failed to create epoll instance: " + std::string(strerror(errno)));
-
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 	// macOS/BSD: Create kqueue instance (kernel event queue)
 	_eventFd = kqueue();
 	if (_eventFd < 0)
 		throw std::runtime_error("Failed to create kqueue instance: " + std::string(strerror(errno)));
 #endif
+	
+	// Set FD_CLOEXEC flag to prevent fd leaks to child processes
+	int flags = fcntl(_eventFd, F_GETFD);
+	if (flags == -1 || fcntl(_eventFd, F_SETFD, flags | FD_CLOEXEC) == -1)
+	{
+		close(_eventFd);
+		throw std::runtime_error("Failed to set FD_CLOEXEC on kqueue fd: " + std::string(strerror(errno)));
+	}
 
 	// Add all listen sockets to event loop (monitor for incoming connections)
 	for (std::map<uint64_t, ListenSocket *>::iterator it = _listeningSockets.begin();
