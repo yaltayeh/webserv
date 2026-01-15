@@ -1,0 +1,15 @@
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Ignore test run directories (cleaned up automatically)
+test_runs/
+
+# Ignore old conf directory (deprecated)
+conf/
+
+# Ignore log files
+*.log
+logs/
