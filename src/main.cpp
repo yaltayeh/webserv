@@ -20,9 +20,8 @@ int main(int argc, char *argv[])
 	GlobalConfig config = GlobalConfig();
 	try
 	{
-		Directive::Parser parser = Directive::Parser::openConfigFile(argv[1]);
 		Directive::Parser::loadConfigFile(argv[1], config);
-		// std::cout << "Configuration parsed successfully" << std::endl;
+		std::cout << "Configuration parsed successfully" << std::endl;
 	}
 	catch (const std::exception &e)
 	{
@@ -30,8 +29,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	EventLoop loop(config);
-	if (loop.init() != 0)
+	EventLoop loop(config); 
+	if (loop.init() != 0) // put .init inside the constructor?
 		return (1);
 	if (loop.run() != 0)
 		return (1);

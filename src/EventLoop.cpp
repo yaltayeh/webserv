@@ -7,21 +7,21 @@
 
 /**
  * Platform-specific event constants
- * 
+ *
  * This code compiles differently on Linux vs macOS/BSD:
  * - Linux uses epoll (efficient I/O event notification)
  * - macOS/BSD uses kqueue (BSD kernel event notification)
- * 
+ *
  * Both provide edge-triggered, non-blocking I/O.
  */
 #if defined(__linux__)
 // Linux: epoll events
-#define EVENT_READ EPOLLIN       // Monitor for read readiness
-#define EVENT_WRITE EPOLLOUT     // Monitor for write readiness
-#define EVENT_EDGE EPOLLET       // Edge-triggered mode (notify once per state change)
+#define EVENT_READ EPOLLIN	 // Monitor for read readiness
+#define EVENT_WRITE EPOLLOUT // Monitor for write readiness
+#define EVENT_EDGE EPOLLET	 // Edge-triggered mode (notify once per state change)
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 // macOS/BSD: kqueue filters
-#define EVENT_READ EVFILT_READ   // Monitor for read readiness
+#define EVENT_READ EVFILT_READ	 // Monitor for read readiness
 #define EVENT_WRITE EVFILT_WRITE // Monitor for write readiness
 #endif
 
@@ -79,13 +79,13 @@ EventLoop &EventLoop::operator=(const EventLoop &other)
 
 /**
  * Initialize event loop: Create virtual servers and listen sockets
- * 
+ *
  * Process:
  * 1. Loop through all server configurations
  * 2. Create a VirtualServer for each server block
  * 3. Create ListenSocket for each unique host:port combination
  * 4. Associate virtual servers with their listen sockets
- * 
+ *
  * Example: If two server blocks listen on same port, they share one ListenSocket
  */
 int EventLoop::init()
@@ -97,7 +97,7 @@ int EventLoop::init()
 	for (size_t i = 0; i < _config.https.size(); i++)
 	{
 		const std::vector<ServerConfig> &servers = _config.https[i].servers;
-		
+
 		// Loop through all server blocks
 		for (size_t j = 0; j < servers.size(); j++)
 		{
@@ -110,7 +110,7 @@ int EventLoop::init()
 			for (size_t l = 0; l < addrs.size(); l++)
 			{
 				ServerConfig::ListenAddr addr = addrs[l];
-				
+
 				// Check if we already have a socket for this host:port
 				if (_listeningSockets.find(addr) == _listeningSockets.end())
 				{
@@ -128,7 +128,7 @@ int EventLoop::init()
 					// Reuse existing socket for this host:port
 					socket = _listeningSockets[(uint64_t)addr];
 				}
-				
+
 				// Associate this virtual server with the listen socket
 				socket->addVirtualServer(virtualServer);
 			}
@@ -139,11 +139,11 @@ int EventLoop::init()
 
 /**
  * Add a file descriptor to the event loop for monitoring
- * 
+ *
  * @param fd     File descriptor to monitor (socket)
  * @param event  Type of event (EVENT_READ or EVENT_WRITE)
  * @param udata  User data pointer (Socket* to identify which socket triggered)
- * 
+ *
  * Edge-triggered mode means:
  * - Notification happens once per state change
  * - Must read/write until EAGAIN to avoid missing events
@@ -156,9 +156,9 @@ int EventLoop::addEvent(int fd, int event, void *udata)
 #if defined(__linux__)
 	// Linux: Use epoll to add file descriptor
 	struct epoll_event ev;
-	ev.events = event | EPOLLET;  // Combine requested event with edge-triggered flag
-	ev.data.ptr = udata;           // Store Socket* for later retrieval
-	
+	ev.events = event | EPOLLET; // Combine requested event with edge-triggered flag
+	ev.data.ptr = udata;		 // Store Socket* for later retrieval
+
 	if (epoll_ctl(_eventFd, EPOLL_CTL_ADD, fd, &ev) == -1)
 	{
 		perror("epoll_ctl ADD");
@@ -169,9 +169,9 @@ int EventLoop::addEvent(int fd, int event, void *udata)
 	// macOS/BSD: Use kqueue to add file descriptor
 	struct kevent kev;
 	EV_SET(&kev, fd, event,
-		   EV_ADD | EV_ENABLE | EV_CLEAR,  // Add, enable, and clear (edge-triggered)
-		   0, 0, udata);                    // Store Socket* for later retrieval
-		   
+		   EV_ADD | EV_ENABLE | EV_CLEAR, // Add, enable, and clear (edge-triggered)
+		   0, 0, udata);				  // Store Socket* for later retrieval
+
 	if (kevent(_eventFd, &kev, 1, NULL, 0, NULL) == -1)
 		perror("kevent ADD");
 #endif
@@ -181,10 +181,10 @@ int EventLoop::addEvent(int fd, int event, void *udata)
 
 /**
  * Remove a file descriptor from the event loop
- * 
+ *
  * @param fd     File descriptor to stop monitoring
  * @param event  Type of event (EVENT_READ or EVENT_WRITE)
- * 
+ *
  * Note: On Linux, epoll removes the entire fd (not just one event type)
  *       On macOS/BSD, kqueue removes the specific filter
  */
@@ -196,7 +196,7 @@ int EventLoop::deleteEvent(int fd, int event)
 #if defined(__linux__)
 	// Linux: epoll removes entire fd, not individual event types
 	(void)event; // Suppress unused parameter warning
-	
+
 	if (epoll_ctl(_eventFd, EPOLL_CTL_DEL, fd, NULL) == -1)
 		perror("epoll_ctl DEL");
 
@@ -204,7 +204,7 @@ int EventLoop::deleteEvent(int fd, int event)
 	// macOS/BSD: kqueue removes specific filter (READ or WRITE)
 	struct kevent kev;
 	EV_SET(&kev, fd, event, EV_DELETE, 0, 0, NULL);
-	
+
 	if (kevent(_eventFd, &kev, 1, NULL, 0, NULL) == -1)
 		perror("kevent DEL");
 #endif
@@ -218,7 +218,7 @@ int EventLoop::deleteEvent(int fd, int event)
 
 /**
  * Main event loop - runs forever processing network events
- * 
+ *
  * Flow:
  * 1. Create event loop fd (epoll on Linux, kqueue on macOS)
  * 2. Add all listen sockets to monitor for incoming connections
@@ -234,7 +234,7 @@ int EventLoop::run()
 {
 #if defined(__linux__)
 	// Linux: Create epoll instance (event notification facility)
-	_eventFd = epoll_create1(0);
+	_eventFd = epoll_create1(0); // TODO: use EPOLL_CLOEXEC flag. // TODO: fix this please should be epoll (epoll_create, epoll_ctl, epoll_wait)
 	if (_eventFd < 0)
 	{
 		perror("epoll_create1");
@@ -267,33 +267,35 @@ int EventLoop::run()
 	struct kevent events[32];
 #endif
 
+	int maxevents = sizeof(events) / sizeof(events[0]);
+
 	// Infinite event loop
 	while (1)
 	{
 #if defined(__linux__)
 		// Linux: Wait for events (blocks until something happens)
 		// Returns number of triggered events
-		int n = epoll_wait(_eventFd, events, 32, -1);  // -1 = wait forever
+		int n = epoll_wait(_eventFd, events, maxevents, -1); // -1 = wait forever
 
 		if (n == -1)
 		{
 			// EINTR means interrupted by signal (not a real error)
 			if (errno == EINTR)
-				continue;  // Try again
-			perror("epoll_wait");
+				continue;		  // Try again
+			perror("epoll_wait"); // TODO: perror is forbidden, fix this
 			return -1;
 		}
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 		// macOS/BSD: Wait for events (blocks until something happens)
 		// Returns number of triggered events
-		int n = kevent(_eventFd, NULL, 0, events, 32, NULL);  // NULL = wait forever
+		int n = kevent(_eventFd, NULL, 0, events, maxevents, NULL); // NULL = wait forever
 
 		if (n == -1)
 		{
 			// EINTR means interrupted by signal (not a real error)
 			if (errno == EINTR)
-				continue;  // Try again 
+				continue; // Try again
 			perror("kevent");
 			return -1;
 		}
@@ -304,25 +306,25 @@ int EventLoop::run()
 		{
 #if defined(__linux__)
 			// Linux: Extract socket and event type from epoll event
-			Socket *socket = (Socket *)events[i].data.ptr;  // Get Socket* we stored earlier
-			
+			Socket *socket = (Socket *)events[i].data.ptr; // Get Socket* we stored earlier
+
 			// Check what happened on this socket
-			bool is_eof = (events[i].events & (EPOLLHUP | EPOLLRDHUP)) != 0;  // Connection closed
-			bool is_read = (events[i].events & EPOLLIN) != 0;                  // Data available to read
-			bool is_write = (events[i].events & EPOLLOUT) != 0;                // Socket ready for writing
+			bool is_eof = (events[i].events & (EPOLLHUP | EPOLLRDHUP)) != 0; // Connection closed
+			bool is_read = (events[i].events & EPOLLIN) != 0;				 // Data available to read
+			bool is_write = (events[i].events & EPOLLOUT) != 0;				 // Socket ready for writing
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 			// macOS/BSD: Extract socket and event type from kqueue event
-			Socket *socket = (Socket *)events[i].udata;  // Get Socket* we stored earlier
-			
+			Socket *socket = (Socket *)events[i].udata; // Get Socket* we stored earlier
+
 			// Check what happened on this socket
-			bool is_eof = (events[i].flags & EV_EOF) != 0;         // Connection closed
-			bool is_read = (events[i].filter == EVFILT_READ);      // Data available to read
-			bool is_write = (events[i].filter == EVFILT_WRITE);    // Socket ready for writing
+			bool is_eof = (events[i].flags & EV_EOF) != 0;		// Connection closed
+			bool is_read = (events[i].filter == EVFILT_READ);	// Data available to read
+			bool is_write = (events[i].filter == EVFILT_WRITE); // Socket ready for writing
 #endif
 
 			// ===== CASE 1: Listen Socket (New Connection) =====
-			if (socket && socket->getType() == LISTEN_ID)
+			if (socket && socket->getType() == LISTEN_ID) // TODO: use the virtual handler pattern here instead of if-else chains
 			{
 				ListenSocket *listen = dynamic_cast<ListenSocket *>(socket);
 
@@ -332,13 +334,13 @@ int EventLoop::run()
 				{
 					// Try to accept a new client connection
 					ClientSocket *clientSocket = listen->accept();
-					
+
 					if (!clientSocket)
 					{
 						// EAGAIN/EWOULDBLOCK means no more connections (normal)
 						if (errno == EAGAIN || errno == EWOULDBLOCK)
 							break;
-							
+
 						perror("accept");
 						break;
 					}
@@ -347,7 +349,7 @@ int EventLoop::run()
 					addEvent(clientSocket->getSocketfd(), EVENT_READ, clientSocket);
 					std::cout << "add client " << clientSocket->getHost() << std::endl;
 				}
-				continue;  // Move to next event
+				continue; // Move to next event
 			}
 
 			// ===== CASE 2: Client Socket (Existing Connection) =====
@@ -359,7 +361,7 @@ int EventLoop::run()
 				if (is_eof)
 				{
 					std::cout << "client [" << client->getHost() << "]: disconnected" << std::endl;
-					
+
 					// Clean up: remove from event loop and free memory
 					deleteEvent(client->getSocketfd(), EVENT_READ);
 					delete client;
@@ -370,7 +372,7 @@ int EventLoop::run()
 				if (is_read)
 				{
 					// Read data and parse HTTP request
-					if (client->handleRead() == false)  // Returns false on error
+					if (client->handleRead() == false) // Returns false on error
 					{
 						// Error occurred, close connection
 						deleteEvent(client->getSocketfd(), EVENT_READ);
@@ -403,8 +405,8 @@ int EventLoop::run()
 					}
 				}
 			}
-		}  // End of event processing loop
-	}  // End of infinite while loop
-	
+		} // End of event processing loop
+	} // End of infinite while loop
+
 	return (0);
 }
