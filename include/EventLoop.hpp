@@ -37,7 +37,6 @@ public:
     EventLoop(const EventLoop &other);
     EventLoop &operator=(const EventLoop &other);
 
-    // Initialization and main loop
-    int init();
-    int run();
+    // Main event loop
+    void run();
 };

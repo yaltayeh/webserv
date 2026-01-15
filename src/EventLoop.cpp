@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <cstring>
 #include <cstdio>
+#include <sstream>
 #include <unistd.h>
 #include "EventLoop.hpp"
 
@@ -26,11 +27,59 @@
 #endif
 
 /**
- * Constructor: Initialize event loop with configuration
- * _eventFd is set to -1 (invalid) until run() creates the epoll/kqueue fd
+ * Constructor: Initialize event loop with configuration and set up virtual servers
+ * Throws runtime_error if initialization fails
  */
 EventLoop::EventLoop(const GlobalConfig &config)
-	: _config(config), _eventFd(-1) {}
+	: _config(config), _eventFd(-1)
+{
+	ListenSocket *socket = NULL;
+	VirtualServer *virtualServer = NULL;
+
+	// Loop through all HTTP configurations
+	for (size_t i = 0; i < _config.https.size(); i++)
+	{
+		const std::vector<ServerConfig> &servers = _config.https[i].servers;
+
+		// Loop through all server blocks
+		for (size_t j = 0; j < servers.size(); j++)
+		{
+			// Create virtual server (handles routing for this server block)
+			virtualServer = new VirtualServer(servers[j]);
+			_virtualServers.push_back(virtualServer);
+
+			// Loop through all listen addresses for this server
+			const std::vector<ServerConfig::ListenAddr> &addrs = servers[j].listenAddresses;
+			for (size_t l = 0; l < addrs.size(); l++)
+			{
+				ServerConfig::ListenAddr addr = addrs[l];
+
+				// Check if we already have a socket for this host:port
+				if (_listeningSockets.find(addr) == _listeningSockets.end())
+				{
+					// Create new listen socket (bind to host:port)
+					socket = new ListenSocket(addr.ip, addr.port);
+					if (socket->getSocketfd() < 0)
+					{
+						delete socket;
+						std::ostringstream oss;
+						oss << "Failed to create listen socket for " << addr.ip << ":" << addr.port;
+						throw std::runtime_error(oss.str());
+					}
+					_listeningSockets[(uint64_t)addr] = socket;
+				}
+				else
+				{
+					// Reuse existing socket for this host:port
+					socket = _listeningSockets[(uint64_t)addr];
+				}
+
+				// Associate this virtual server with the listen socket
+				socket->addVirtualServer(virtualServer);
+			}
+		}
+	}
+}
 
 EventLoop::~EventLoop()
 {
@@ -77,65 +126,7 @@ EventLoop &EventLoop::operator=(const EventLoop &other)
 	return (*this);
 }
 
-/**
- * Initialize event loop: Create virtual servers and listen sockets
- *
- * Process:
- * 1. Loop through all server configurations
- * 2. Create a VirtualServer for each server block
- * 3. Create ListenSocket for each unique host:port combination
- * 4. Associate virtual servers with their listen sockets
- *
- * Example: If two server blocks listen on same port, they share one ListenSocket
- */
-int EventLoop::init()
-{
-	ListenSocket *socket = NULL;
-	VirtualServer *virtualServer = NULL;
 
-	// Loop through all HTTP configurations
-	for (size_t i = 0; i < _config.https.size(); i++)
-	{
-		const std::vector<ServerConfig> &servers = _config.https[i].servers;
-
-		// Loop through all server blocks
-		for (size_t j = 0; j < servers.size(); j++)
-		{
-			// Create virtual server (handles routing for this server block)
-			virtualServer = new VirtualServer(servers[j]);
-			_virtualServers.push_back(virtualServer);
-
-			// Loop through all listen addresses for this server
-			const std::vector<ServerConfig::ListenAddr> &addrs = servers[j].listenAddresses;
-			for (size_t l = 0; l < addrs.size(); l++)
-			{
-				ServerConfig::ListenAddr addr = addrs[l];
-
-				// Check if we already have a socket for this host:port
-				if (_listeningSockets.find(addr) == _listeningSockets.end())
-				{
-					// Create new listen socket (bind to host:port)
-					socket = new ListenSocket(addr.ip, addr.port);
-					if (socket->getSocketfd() < 0)
-					{
-						delete socket;
-						return (-1);
-					}
-					_listeningSockets[(uint64_t)addr] = socket;
-				}
-				else
-				{
-					// Reuse existing socket for this host:port
-					socket = _listeningSockets[(uint64_t)addr];
-				}
-
-				// Associate this virtual server with the listen socket
-				socket->addVirtualServer(virtualServer);
-			}
-		}
-	}
-	return (0);
-}
 
 /**
  * Add a file descriptor to the event loop for monitoring
@@ -230,25 +221,19 @@ int EventLoop::deleteEvent(int fd, int event)
  *      * Client socket write → send HTTP response
  * 4. Use edge-triggered I/O for efficiency
  */
-int EventLoop::run()
+void EventLoop::run()
 {
 #if defined(__linux__)
 	// Linux: Create epoll instance (event notification facility)
 	_eventFd = epoll_create1(0); // TODO: use EPOLL_CLOEXEC flag. // TODO: fix this please should be epoll (epoll_create, epoll_ctl, epoll_wait)
 	if (_eventFd < 0)
-	{
-		perror("epoll_create1");
-		return (-1);
-	}
+		throw std::runtime_error("Failed to create epoll instance: " + std::string(strerror(errno)));
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 	// macOS/BSD: Create kqueue instance (kernel event queue)
 	_eventFd = kqueue();
 	if (_eventFd < 0)
-	{
-		perror("kqueue");
-		return (-1);
-	}
+		throw std::runtime_error("Failed to create kqueue instance: " + std::string(strerror(errno)));
 #endif
 
 	// Add all listen sockets to event loop (monitor for incoming connections)
@@ -281,9 +266,8 @@ int EventLoop::run()
 		{
 			// EINTR means interrupted by signal (not a real error)
 			if (errno == EINTR)
-				continue;		  // Try again
-			perror("epoll_wait"); // TODO: perror is forbidden, fix this
-			return -1;
+				continue; // Try again
+			throw std::runtime_error("epoll_wait failed: " + std::string(strerror(errno)));
 		}
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
@@ -296,8 +280,7 @@ int EventLoop::run()
 			// EINTR means interrupted by signal (not a real error)
 			if (errno == EINTR)
 				continue; // Try again
-			perror("kevent");
-			return -1;
+			throw std::runtime_error("kevent failed: " + std::string(strerror(errno)));
 		}
 #endif
 
@@ -407,6 +390,4 @@ int EventLoop::run()
 			}
 		} // End of event processing loop
 	} // End of infinite while loop
-
-	return (0);
 }

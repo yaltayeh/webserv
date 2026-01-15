@@ -22,17 +22,16 @@ int main(int argc, char *argv[])
 	{
 		Directive::Parser::loadConfigFile(argv[1], config);
 		std::cout << "Configuration parsed successfully" << std::endl;
+
+		EventLoop loop(config);
+		std::cout << "Event loop initialized successfully" << std::endl;
+		loop.run();
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "Error parsing configuration: " << e.what() << std::endl;
+		std::cerr << "Error: " << e.what() << std::endl;
 		return 1;
 	}
 
-	EventLoop loop(config); 
-	if (loop.init() != 0) // put .init inside the constructor?
-		return (1);
-	if (loop.run() != 0)
-		return (1);
-	return (0);
+	return 0;
 }
