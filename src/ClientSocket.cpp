@@ -29,7 +29,8 @@ int ClientSocket::EventHandler(EventLoop *el)
 
         // Clean up: remove from event loop and free memory
         el->deleteEvent(_socketfd, EVENT_READ);
-        // delete client;
+        el->deleteEvent(_socketfd, EVENT_WRITE);
+        delete this;
         return 0;
     }
 
@@ -40,8 +41,9 @@ int ClientSocket::EventHandler(EventLoop *el)
         if (handleRead() == false) // Returns false on error
         {
             // Error occurred, close connection
+            el->deleteEvent(_socketfd, EVENT_WRITE);
             el->deleteEvent(_socketfd, EVENT_READ);
-            // delete client;
+            delete this;
             return (0);
         }
 
@@ -66,7 +68,8 @@ int ClientSocket::EventHandler(EventLoop *el)
         {
             // Clean up: close connection and free memory
             el->deleteEvent(_socketfd, EVENT_WRITE);
-            // delete client;
+            el->deleteEvent(_socketfd, EVENT_READ);
+            delete this;
         }
     }
     return (0);
