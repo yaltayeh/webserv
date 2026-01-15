@@ -253,9 +253,6 @@ void EventLoop::run()
 			if (errno == EINTR)
 				continue; // Try again
 			throw std::runtime_error("epoll_wait failed: " + std::string(strerror(errno)));
-			continue; // Try again
-			perror("epoll_wait");
-			return -1;
 		}
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
