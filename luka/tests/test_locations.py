@@ -2,8 +2,8 @@
 Multiple locations test.
 Tests if the server handles different location blocks correctly.
 """
-from loka.base_test import BaseTest
-from loka.utilities.test_helpers import HTMLBuilder
+from luka.base_test import BaseTest
+from luka.utilities.test_helpers import HTMLBuilder
 
 
 class MultipleLocationsTest(BaseTest):

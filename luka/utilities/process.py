@@ -1,6 +1,6 @@
 import subprocess
 import os
-from loka import logger
+from luka import logger
 
 def run_command(command, cwd=None, wait=True):
     # logger.info(f"Executing: {' '.join(command)}")

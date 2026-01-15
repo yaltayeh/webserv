@@ -1,5 +1,5 @@
 import requests
-from loka import logger
+from luka import logger
 from .http10 import create_http10_session
 
 def get(url, headers=None, http_version="1.1"):

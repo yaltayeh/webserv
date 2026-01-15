@@ -2,8 +2,8 @@
 CGI test.
 Tests if the server executes CGI scripts correctly.
 """
-from loka.base_test import BaseTest
-from loka.utilities.test_helpers import HTMLBuilder, CGIBuilder
+from luka.base_test import BaseTest
+from luka.utilities.test_helpers import HTMLBuilder, CGIBuilder
 
 
 class CGIBasicTest(BaseTest):

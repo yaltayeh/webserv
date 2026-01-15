@@ -2,8 +2,8 @@
 Comprehensive example test demonstrating all framework features.
 This is a template you can copy and modify for your own tests.
 """
-from loka.base_test import BaseTest
-from loka.utilities.test_helpers import HTMLBuilder, CGIBuilder, ConfigBuilder
+from luka.base_test import BaseTest
+from luka.utilities.test_helpers import HTMLBuilder, CGIBuilder, ConfigBuilder
 
 
 class ComprehensiveExampleTest(BaseTest):

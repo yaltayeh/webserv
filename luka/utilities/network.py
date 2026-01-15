@@ -1,5 +1,5 @@
 import socket
-from loka import logger
+from luka import logger
 
 def is_port_open(host, port):
     """

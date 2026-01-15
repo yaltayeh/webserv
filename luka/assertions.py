@@ -1,4 +1,4 @@
-from loka import logger
+from luka import logger
 
 class AssertEqualError(AssertionError):
     def __init__(self, expected, actual):

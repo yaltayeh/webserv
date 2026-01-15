@@ -2,8 +2,8 @@
 Basic GET request test.
 Tests if the server responds correctly to a simple GET request.
 """
-from loka.base_test import BaseTest
-from loka.utilities.test_helpers import HTMLBuilder, ConfigBuilder
+from luka.base_test import BaseTest
+from luka.utilities.test_helpers import HTMLBuilder, ConfigBuilder
 
 
 class BasicRequestTest(BaseTest):

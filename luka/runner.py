@@ -9,9 +9,9 @@ import tempfile
 WEBSERV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, WEBSERV_PATH)
 
-from loka import logger, assertions
-from loka.utilities import process, network, http
-from loka.base_test import BaseTest
+from luka import logger, assertions
+from luka.utilities import process, network, http
+from luka.base_test import BaseTest
 
 TESTS_DIR = os.path.join(WEBSERV_PATH, "loka", "tests")
 TEST_RUNS_DIR = os.path.join(WEBSERV_PATH, "loka", "test_runs")
