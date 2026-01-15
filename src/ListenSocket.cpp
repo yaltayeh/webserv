@@ -51,7 +51,8 @@ int ListenSocket::EventHandler(EventLoop *el)
 			if (errno == EAGAIN || errno == EWOULDBLOCK)
 				break;
 
-			perror("accept");
+			std::cerr << "Error: accept() failed: "
+					  << strerror(errno) << std::endl;
 			break;
 		}
 
