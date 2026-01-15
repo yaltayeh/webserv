@@ -18,6 +18,8 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/socket.h>
+#include <csignal>
 #include <fcntl.h>
 #include <sstream>
 
@@ -548,9 +550,9 @@ TEST(setup_result_messages) {
 
 TEST(execute_without_setup) {
     CGI cgi;
-    int readFd, writeFd;
+    int socketFd;
     
-    pid_t pid = cgi.execute(readFd, writeFd);
+    pid_t pid = cgi.execute(socketFd);
     
     ASSERT_EQ(-1, pid);
     ASSERT_CONTAINS(cgi.getError(), "setup");
@@ -573,13 +575,13 @@ TEST(execute_python_script) {
     CGI::SetupResult setupResult = cgi.setup(request, scriptPath, "/usr/bin/python3", "localhost", 8080);
     ASSERT_EQ(CGI::SETUP_OK, setupResult);
     
-    int readFd, writeFd;
-    pid_t pid = cgi.execute(readFd, writeFd);
+    int socketFd;
+    pid_t pid = cgi.execute(socketFd);
     ASSERT_NE(-1, pid);
     
-    close(writeFd);
-    std::string output = readFromFd(readFd);
-    close(readFd);
+    // Close the socket after reading (bidirectional socketpair)
+    std::string output = readFromFd(socketFd);
+    close(socketFd);
     
     int exitStatus = waitForChild(pid);
     ASSERT_EQ(0, exitStatus);
@@ -610,13 +612,12 @@ TEST(execute_shell_script) {
     CGI::SetupResult setupResult = cgi.setup(request, scriptPath, "/bin/bash", "localhost", 8080);
     ASSERT_EQ(CGI::SETUP_OK, setupResult);
     
-    int readFd, writeFd;
-    pid_t pid = cgi.execute(readFd, writeFd);
+    int socketFd;
+    pid_t pid = cgi.execute(socketFd);
     ASSERT_NE(-1, pid);
     
-    close(writeFd);
-    std::string output = readFromFd(readFd);
-    close(readFd);
+    std::string output = readFromFd(socketFd);
+    close(socketFd);
     
     waitForChild(pid);
     
@@ -644,13 +645,12 @@ TEST(execute_environment_variables) {
     CGI::SetupResult setupResult = cgi.setup(request, scriptPath, "/usr/bin/python3", "testserver", 9090);
     ASSERT_EQ(CGI::SETUP_OK, setupResult);
     
-    int readFd, writeFd;
-    pid_t pid = cgi.execute(readFd, writeFd);
+    int socketFd;
+    pid_t pid = cgi.execute(socketFd);
     ASSERT_NE(-1, pid);
     
-    close(writeFd);
-    std::string output = readFromFd(readFd);
-    close(readFd);
+    std::string output = readFromFd(socketFd);
+    close(socketFd);
     waitForChild(pid);
     
     ASSERT_CONTAINS(output, "REQUEST_METHOD=POST");
@@ -685,17 +685,19 @@ TEST(execute_post_with_body) {
     CGI cgi;
     cgi.setup(request, scriptPath, "/usr/bin/python3", "localhost", 8080);
     
-    int readFd, writeFd;
-    pid_t pid = cgi.execute(readFd, writeFd);
+    int socketFd;
+    pid_t pid = cgi.execute(socketFd);
     ASSERT_NE(-1, pid);
     
     // Write POST body to CGI script, checking for errors
-    ssize_t bytesWritten = write(writeFd, postBody.c_str(), postBody.length());
+    ssize_t bytesWritten = write(socketFd, postBody.c_str(), postBody.length());
     ASSERT_EQ(static_cast<ssize_t>(postBody.length()), bytesWritten);
-    close(writeFd);
     
-    std::string output = readFromFd(readFd);
-    close(readFd);
+    // Use shutdown to signal EOF while keeping socket open for reading
+    shutdown(socketFd, SHUT_WR);
+    
+    std::string output = readFromFd(socketFd);
+    close(socketFd);
     waitForChild(pid);
     
     ASSERT_CONTAINS(output, postBody);
@@ -722,13 +724,12 @@ TEST(edge_case_empty_query_string) {
     CGI::SetupResult result = cgi.setup(request, scriptPath, "/usr/bin/python3", "localhost", 8080);
     ASSERT_EQ(CGI::SETUP_OK, result);
     
-    int readFd, writeFd;
-    pid_t pid = cgi.execute(readFd, writeFd);
+    int socketFd;
+    pid_t pid = cgi.execute(socketFd);
     ASSERT_NE(-1, pid);
     
-    close(writeFd);
-    std::string output = readFromFd(readFd);
-    close(readFd);
+    std::string output = readFromFd(socketFd);
+    close(socketFd);
     waitForChild(pid);
     
     ASSERT_CONTAINS(output, "QUERY_STRING=\n");
@@ -769,13 +770,12 @@ TEST(edge_case_special_chars_in_query) {
     CGI::SetupResult result = cgi.setup(request, scriptPath, "/usr/bin/python3", "localhost", 8080);
     ASSERT_EQ(CGI::SETUP_OK, result);
     
-    int readFd, writeFd;
-    pid_t pid = cgi.execute(readFd, writeFd);
+    int socketFd;
+    pid_t pid = cgi.execute(socketFd);
     ASSERT_NE(-1, pid);
     
-    close(writeFd);
-    std::string output = readFromFd(readFd);
-    close(readFd);
+    std::string output = readFromFd(socketFd);
+    close(socketFd);
     waitForChild(pid);
     
     ASSERT_CONTAINS(output, "QUERY_STRING=key=value%20with%20spaces&special=<>&test");
@@ -816,13 +816,12 @@ TEST(edge_case_empty_server_name) {
     CGI::SetupResult result = cgi.setup(request, scriptPath, "/usr/bin/python3", "", 8080);
     ASSERT_EQ(CGI::SETUP_OK, result);
     
-    int readFd, writeFd;
-    pid_t pid = cgi.execute(readFd, writeFd);
+    int socketFd;
+    pid_t pid = cgi.execute(socketFd);
     ASSERT_NE(-1, pid);
     
-    close(writeFd);
-    std::string output = readFromFd(readFd);
-    close(readFd);
+    std::string output = readFromFd(socketFd);
+    close(socketFd);
     waitForChild(pid);
     
     ASSERT_CONTAINS(output, "SERVER_NAME=\n");
