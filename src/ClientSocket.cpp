@@ -54,6 +54,36 @@ int ClientSocket::EventHandler(EventLoop *el)
             // (Stop monitoring reads, start monitoring writes)
             el->deleteEvent(_socketfd, EVENT_READ);
             el->addEvent(_socketfd, EVENT_WRITE, this);
+
+            // Route the request and generate response
+            libhttp::Request request = parser.getRequest();
+            const std::vector<VirtualServer *> &servers = listenSocket->getVirtualServer();
+            if (servers.empty())
+            {
+                std::cerr << "Error: No virtual servers configured" << std::endl;
+                return false;
+            }
+
+            // TODO: assign virtual server function
+            // TODO: turn the request ownership to the selected virtual server
+            libhttp::Response response;
+            std::vector<VirtualServer *>::const_iterator it;
+            for (it = servers.begin();
+                it != servers.end();
+                it++)
+            {
+                // check server_name is equal host
+                if ((*it)->checkRequest(request))
+                {
+                    response = (*it)->handleRequest(request);
+                    break;
+                }
+            }
+            if (it == servers.end())
+                response = servers[0]->handleRequest(request);
+
+            write_buffer = response.toString();
+
         }
     }
 
@@ -133,34 +163,6 @@ bool ClientSocket::handleRead()
     // STEP 5: Generate response if request is complete
     if (parse_result == 0)
     {
-        std::cout << "Request complete for client " << getHost() << std::endl;
-
-        // Route the request and generate response
-        libhttp::Request request = parser.getRequest();
-        const std::vector<VirtualServer *> &servers = listenSocket->getVirtualServer();
-        if (servers.empty())
-        {
-            std::cerr << "Error: No virtual servers configured" << std::endl;
-            return false;
-        }
-
-        libhttp::Response response;
-        std::vector<VirtualServer *>::const_iterator it;
-        for (it = servers.begin();
-             it != servers.end();
-             it++)
-        {
-            // check server_name is equal host
-            if ((*it)->checkRequest(request))
-            {
-                response = (*it)->handleRequest(request);
-                break;
-            }
-        }
-        if (it == servers.end())
-            response = servers[0]->handleRequest(request);
-
-        write_buffer = response.toString();
         isRequestRead = 1;
         std::cout << "Response ready, waiting for socket to be writable"
                   << std::endl;
