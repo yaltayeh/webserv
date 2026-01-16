@@ -1,10 +1,11 @@
 #include "../include/Request.hpp"
 #include "../include/Utils.hpp"
 #include <sstream>
+#include <unistd.h>
 
 namespace libhttp {
 
-	Request::Request() : _method(GET) {}
+	Request::Request() : _method(GET), _hasBodyTempFile(false) {}
 
 	Request::Request(const Request& other) {
 		*this = other;
@@ -16,11 +17,18 @@ namespace libhttp {
 			_uri = other._uri;
 			_headers = other._headers;
 			_body = other._body;
+			_bodyTempFile = other._bodyTempFile;
+			_hasBodyTempFile = other._hasBodyTempFile;
 		}
 		return *this;
 	}
 
-	Request::~Request() {}
+	Request::~Request() {
+		// Clean up temp file if it exists
+		if (_hasBodyTempFile && !_bodyTempFile.empty()) {
+			unlink(_bodyTempFile.c_str());
+		}
+	}
 
 
 	// Setters
@@ -36,6 +44,10 @@ namespace libhttp {
 	void Request::setBody(const std::string& body) {
 		_body = body;
 	}
+	void Request::setBodyTempFile(const std::string& tempFilePath) {
+		_bodyTempFile = tempFilePath;
+		_hasBodyTempFile = true;
+	}
 
 	// Getters
 	Method Request::getMethod() const { return _method; }
@@ -49,6 +61,8 @@ namespace libhttp {
 	}
 	std::string Request::getBody() const { return _body; }
 	std::multimap<std::string, std::string> Request::getHeaders() const { return _headers; }
+	bool Request::hasBodyTempFile() const { return _hasBodyTempFile; }
+	std::string Request::getBodyTempFile() const { return _bodyTempFile; }
 
 	// Helper to convert request to string
 	std::string Request::toString() const {

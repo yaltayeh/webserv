@@ -18,6 +18,7 @@ namespace libhttp {
 		void setUri(const std::string& uri);
 		void setHeader(const std::string& key, const std::string& value);
 		void setBody(const std::string& body);
+		void setBodyTempFile(const std::string& tempFilePath);
 
 		// Getters
 		Method getMethod() const;
@@ -25,6 +26,8 @@ namespace libhttp {
 		std::string getHeader(const std::string& key) const;
 		std::string getBody() const;
 		std::multimap<std::string, std::string> getHeaders() const;
+		bool hasBodyTempFile() const;
+		std::string getBodyTempFile() const;
 
 		// Helper to convert request to string
 		std::string toString() const;
@@ -34,6 +37,8 @@ namespace libhttp {
 		std::string _uri;
 		std::multimap<std::string, std::string> _headers;
 		std::string _body;
+		std::string _bodyTempFile; // Path to temp file for large bodies
+		bool _hasBodyTempFile;
 	};
 
 }

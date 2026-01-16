@@ -16,7 +16,7 @@ private:
 
 	// From ConnectionManager (struct Connection)
 	std::string write_buffer;
-	libhttp::Parser parser;
+	libhttp::Parser *parser;
 
 	int isRequestRead;
 	int isResponseSent;

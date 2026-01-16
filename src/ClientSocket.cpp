@@ -10,13 +10,25 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
     : Socket(client_fd),
       addr(addr),
       listenSocket(listen),
+      parser(NULL),
       isRequestRead(false),
       isResponseSent(false)
 {
+    // Initialize parser with config from the first virtual server
+    const std::vector<VirtualServer *> &servers = listenSocket->getVirtualServer();
+    if (!servers.empty()) {
+        const ServerConfig &config = servers[0]->getConfig();
+        // Create new parser with config
+        parser = new libhttp::Parser(config.client_max_body_size, config.client_body_temp_path);
+    } else {
+        // Use default parser
+        parser = new libhttp::Parser();
+    }
 }
 
 ClientSocket::~ClientSocket()
 {
+    delete parser;
     (void)listenSocket;
 }
 
@@ -56,7 +68,7 @@ int ClientSocket::EventHandler(EventLoop *el)
             el->addEvent(_socketfd, EVENT_WRITE, this);
 
             // Route the request and generate response
-            libhttp::Request request = parser.getRequest();
+            libhttp::Request request = parser->getRequest();
             const std::vector<VirtualServer *> &servers = listenSocket->getVirtualServer();
             if (servers.empty())
             {
@@ -144,7 +156,7 @@ bool ClientSocket::handleRead()
 
     std::cout << "Read " << bytes_read << " bytes from client " << getHost() << std::endl;
 
-    int parse_result = parser.parse(buffer, bytes_read);
+    int parse_result = parser->parse(buffer, bytes_read);
 
     if (parse_result == -1)
     {

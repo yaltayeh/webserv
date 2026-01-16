@@ -4,14 +4,39 @@
 #include <sstream>
 #include <vector>
 #include <cstdlib>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 namespace libhttp {
 
 	Parser::Parser() : 	_state(REQUEST_LINE),
 						_buffer(""),
 						_expectedBodyLength(0),
-						_receivedBodyLength(0) {}
-	Parser::~Parser() {}
+						_receivedBodyLength(0),
+						_maxBodySize(1024 * 1024), // Default 1MB
+						_tempPath("client_body_temp"),
+						_usesTempFile(false) {}
+	
+	Parser::Parser(size_t maxBodySize, const std::string& tempPath) :
+						_state(REQUEST_LINE),
+						_buffer(""),
+						_expectedBodyLength(0),
+						_receivedBodyLength(0),
+						_maxBodySize(maxBodySize),
+						_tempPath(tempPath),
+						_usesTempFile(false) {}
+
+	Parser::~Parser() {
+		if (_tempFile.is_open()) {
+			_tempFile.close();
+		}
+		// Clean up temp file if we created one but request didn't complete
+		// (If request completed, the Request object owns the file and will clean it up)
+		if (_usesTempFile && !_tempFilePath.empty() && _state != COMPLETE) {
+			unlink(_tempFilePath.c_str());
+		}
+	}
 	
 	//// //// parsing functions
 	// int 0 -> success, 1 -> incomplete, -1 -> error
@@ -115,29 +140,93 @@ namespace libhttp {
 			return 0;
 		}
 		
+		// Determine if we need to use temp file for this body
+		// Use temp file if body will exceed max size OR if we already started using one
+		if (!_usesTempFile && _expectedBodyLength > _maxBodySize) {
+			_usesTempFile = true;
+			createTempFile();
+			if (_state == ERROR) {
+				return -1;
+			}
+			
+			// Write any body data we've already accumulated
+			if (!_request.getBody().empty()) {
+				writeTempFile(_request.getBody().c_str(), _request.getBody().size());
+				_request.setBody(""); // Clear in-memory body
+			}
+		}
+		
 		// Accumulate body data
 		size_t bytesToRead = _buffer.size();
 		if (_receivedBodyLength + bytesToRead > _expectedBodyLength) {
 			bytesToRead = _expectedBodyLength - _receivedBodyLength;
 		}
 		
-		_request.setBody(_request.getBody() + _buffer.substr(0, bytesToRead));
-		_buffer.erase(0, bytesToRead);
+		if (_usesTempFile) {
+			// Write to temp file
+			writeTempFile(_buffer.c_str(), bytesToRead);
+			_buffer.erase(0, bytesToRead);
+		} else {
+			// Store in memory
+			_request.setBody(_request.getBody() + _buffer.substr(0, bytesToRead));
+			_buffer.erase(0, bytesToRead);
+		}
+		
 		_receivedBodyLength += bytesToRead;
 		
 		// Check if we've received all expected body data
 		if (_receivedBodyLength >= _expectedBodyLength) {
+			if (_usesTempFile) {
+				closeTempFile();
+				_request.setBodyTempFile(_tempFilePath);
+			}
 			_state = COMPLETE;
 		}
 		
 		return 0;
 	}
 
-	// simple state checkers
+	// Getters
 	bool Parser::isComplete() const { return _state == COMPLETE; }
 	bool Parser::isError() const { return _state == ERROR; }
-
-	// get the parsed request
 	Request Parser::getRequest() const { return _request; }
+
+	// Temp file helpers
+	void Parser::createTempFile() {
+		// Create temp directory if it doesn't exist
+		struct stat st;
+		if (stat(_tempPath.c_str(), &st) != 0) {
+			mkdir(_tempPath.c_str(), 0755);
+		}
+
+		// Generate unique temp file name using PID, timestamp, and address
+		// Using 'this' pointer address adds uniqueness for concurrent requests
+		std::ostringstream oss;
+		oss << _tempPath << "/body_" << getpid() << "_" << time(NULL) << "_" << this;
+		_tempFilePath = oss.str();
+
+		_tempFile.open(_tempFilePath.c_str(), std::ios::binary | std::ios::out);
+		if (!_tempFile.is_open()) {
+			std::cerr << "Failed to create temp file: " << _tempFilePath << std::endl;
+			_state = ERROR;
+		}
+	}
+
+	void Parser::writeTempFile(const char* data, size_t size) {
+		if (_tempFile.is_open()) {
+			_tempFile.write(data, size);
+			if (!_tempFile.good()) {
+				std::cerr << "Failed to write to temp file" << std::endl;
+				_state = ERROR;
+			}
+		}
+	}
+
+	void Parser::closeTempFile() {
+		if (_tempFile.is_open()) {
+			_tempFile.flush();
+			_tempFile.close();
+		}
+	}
 
 }

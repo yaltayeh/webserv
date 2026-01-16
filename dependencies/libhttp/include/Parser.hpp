@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <fstream>
 #include "Request.hpp"
 
 namespace libhttp {
@@ -8,6 +9,7 @@ namespace libhttp {
 	class Parser {
 	public:
 		Parser();
+		Parser(size_t maxBodySize, const std::string& tempPath);
 		~Parser();
 		
 		// simple state checkers
@@ -22,6 +24,9 @@ namespace libhttp {
 		Request getRequest() const;
 
 	private:
+		// Non-copyable due to ofstream member
+		Parser(const Parser&);
+		Parser& operator=(const Parser&);
 
 		enum State {
             REQUEST_LINE,
@@ -41,6 +46,19 @@ namespace libhttp {
 		int processRequestLine();
         int processHeaders();
         int processBody();
+
+		// Config for body size limit
+		size_t _maxBodySize;
+		std::string _tempPath;
+		
+		// Temp file handling
+		bool _usesTempFile;
+		std::string _tempFilePath;
+		std::ofstream _tempFile;
+		
+		void createTempFile();
+		void writeTempFile(const char* data, size_t size);
+		void closeTempFile();
 	};
 
 }
