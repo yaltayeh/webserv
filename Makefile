@@ -24,9 +24,16 @@ SRCS		    		=   src/main.cpp 										\
 							src/ListenSocket.cpp 								\
 							src/VirtualServer.cpp 								\
 							src/EventLoop.cpp									\
-							src/RequestRouter.cpp								\
+							src/RouteHandler.cpp								\
 							src/RegEx.cpp										\
 							src/EventData.cpp									\
+							\
+							src/routes/DefualtRoute.cpp							\
+							src/routes/ReturnRoute.cpp							\
+							src/routes/ExceedsMaxBodySize.cpp					\
+							src/routes/AccessDenied.cpp							\
+							src/routes/CGIRoute.cpp								\
+							src/routes/MethodAllod.cpp							\
 							\
 							src/directives/Core/LocationDirective.cpp			\
 							src/directives/Core/ServerDirective.cpp				\

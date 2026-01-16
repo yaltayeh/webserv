@@ -1,5 +1,5 @@
 #include "VirtualServer.hpp"
-#include "RequestRouter.hpp"
+#include "RouteHandler.hpp"
 #include "RegEx.hpp"
 
 VirtualServer::VirtualServer()
@@ -25,8 +25,8 @@ int VirtualServer::checkRequest(const libhttp::Request &r)
 	std::string host = r.getHeader("Host");
 	std::vector<std::string>::iterator it;
 	for (it = _config.server_names.begin();
-	it != _config.server_names.end();
-	it++)
+		 it != _config.server_names.end();
+		 it++)
 	{
 		if (RegEx::matchPattern(*it, host))
 			return (1);
@@ -34,8 +34,64 @@ int VirtualServer::checkRequest(const libhttp::Request &r)
 	return 0;
 }
 
-libhttp::Response VirtualServer::handleRequest(const libhttp::Request &r)
+const libhttp::Response &VirtualServer::handleRequest(const libhttp::Request &request) const
 {
-	RequestRouter router;
-	return router.route(r, _config);
+	const std::string &uri = request.getUri();
+	const LocationConfig &location = findMatchingLocation(uri);
+
+	return RouteHandler::route(request, location);
+}
+
+const VirtualServer *VirtualServer::findMatchServer(const std::vector<VirtualServer *> &servers,
+													const libhttp::Request &request)
+{
+	if (servers.empty())
+		return NULL;
+
+	std::vector<VirtualServer *>::const_iterator it;
+	for (it = servers.begin();
+		 it != servers.end();
+		 it++)
+	{
+		// check server_name is equal host
+		if ((*it)->checkRequest(request))
+			return *it;
+	}
+	return servers[0];
+}
+
+/**
+ * findMatchingLocation() - Finds the best matching location block for a URI
+ *
+ * Implements longest-prefix matching:
+ * - /images/cat.jpg matches both "/" and "/images"
+ * - "/images" wins because it's more specific (longer prefix)
+ *
+ * RETURNS:
+ * - Pointer to matching LocationConfig, or NULL if no match
+ */
+const LocationConfig &VirtualServer::findMatchingLocation(const std::string &uri) const
+{
+	const LocationConfig *best_match;
+	size_t longest_match = 0;
+
+	// Iterate through all location blocks
+	for (size_t i = 0; i < _config.locations.size(); ++i)
+	{
+		const LocationConfig *loc = &_config.locations[i];
+		const std::string &loc_path = loc->path;
+
+		// Check if URI starts with location path
+		if (uri.compare(0, loc_path.length(), loc_path) == 0)
+		{
+			// This location matches, check if it's more specific
+			if (loc_path.length() > longest_match)
+			{
+				longest_match = loc_path.length();
+				best_match = loc;
+			}
+		}
+	}
+
+	return *best_match;
 }

@@ -21,7 +21,7 @@ namespace libhttp {
 
 		// Getters
 		Method getMethod() const;
-		std::string getUri() const;
+		const std::string &getUri() const;
 		std::string getHeader(const std::string& key) const;
 		std::string getBody() const;
 		std::multimap<std::string, std::string> getHeaders() const;

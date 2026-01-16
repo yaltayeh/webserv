@@ -39,7 +39,7 @@ namespace libhttp {
 
 	// Getters
 	Method Request::getMethod() const { return _method; }
-	std::string Request::getUri() const { return _uri; }
+	const std::string &Request::getUri() const { return _uri; }
 	std::string Request::getHeader(const std::string& key) const {
 		std::multimap<std::string, std::string>::const_iterator it = _headers.find(key);
 		if (it != _headers.end()) {

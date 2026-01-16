@@ -52,7 +52,7 @@ namespace libhttp {
 			std::vector<std::string> request_line_parts = split(request_line, ' ');
 
 			if (request_line_parts.size() != 3 
-				|| request_line_parts[2] != HTTP_1_0
+				// || request_line_parts[2] != HTTP_1_0
 				)
 				{ _state = ERROR; return -1; }
 			_request.setMethod(stringToMethod(request_line_parts[0]));

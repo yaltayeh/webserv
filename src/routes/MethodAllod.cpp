@@ -1,0 +1,40 @@
+#include "RouteHandler.hpp"
+#include "libhttp/include/Utils.hpp"
+#include <iostream>
+
+// Validate HTTP method
+// if (!isMethodAllowed(request.getMethod(), location))
+// {
+//     return generateErrorResponse(405, location);
+// }
+
+/**
+ * isMethodAllowed() - Checks if HTTP method is allowed for this location
+ *
+ * RETURNS:
+ * - true if method is allowed (or no restrictions configured)
+ * - false if method is explicitly denied
+ */
+static bool isMethodNotAllowed(const libhttp::Request &request,
+                            const LocationConfig &loc)
+{
+    std::cout << "isMethodNotAllowed" << std::endl;
+    // If no restrictions configured, all methods are allowed
+    if (loc.allowed_methods.empty())
+    {
+        return false;
+    }
+
+    std::string method_str = libhttp::methodToString(request.getMethod());
+
+    return loc.allowed_methods.find(method_str) == loc.allowed_methods.end();
+}
+
+static libhttp::Response &generateResponse(const libhttp::Request &request,
+                                           const LocationConfig &loc)
+{
+    (void)request;
+    return RouteHandler::generateErrorResponse(405, loc);
+}
+
+DEFINE_PERMISSION_ROUTE_HANDLER(isMethodNotAllowed, generateResponse);

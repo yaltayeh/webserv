@@ -1,8 +1,8 @@
 #include "ClientSocket.hpp"
 #include <arpa/inet.h>
 #include <iostream>
-#include <RequestRouter.hpp>
 #include "EventLoop.hpp"
+#include "StaticResponse.hpp"
 
 #define READ_BUFFER_SIZE 4096
 
@@ -66,24 +66,17 @@ int ClientSocket::EventHandler(EventLoop *el)
 
             // TODO: assign virtual server function
             // TODO: turn the request ownership to the selected virtual server
-            libhttp::Response response;
-            std::vector<VirtualServer *>::const_iterator it;
-            for (it = servers.begin();
-                it != servers.end();
-                it++)
+            ;
+
+            const VirtualServer *server = VirtualServer::findMatchServer(servers, request);
+            if (!server)
             {
-                // check server_name is equal host
-                if ((*it)->checkRequest(request))
-                {
-                    response = (*it)->handleRequest(request);
-                    break;
-                }
+                std::cerr << "Virtual Server Not Found" << std::endl;
+                return (0);
             }
-            if (it == servers.end())
-                response = servers[0]->handleRequest(request);
-
-            write_buffer = response.toString();
-
+            const libhttp::Response &response = server->handleRequest(request);
+            const libhttp::StaticResponse &staticRes = dynamic_cast<const libhttp::StaticResponse &>(response);
+            write_buffer = staticRes.toString();
         }
     }
 

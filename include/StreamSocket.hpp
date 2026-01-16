@@ -5,13 +5,16 @@
 #include "ListenSocket.hpp"
 #include "libhttp/include/Parser.hpp"
 #include "EventData.hpp"
+#include "ClientSocket.hpp"
 
-class CGISocket : public Socket, public EventData
+class StreamSocket : public Socket, public EventData
 {
 private:
+	std::string &_buffer;
 
 public:
-	CGISocket();
-	~CGISocket();
+	StreamSocket(int fd, std::string &buffer);
+	~StreamSocket();
+
 	int EventHandler(EventLoop *el);
 };
