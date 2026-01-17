@@ -15,8 +15,8 @@ int StreamSocket::EventHandler(EventLoop *el)
 {
 	if (isEOF)
 	{
-		el->deleteEvent(_socketfd, EVENT_READ);
-		el->deleteEvent(_socketfd, EVENT_WRITE);
+		el->deleteEvent(_socketfd, EVENT_READ, this);
+		el->deleteEvent(_socketfd, EVENT_WRITE, this);
 		delete this;
 	}
 	if (isRead)

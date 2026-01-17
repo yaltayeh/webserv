@@ -37,7 +37,7 @@ public:
     EventLoop(const EventLoop &other);
 
     int addEvent(int fd, int event, EventData *udata);
-    int deleteEvent(int fd, int event);
+    int deleteEvent(int fd, int event, EventData *udata);
     EventLoop &operator=(const EventLoop &other);
 
     // Main event loop

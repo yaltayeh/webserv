@@ -184,7 +184,7 @@ libhttp::Response &handleStaticFile(const libhttp::Request &request,
 
     // Build response
     response.setStatus(200);
-    response.setHeader("Content-Type", libhttp::getMimeType(file_path));
+    response.setHeader("Content-Type", RouteHandler::getMimeType(file_path, loc));
 
     std::ostringstream ss;
     ss << content.size();

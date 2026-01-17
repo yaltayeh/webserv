@@ -77,9 +77,13 @@ namespace Directive
 		 */
 		const char *_directiveEnd;
 
-		const char *_block_start;
+		const char *_blockStart;
+		const char *_blockEnd;
 
 		ParserHandler _handler;
+
+		std::string _filePath;
+		std::string _dirPath;
 
 		// Config *config;
 
@@ -93,13 +97,13 @@ namespace Directive
 		 */
 		std::vector<std::string> getArgs();
 
-	public:
 		/**
 		 * @brief Constructor - parses entire string
 		 * @param configString Configuration file content
 		 */
-		Parser(std::string configString);
+		Parser(const std::string &configString);
 
+	public:
 		/**
 		 * @brief Copy constructor
 		 * @param other Parser to copy from
@@ -171,6 +175,16 @@ namespace Directive
 		bool getNextDirectives();
 
 		/**
+		 * @brief Parses a directive string and adds it to parent
+		 * @param parent Parent directive to add parsed directive to
+		 * @param str String containing the directive to parse
+		 * @return Pointer to newly created directive, or NULL on error
+		 * @throws DirectiveNotFound if directive type unknown
+		 * @throws ParseException on syntax errors
+		 */
+		const Config *parseDirective(Config *parent);
+
+		/**
 		 * @brief Gets pointer to start of current directive
 		 * @return Pointer into _configString
 		 */
@@ -181,6 +195,9 @@ namespace Directive
 		 * @return Pointer into _configString
 		 */
 		const char *getDirectiveEnd() const;
+
+		const std::string &getFilePath() const;
+		const std::string &getDirPath() const;
 
 		/**
 		 * @brief Skips whitespace characters
@@ -227,16 +244,6 @@ namespace Directive
 		 * @note Static utility method
 		 */
 		static const char *getName(const char *p, const char *end, std::string &name);
-
-		/**
-		 * @brief Parses a directive string and adds it to parent
-		 * @param parent Parent directive to add parsed directive to
-		 * @param str String containing the directive to parse
-		 * @return Pointer to newly created directive, or NULL on error
-		 * @throws DirectiveNotFound if directive type unknown
-		 * @throws ParseException on syntax errors
-		 */
-		const Config *parseDirective(Config *parent);
 	};
 
 }

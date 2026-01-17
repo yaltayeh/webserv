@@ -28,6 +28,9 @@ struct EventData
 	bool isWrite;
 	bool isRead;
 
+	bool isEnableReadEvent;
+	bool isEnableWriteEvent;
+
 	EventData();
 	virtual ~EventData() = 0;
 	virtual int EventHandler(EventLoop *el) = 0;

@@ -42,8 +42,8 @@ int ClientSocket::EventHandler(EventLoop *el)
         std::cout << "client [" << getHost() << "]: disconnected" << std::endl;
 
         // Clean up: remove from event loop and free memory
-        el->deleteEvent(_socketfd, EVENT_READ);
-        el->deleteEvent(_socketfd, EVENT_WRITE);
+        el->deleteEvent(_socketfd, EVENT_READ, this);
+        el->deleteEvent(_socketfd, EVENT_WRITE, this);
         delete this;
         return 0;
     }
@@ -55,8 +55,8 @@ int ClientSocket::EventHandler(EventLoop *el)
         if (handleRead() == false) // Returns false on error
         {
             // Error occurred, close connection
-            el->deleteEvent(_socketfd, EVENT_WRITE);
-            el->deleteEvent(_socketfd, EVENT_READ);
+            el->deleteEvent(_socketfd, EVENT_WRITE, this);
+            el->deleteEvent(_socketfd, EVENT_READ, this);
             delete this;
             return (0);
         }
@@ -66,7 +66,7 @@ int ClientSocket::EventHandler(EventLoop *el)
         {
             // Switch from reading to writing
             // (Stop monitoring reads, start monitoring writes)
-            el->deleteEvent(_socketfd, EVENT_READ);
+            el->deleteEvent(_socketfd, EVENT_READ, this);
             el->addEvent(_socketfd, EVENT_WRITE, this);
 
             // Route the request and generate response
@@ -113,7 +113,7 @@ int ClientSocket::EventHandler(EventLoop *el)
     {
         if (write_buffer.empty())
         {
-            el->deleteEvent(_socketfd, EVENT_WRITE);
+            el->deleteEvent(_socketfd, EVENT_WRITE, this);
             return (1);
         }
         // Send HTTP response data
@@ -123,8 +123,8 @@ int ClientSocket::EventHandler(EventLoop *el)
         if (isResponseSent)
         {
             // Clean up: close connection and free memory
-            el->deleteEvent(_socketfd, EVENT_WRITE);
-            el->deleteEvent(_socketfd, EVENT_READ);
+            el->deleteEvent(_socketfd, EVENT_WRITE, this);
+            el->deleteEvent(_socketfd, EVENT_READ, this);
             delete this; // defualt close _socketfd
         }
     }

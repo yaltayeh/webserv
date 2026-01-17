@@ -21,7 +21,8 @@ namespace Directive
 	/**
 	 * @brief Constructs parser for entire string
 	 */
-	Parser::Parser(std::string configString) : _configString(configString)
+	Parser::Parser(const std::string &configString)
+		: _configString(configString)
 	{
 		_start = _configString.c_str();
 		_end = _start + _configString.length();
@@ -48,7 +49,8 @@ namespace Directive
 		_directiveStart = _start + directiveStartOffset;
 		_directiveEnd = _start + directiveEndOffset;
 
-		_block_start = other._block_start;
+		_blockStart = other._blockStart;
+		_blockEnd = other._blockEnd;
 		_handler = other._handler;
 	}
 
@@ -120,7 +122,18 @@ namespace Directive
 
 		std::string str = ss.str();
 
-		return (Parser(str));
+		Parser parser = Parser(str);
+		parser._filePath = fileName;
+
+		std::string dirpath;
+		size_t last_slash_pos = fileName.find_last_of("/\\");
+		if (last_slash_pos != std::string::npos)
+			dirpath = fileName.substr(0, last_slash_pos);
+		else
+			dirpath = ".";
+		parser._dirPath = dirpath;
+
+		return (parser);
 	}
 
 	bool Parser::loadConfigFile(const std::string &fileName, Config &config)
@@ -160,9 +173,9 @@ namespace Directive
 	{
 		const char *p;
 		int bracket_level = 0;
-		const char *slice;
 
-		_block_start = NULL;
+		_blockStart = NULL;
+		_blockEnd = NULL;
 		if (_p >= _end)
 			return false;
 		p = _p;
@@ -178,7 +191,7 @@ namespace Directive
 				break;
 		}
 
-		slice = p; // Mark start of directive
+		_directiveStart = p; // Mark start of directive
 
 		// Find end of directive
 		while (p < _end)
@@ -193,26 +206,26 @@ namespace Directive
 			if (*p == '{')
 			{
 				if (bracket_level == 0)
-					_block_start = p;
+					_blockStart = p;
 				bracket_level++;
 			}
 			if (*p == '}')
 			{
 				bracket_level--;
-				if (bracket_level == 0)
+				if (bracket_level <= 0)
+				{
+					_blockEnd = p;
 					break; // Block directive end
+				}
 			}
-			if (bracket_level < 0)
-				throw ParseException("Mismatched closing bracket '}'");
 			p++;
 		}
 		if (bracket_level != 0)
-			throw ParseException("Mismatched closing bracket '}'");
-		_directiveStart = slice;
-		if (*p == '}')
+			throw ParseException("Mismatched closing bracket != 0 '}'");
+		if (*p == '}' && p != _end)
 			p++;
-		_directiveEnd = p;
-		if (*p == ';')
+		_directiveEnd = p; // Mark end of directive
+		if (*p == ';' && p != _end)
 			p++;
 		_p = p;
 		return (true);
@@ -232,6 +245,16 @@ namespace Directive
 	const char *Parser::getDirectiveEnd() const
 	{
 		return _directiveEnd;
+	}
+
+	const std::string &Parser::getFilePath() const
+	{
+		return _filePath;
+	}
+
+	const std::string &Parser::getDirPath() const
+	{
+		return _dirPath;
 	}
 
 	/**
@@ -286,7 +309,7 @@ namespace Directive
 				config = _handler(this, args, parent);
 			if (config)
 				config->parent = parent;
-			if (_block_start)
+			if (_blockStart)
 				parseBlockDirective(config);
 			return config;
 		}
@@ -308,53 +331,25 @@ namespace Directive
 	 */
 	void Parser::parseBlockDirective(Config *parent)
 	{
-		const char *p = NULL;
 		const char *start;
 		const char *end;
-		int bracket_level = 0;
 
-		start = _block_start;
-		end = _directiveEnd;
-		if (*start != '{')
-			throw ParseException("Block directive must start with '{'");
-		start++; // skip first {
-		bracket_level = 1;
-
-		// skip spaces after {
-		p = start;
-		while (p < end && isspace(*p))
-			p++;
-		while (p < end)
-		{
-			// skip qout and double qout
-			if (*p == '\"' || *p == '\'')
-				p = Directive::Parser::nextQout(p, end, *p);
-
-			// skip comment
-			if (*p == '#')
-				p = Directive::Parser::skipComment(p, end);
-
-			if (*p == '{')
-				bracket_level++;
-			if (*p == '}')
-				bracket_level--;
-			if (*p == '}' && bracket_level == 0)
-				break;
-			if (bracket_level < 0)
-				throw ParseException("Invalid close bracket '}' without matching open bracket '{'");
-			p++;
-		}
-		if (p >= end)
-			throw ParseException("Missing closing bracket '}' for block directive");
-		end = p - 1;
-
+		start = _blockStart;
+		end = _blockEnd;
+		if (*start != '{' || *end != '}')
+			throw ParseException("unexpected Block directive");
+		start++;
+		end--;
+		if (end < start)
+			return ;
 		std::string block = _configString.substr(start - _configString.c_str(), end - start);
-
+		
 		Directive::Parser parser(block);
 		parser.setHandler(_handler);
 		while (parser.getNextDirectives())
 			parser.parseDirective(parent);
-		_block_start = NULL;
+		_blockStart = NULL;
+		_blockEnd = NULL;
 	}
 
 	/**

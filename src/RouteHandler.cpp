@@ -30,7 +30,21 @@ void RouteHandler::setDefualtHandler(const RouteHandlerFunc handler)
     defualtHandler = handler;
 }
 
-#include <iostream>
+const std::string &RouteHandler::getMimeType(const std::string &path,
+                                             const LocationConfig &loc)
+{
+    size_t dotPos = path.rfind('.');
+    if (dotPos != std::string::npos)
+    {
+        std::string extension = path.substr(dotPos + 1);
+        std::map<std::string, std::string>::const_iterator it = loc.mimeTypes.find(extension);
+        if (it != loc.mimeTypes.end())
+        {
+            return it->second;
+        }
+    }
+    return loc.default_type; // Default MIME type
+}
 
 const libhttp::Response &RouteHandler::route(const libhttp::Request &request, const LocationConfig &location)
 {

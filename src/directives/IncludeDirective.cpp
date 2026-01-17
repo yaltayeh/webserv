@@ -25,7 +25,11 @@ struct Config *parseIncludeDirective(Directive::Parser *parser, const std::vecto
 	if (args.size() != 2)
 		throw Directive::ArgumentException("include", "requires exactly one argument (file path)");
 	
-	Directive::Parser::loadConfigFile(args[1], *parent);
+	std::string filepath;
+
+	filepath = parser->getDirPath() + "/" + args[1];
+
+	Directive::Parser::loadConfigFile(filepath, *parent);
 
 	return NULL;
 }

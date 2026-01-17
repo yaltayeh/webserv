@@ -124,12 +124,14 @@ int EventLoop::addEvent(int fd, int event, EventData *udata)
 	if (_eventFd < 0)
 		return (-1);
 
+	if (event == EVENT_READ && udata->isEnableReadEvent)
+		return (0);
+	if (event == EVENT_WRITE && udata->isEnableWriteEvent)
+		return (0);
+
 #if defined(__linux__)
 	// Linux: Use epoll to add file descriptor
 	struct epoll_event ev;
-	ev.events = event | EPOLLET; // Combine requested event with edge-triggered flag
-	ev.data.ptr = udata;		 // Store Socket* for later retrieval
-
 	ev.events = event | EPOLLET; // Combine requested event with edge-triggered flag
 	ev.data.ptr = udata;		 // Store Socket* for later retrieval
 
@@ -150,6 +152,10 @@ int EventLoop::addEvent(int fd, int event, EventData *udata)
 		perror("kevent ADD");
 #endif
 
+	if (event == EVENT_READ)
+		udata->isEnableReadEvent = true;
+	if (event == EVENT_WRITE)
+		udata->isEnableWriteEvent = true;
 	return 0;
 }
 
@@ -164,10 +170,15 @@ int EventLoop::addEvent(int fd, int event, EventData *udata)
  * Note: On Linux, epoll removes the entire fd (not just one event type)
  *       On macOS/BSD, kqueue removes the specific filter
  */
-int EventLoop::deleteEvent(int fd, int event)
+int EventLoop::deleteEvent(int fd, int event, EventData *udata)
 {
 	if (_eventFd < 0)
 		return (-1);
+
+	if (event == EVENT_READ && !(udata->isEnableReadEvent))
+		return (0);
+	if (event == EVENT_WRITE && !(udata->isEnableWriteEvent))
+		return (0);
 
 #if defined(__linux__)
 	// Linux: epoll removes entire fd, not individual event types
@@ -184,6 +195,11 @@ int EventLoop::deleteEvent(int fd, int event)
 	if (kevent(_eventFd, &kev, 1, NULL, 0, NULL) == -1)
 		perror("kevent DEL");
 #endif
+
+	if (event == EVENT_READ)
+		udata->isEnableReadEvent = false;
+	if (event == EVENT_WRITE)
+		udata->isEnableWriteEvent = false;
 
 	return 0;
 }
@@ -220,7 +236,7 @@ void EventLoop::run()
 	if (_eventFd < 0)
 		throw std::runtime_error("Failed to create kqueue instance: " + std::string(strerror(errno)));
 #endif
-	
+
 	// Set FD_CLOEXEC flag to prevent fd leaks to child processes
 	int flags = fcntl(_eventFd, F_GETFD);
 	if (flags == -1 || fcntl(_eventFd, F_SETFD, flags | FD_CLOEXEC) == -1)

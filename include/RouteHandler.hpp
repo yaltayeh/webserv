@@ -81,6 +81,9 @@ public:
 
     static std::string findIndexFile(const std::string &directory_path,
                                      const LocationConfig &loc);
+
+    static const std::string &getMimeType(const std::string &path,
+                                          const LocationConfig &loc);
 };
 
 #define DEFINE_NORMAL_ROUTE_HANDLER(checkHandler, routeHandler) \
