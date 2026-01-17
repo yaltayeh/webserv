@@ -21,6 +21,7 @@ INCLUDE_FLAGS	   		= -Iinclude -Iinclude/directives -Idependencies $(foreach lib
 SRCS		    		=   src/main.cpp 										\
 							src/Socket.cpp 										\
 							src/ClientSocket.cpp 								\
+							src/StreamSocket.cpp 								\
 							src/ListenSocket.cpp 								\
 							src/VirtualServer.cpp 								\
 							src/EventLoop.cpp									\

@@ -3,6 +3,7 @@
 #include <sstream>
 #include "RouteHandler.hpp"
 #include "CGI.hpp"
+#include <sys/fcntl.h>
 
 // STEP 7: Determine if CGI or static file
 // if (isCGIRequest(uri, location))
@@ -24,7 +25,6 @@
 bool isCGIRequest(const libhttp::Request &request,
 				  const LocationConfig &loc)
 {
-	std::cout << "isCGIRequest" << std::endl;
 	const std::string &uri = request.getUri();
 
 	// Check if CGI is configured
@@ -64,9 +64,9 @@ bool isCGIRequest(const libhttp::Request &request,
  */
 
 static libhttp::Response &generateResponse(const libhttp::Request &request,
-									const LocationConfig &loc)
+										   const LocationConfig &loc)
 {
-	static libhttp::StaticResponse response;
+	static libhttp::StreamResponse response;
 	const std::string &uri = request.getUri();
 
 	// Get location path
@@ -104,15 +104,15 @@ static libhttp::Response &generateResponse(const libhttp::Request &request,
 
 	pid_t pid = cgi.execute(socketFd);
 
-	if (pid == -1)
+	if (pid == -1 || socketFd == -1)
 	{
 		std::cerr << "CGI execution failed: " << cgi.getError() << std::endl;
 		return RouteHandler::generateErrorResponse(500, loc);
 	}
 
 	// Write request body to CGI script (for POST requests)
-	std::string request_body = request.getBody();
-	if (!request_body.empty() && socketFd != -1)
+	const std::string &request_body = request.getBody();
+	if (!request_body.empty())
 	{
 		ssize_t written = write(socketFd, request_body.c_str(),
 								request_body.size());
@@ -122,57 +122,60 @@ static libhttp::Response &generateResponse(const libhttp::Request &request,
 		}
 	}
 
-	// Read CGI output
-	std::string cgi_output;
-	char buffer[4096];
-	ssize_t bytes_read;
+	response = libhttp::StreamResponse(socketFd, pid);
+	return (response);
 
-	while ((bytes_read = read(socketFd, buffer, sizeof(buffer))) > 0)
-	{
-		cgi_output.append(buffer, bytes_read);
-	}
+	// // Read CGI output
+	// std::string cgi_output;
+	// char buffer[4096];
+	// ssize_t bytes_read;
 
-	close(socketFd);
+	// while ((bytes_read = read(socketFd, buffer, sizeof(buffer))) > 0)
+	// {
+	// 	cgi_output.append(buffer, bytes_read);
+	// }
 
-	// Wait for CGI script to finish
-	int status;
-	waitpid(pid, &status, 0);
+	// close(socketFd);
 
-	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
-	{
-		std::cerr << "CGI script exited with error" << std::endl;
-		return RouteHandler::generateErrorResponse(500, loc);
-	}
+	// // Wait for CGI script to finish
+	// int status;
+	// waitpid(pid, &status, 0);
 
-	// Parse CGI output
-	std::map<std::string, std::string> cgi_headers;
-	std::string cgi_body;
+	// if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+	// {
+	// 	std::cerr << "CGI script exited with error" << std::endl;
+	// 	return RouteHandler::generateErrorResponse(500, loc);
+	// }
 
-	if (!CGI::parseCGIOutput(cgi_output, cgi_headers, cgi_body))
-	{
-		std::cerr << "Failed to parse CGI output" << std::endl;
-		return RouteHandler::generateErrorResponse(500, loc);
-	}
+	// // Parse CGI output
+	// std::map<std::string, std::string> cgi_headers;
+	// std::string cgi_body;
 
-	// Build response from CGI output
-	response.setStatus(200);
+	// if (!CGI::parseCGIOutput(cgi_output, cgi_headers, cgi_body))
+	// {
+	// 	std::cerr << "Failed to parse CGI output" << std::endl;
+	// 	return RouteHandler::generateErrorResponse(500, loc);
+	// }
 
-	// Copy CGI headers to response
-	for (std::map<std::string, std::string>::const_iterator it = cgi_headers.begin();
-		 it != cgi_headers.end(); ++it)
-	{
-		response.setHeader(it->first, it->second);
-	}
+	// // Build response from CGI output
+	// response.setStatus(200);
 
-	// Set Content-Length if not already set by CGI
-	if (cgi_headers.find("Content-Length") == cgi_headers.end())
-	{
-		std::ostringstream ss;
-		ss << cgi_body.size();
-		response.setHeader("Content-Length", ss.str());
-	}
+	// // Copy CGI headers to response
+	// for (std::map<std::string, std::string>::const_iterator it = cgi_headers.begin();
+	// 	 it != cgi_headers.end(); ++it)
+	// {
+	// 	response.setHeader(it->first, it->second);
+	// }
 
-	response.setBody(cgi_body);
+	// // Set Content-Length if not already set by CGI
+	// if (cgi_headers.find("Content-Length") == cgi_headers.end())
+	// {
+	// 	std::ostringstream ss;
+	// 	ss << cgi_body.size();
+	// 	response.setHeader("Content-Length", ss.str());
+	// }
+
+	// response.setBody(cgi_body);
 
 	return response;
 }

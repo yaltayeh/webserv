@@ -18,7 +18,6 @@
 static bool isMethodNotAllowed(const libhttp::Request &request,
                             const LocationConfig &loc)
 {
-    std::cout << "isMethodNotAllowed" << std::endl;
     // If no restrictions configured, all methods are allowed
     if (loc.allowed_methods.empty())
     {

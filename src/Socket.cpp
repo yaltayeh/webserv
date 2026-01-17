@@ -29,6 +29,16 @@ Socket::Socket(int socketfd)
 		}
 	}
 
+	// Set FD_CLOEXEC flag to prevent fd leaks to child processes
+	int flags = fcntl(_socketfd, F_GETFD);
+	if (flags == -1 || fcntl(_socketfd, F_SETFD, flags | FD_CLOEXEC) == -1)
+	{
+		Socket::close();
+		std::cerr << "Error: Failed to set FD_CLOEXEC mode on "
+				  << _socketfd << strerror(errno) << std::endl;
+		throw std::runtime_error("Failed to set FD_CLOEXEC on kqueue fd: " + std::string(strerror(errno)));
+	}
+
 	/**
 	 * ========================================================================
 	 * STEP 5: Set socket to non-blocking mode

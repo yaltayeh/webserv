@@ -10,10 +10,10 @@
 class StreamSocket : public Socket, public EventData
 {
 private:
-	std::string &_buffer;
+	ClientSocket *_clientSocket;
 
 public:
-	StreamSocket(int fd, std::string &buffer);
+	StreamSocket(int fd, ClientSocket *clientSocket);
 	~StreamSocket();
 
 	int EventHandler(EventLoop *el);

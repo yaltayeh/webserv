@@ -11,7 +11,6 @@
 #include <iostream>
 bool checkAccessDenied(const libhttp::Request &r, const LocationConfig &loc)
 {
-	std::cout << "checkAccessDenied" << std::endl;
 	(void)r;
 	return loc.deny_all;
 }

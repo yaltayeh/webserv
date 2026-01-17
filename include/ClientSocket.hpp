@@ -28,6 +28,7 @@ public:
 
 	sockaddr_in getAddress();
 	const char *getHost();
+	void WriteToBuffer(char *buf, size_t len);
 	bool handleRead();
 	bool handleWrite();
 };

@@ -11,7 +11,6 @@
 static bool isRedirection(const libhttp::Request &request,
 						  const LocationConfig &loc)
 {
-	std::cout << "isRedirection" << std::endl;
 	(void)request;
 	return loc.is_return;
 }

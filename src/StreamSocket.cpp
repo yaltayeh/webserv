@@ -1,8 +1,9 @@
 #include "StreamSocket.hpp"
 #include "EventLoop.hpp"
+#include <iostream>
 
-StreamSocket::StreamSocket(int fd, std::string &buffer)
-	: Socket(fd), _buffer(buffer)
+StreamSocket::StreamSocket(int fd, ClientSocket *clientSocket)
+	: Socket(fd), _clientSocket(clientSocket)
 {
 }
 
@@ -22,10 +23,11 @@ int StreamSocket::EventHandler(EventLoop *el)
 	{
 		char buf[4096];
 
-		ssize_t nbytes;
-		if ((nbytes = recv(buf, sizeof(buf))) <= 0)
+		ssize_t nbytes = recv(buf, sizeof(buf));
+		if (nbytes <= 0)
 			return (1);
-		_buffer.append(buf, nbytes);
+		_clientSocket->WriteToBuffer(buf, nbytes);
+		el->addEvent(_clientSocket->getSocketfd(), EVENT_WRITE, _clientSocket);
 	}
 	return 0;
 }

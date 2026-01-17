@@ -11,7 +11,6 @@
 static bool exceedsMaxBodySize(const libhttp::Request &request,
 						const LocationConfig &loc)
 {
-	std::cout << "exceedsMaxBodySize" << std::endl;
 	std::string content_length_str = request.getHeader("Content-Length");
 
 	if (content_length_str.empty())

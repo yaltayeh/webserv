@@ -3,6 +3,8 @@
 #include <iostream>
 #include "EventLoop.hpp"
 #include "StaticResponse.hpp"
+#include "StreamResponse.hpp"
+#include "StreamSocket.hpp"
 
 #define READ_BUFFER_SIZE 4096
 
@@ -86,15 +88,34 @@ int ClientSocket::EventHandler(EventLoop *el)
                 std::cerr << "Virtual Server Not Found" << std::endl;
                 return (0);
             }
-            const libhttp::Response &response = server->handleRequest(request);
-            const libhttp::StaticResponse &staticRes = dynamic_cast<const libhttp::StaticResponse &>(response);
-            write_buffer = staticRes.toString();
+            const libhttp::Response *raw_response = &server->handleRequest(request);
+            if (dynamic_cast<const libhttp::StaticResponse *>(raw_response))
+            {
+                const libhttp::StaticResponse *response = dynamic_cast<const libhttp::StaticResponse *>(raw_response);
+                write_buffer = response->toString();
+            }
+            else if (dynamic_cast<const libhttp::StreamResponse *>(raw_response))
+            {
+                const libhttp::StreamResponse *response = dynamic_cast<const libhttp::StreamResponse *>(raw_response);
+                write_buffer = "";
+                StreamSocket *ss = new StreamSocket(response->getFD(), this);
+                el->addEvent(ss->getSocketfd(), EVENT_READ, ss);
+            }
+            else
+            {
+                write_buffer = "WTF";
+            }
         }
     }
 
     // --- Sub-case C: Socket Ready to Write (HTTP Response) ---
     else if (isWrite)
     {
+        if (write_buffer.empty())
+        {
+            el->deleteEvent(_socketfd, EVENT_WRITE);
+            return (1);
+        }
         // Send HTTP response data
         handleWrite();
 
@@ -104,7 +125,7 @@ int ClientSocket::EventHandler(EventLoop *el)
             // Clean up: close connection and free memory
             el->deleteEvent(_socketfd, EVENT_WRITE);
             el->deleteEvent(_socketfd, EVENT_READ);
-            delete this;
+            delete this; // defualt close _socketfd
         }
     }
     return (0);
@@ -119,6 +140,13 @@ const char *ClientSocket::getHost()
 {
     char *addr_str = inet_ntoa(addr.sin_addr);
     return addr_str;
+}
+
+void ClientSocket::WriteToBuffer(char *buf, size_t len)
+{
+    if (write_buffer.capacity() <= write_buffer.size() + len)
+        write_buffer.reserve(4096);
+    write_buffer.append(buf, len);
 }
 
 /**
@@ -178,8 +206,11 @@ bool ClientSocket::handleRead()
 
 bool ClientSocket::handleWrite()
 {
+    // std::cout << "Try write to client " << write_buffer << std::endl;
     if (write_buffer.empty())
+    {
         return true;
+    }
 
     ssize_t bytes_sent = send(write_buffer.c_str(), write_buffer.size());
 
