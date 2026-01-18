@@ -149,6 +149,11 @@ libhttp::Response &handleStaticFile(const libhttp::Request &request,
     // Check if path exists
     if (!RouteHandler::fileExists(file_path))
     {
+        if (loc.autoindex)
+        {
+            std::cout << "File not found, but autoindex enabled, generating directory listing" << std::endl;
+            return handleAutoindex(file_path, uri);
+        }
         return RouteHandler::generateErrorResponse(404, loc);
     }
 
@@ -157,6 +162,8 @@ libhttp::Response &handleStaticFile(const libhttp::Request &request,
     {
         // Look for index file
         std::string index_file = RouteHandler::findIndexFile(file_path, loc);
+
+        std::cout << "index_file: " << index_file << std::endl;
 
         if (!index_file.empty())
         {

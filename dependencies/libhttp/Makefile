@@ -11,7 +11,6 @@ SRCS = $(SRC_DIR)/Request.cpp \
 		$(SRC_DIR)/Response.cpp \
 		$(SRC_DIR)/StreamResponse.cpp \
 		$(SRC_DIR)/StaticResponse.cpp \
-		$(SRC_DIR)/Constants.cpp \
 		$(SRC_DIR)/Utils.cpp \
 		$(SRC_DIR)/Parser.cpp \
 		$(SRC_DIR)/CGI.cpp

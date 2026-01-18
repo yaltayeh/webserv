@@ -17,11 +17,11 @@ struct Config *parseClientMaxBodySizeDirective(Directive::Parser *parser, const 
 	// Cast parent to config
 	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
 	if (!config)
-		throw Directive::InvalidNesting("client_max_body_size", "can only be used in http, server or location context");
+		throw Directive::InvalidNesting("max_body_size", "can only be used in http, server or location context");
 
 	// Parse value
 	if (args.size() != 2)
-		throw Directive::ArgumentException("client_max_body_size", "requires exactly one argument");
+		throw Directive::ArgumentException("max_body_size", "requires exactly one argument");
 
 	std::string size_str = args[1];
 	size_t size = 0;
@@ -56,4 +56,4 @@ struct Config *parseClientMaxBodySizeDirective(Directive::Parser *parser, const 
 	return NULL;
 }
 
-DEFINE_DIRECTIVE("client_max_body_size", parseClientMaxBodySizeDirective);
+DEFINE_DIRECTIVE("max_body_size", parseClientMaxBodySizeDirective);

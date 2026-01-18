@@ -12,6 +12,7 @@ namespace libhttp {
 			case OK: return "OK";
 			case CREATED: return "Created";
 			case NO_CONTENT: return "No Content";
+			case NOT_ALLOWED: return "Method Not Allowed";
 			case BAD_REQUEST: return "Bad Request";
 			case FORBIDDEN: return "Forbidden";
 			case NOT_FOUND: return "Not Found";
