@@ -135,6 +135,7 @@ libhttp::Response &handleStaticFile(const libhttp::Request &request,
 {
     std::cout << "handleStaticFile" << std::endl;
     static libhttp::StaticResponse response;
+    response = libhttp::StaticResponse(); // Reset response // TODO: please check if this is safe
     const std::string &uri = request.getUri();
 
     // Get location path (empty string if server-level config)
