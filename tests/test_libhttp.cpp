@@ -2,8 +2,8 @@
 #include <string>
 #include <cstring>
 #include <fstream>
-#include "dependencies/libhttp/include/Parser.hpp"
-#include "dependencies/libhttp/include/Request.hpp"
+#include "../dependencies/libhttp/include/Parser.hpp"
+#include "../dependencies/libhttp/include/Request.hpp"
 
 
 // ❯ rm -rf test_temp && c++ -Wall -Wextra -Werror -std=c++98 -Idependencies/libhttp/include -Idependencies/libutils/include test_libhttp.cpp dependencies/libhttp/src/*.cpp dependencies/libutils/src/*.cpp -o

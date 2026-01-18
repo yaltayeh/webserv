@@ -250,14 +250,14 @@ namespace Directive
 		static const char *getName(const char *p, const char *end, std::string &name);
 
 		static const char *skipVariableName(const char *p, const char *end);
-	
+
 		static std::string getEnvName(const std::string &str);
 
 		const std::string &getVarValue(const std::string &str, size_t dollar_sign);
 
-
 		std::string ExpantionEnviron(const std::string &str);
-		std::string ExpantionVariable(const std::string &str);
+		static std::string ExpantionVariable(const std::string &str,
+											 std::map<std::string, std::string> &_table);
 	};
 
 }

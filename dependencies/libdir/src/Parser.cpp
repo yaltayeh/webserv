@@ -535,9 +535,32 @@ namespace Directive
 		return (str);
 	}
 
-	std::string Parser::ExpantionVariable(const std::string &str)
+	std::string Parser::ExpantionVariable(const std::string &raw,
+										  std::map<std::string, std::string> &_table)
 	{
-		(void)str;
-		return std::string();
+		std::stringstream ss;
+
+		size_t i = 0;
+		size_t dollar_sign;
+		while (i < raw.length())
+		{
+			dollar_sign = raw.find('$', i);
+			if (dollar_sign > i)
+				ss << raw.substr(i, dollar_sign - i);
+			if (dollar_sign == std::string::npos)
+				break;
+			i = dollar_sign + 1;
+			while (i < raw.length() && (std::isalnum(raw[i]) || raw[i] == '_'))
+				i++;
+			if (i > dollar_sign)
+			{
+				std::string name = raw.substr(dollar_sign + 1, i);
+				const std::string &value = _table[name];
+				ss << value;
+			}
+		}
+		std::string str;
+		ss >> str;
+		return (str);
 	}
 }

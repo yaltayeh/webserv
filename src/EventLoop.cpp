@@ -255,10 +255,10 @@ void EventLoop::run()
 
 #if defined(__linux__)
 	// Linux: Array to hold triggered epoll events (max 32 events per wait)
-	struct epoll_event events[32];
+	struct epoll_event events[1024];
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 	// macOS/BSD: Array to hold triggered kqueue events (max 32 events per wait)
-	struct kevent events[32];
+	struct kevent events[1024];
 #endif
 
 	int maxevents = sizeof(events) / sizeof(events[0]);
@@ -292,6 +292,9 @@ void EventLoop::run()
 			throw std::runtime_error("kevent failed: " + std::string(strerror(errno)));
 		}
 #endif
+
+		// while (waitpid(-1, NULL, WNOHANG) != -1)
+		// 	;
 
 		// Process each triggered event
 		for (int i = 0; i < n; i++)
