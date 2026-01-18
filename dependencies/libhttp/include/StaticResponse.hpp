@@ -25,7 +25,8 @@ namespace libhttp {
 		std::string getBody() const;
 
 		// Helper to convert StaticResponse to string
-		std::string toString() const;		
+		std::string toString() const;
+		std::string toString(bool includeBody) const;		
     private:
         int _statusCode;
         std::multimap<std::string, std::string> _headers;

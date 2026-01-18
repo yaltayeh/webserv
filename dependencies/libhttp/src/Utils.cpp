@@ -24,6 +24,7 @@ namespace libhttp {
 
 	Method stringToMethod(const std::string& methodStr) {
 		if (methodStr == "GET") return GET;
+		if (methodStr == "HEAD") return HEAD;
 		if (methodStr == "POST") return POST;
 		if (methodStr == "DELETE") return DELETE;
 		return INVALID; // Default to INVALID for unknown methods
@@ -32,6 +33,7 @@ namespace libhttp {
 	std::string methodToString(Method method) {
 		switch (method) {
 			case GET: return "GET";
+			case HEAD: return "HEAD";
 			case POST: return "POST";
 			case DELETE: return "DELETE";
 			default: return "INVALID";

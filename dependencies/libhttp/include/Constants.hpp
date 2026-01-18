@@ -8,6 +8,7 @@ namespace libhttp {
 	// HTTP Methods
 	enum Method {
 		GET,
+		HEAD,
 		POST,
 		DELETE,
 		INVALID

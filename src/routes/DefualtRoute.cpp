@@ -16,7 +16,7 @@ libhttp::Response &handleAutoindex(const std::string &directory_path,
                                                 const std::string &uri)
 {
     static libhttp::StaticResponse response;
-
+    response = libhttp::StaticResponse();
     // Open directory
     DIR *dir = opendir(directory_path.c_str());
     if (dir == NULL)

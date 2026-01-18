@@ -8,5 +8,3 @@ framework/generated.conf
 __pycache__/
 *.pyc
 .coverage
-cgi_tester
-tester.1

@@ -40,6 +40,10 @@ namespace libhttp {
 
 	// Helper to convert response to string
 	std::string StaticResponse::toString() const {
+		return toString(true);
+	}
+
+	std::string StaticResponse::toString(bool includeBody) const {
 		std::string response;
 		response += HTTP_1_0;
 		std::stringstream ss;
@@ -48,7 +52,10 @@ namespace libhttp {
 		for (std::multimap<std::string, std::string>::const_iterator it = _headers.begin(); it != _headers.end(); ++it) {
 			response += it->first + ": " + it->second + "\r\n";
 		}
-		response += "\r\n" + _body;
+		response += "\r\n";
+		if (includeBody) {
+			response += _body;
+		}
 		return response;
 	}
 

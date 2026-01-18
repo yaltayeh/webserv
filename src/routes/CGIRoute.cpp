@@ -67,6 +67,8 @@ static libhttp::Response &generateResponse(const libhttp::Request &request,
 										   const LocationConfig &loc)
 {
 	static libhttp::StreamResponse response;
+	response = libhttp::StreamResponse();
+
 	const std::string &uri = request.getUri();
 
 	// Get location path

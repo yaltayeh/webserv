@@ -92,7 +92,9 @@ int ClientSocket::EventHandler(EventLoop *el)
             if (dynamic_cast<const libhttp::StaticResponse *>(raw_response))
             {
                 const libhttp::StaticResponse *response = dynamic_cast<const libhttp::StaticResponse *>(raw_response);
-                write_buffer = response->toString();
+                // For HEAD requests, exclude the body
+                bool includeBody = (request.getMethod() != libhttp::HEAD);
+                write_buffer = response->toString(includeBody);
             }
             else if (dynamic_cast<const libhttp::StreamResponse *>(raw_response))
             {

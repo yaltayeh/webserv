@@ -131,7 +131,8 @@ libhttp::Response &RouteHandler::generateErrorResponse(int status_code,
 libhttp::Response &RouteHandler::generateDefaultErrorPage(int status_code)
 {
     static libhttp::StaticResponse response;
-
+    response = libhttp::StaticResponse();
+    
     std::string message = libhttp::getStatusMessage(status_code);
 
     std::ostringstream html;
