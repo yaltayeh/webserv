@@ -1,5 +1,6 @@
 #include "RouteHandler.hpp"
 #include <iostream>
+#include <cstdlib>
 
 /**
  * exceedsMaxBodySize() - Checks if request body exceeds limit

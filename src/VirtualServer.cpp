@@ -19,15 +19,20 @@ const ServerConfig &VirtualServer::getConfig() const
 {
 	return _config;
 }
-
+#include <iostream>
 int VirtualServer::checkRequest(const libhttp::Request &r)
 {
-	std::string host = r.getHeader("Host");
+	std::string host_with_port = r.getHeader("Host");
+	std::string host = host_with_port.find(':') != std::string::npos ?
+				host_with_port.substr(0, host_with_port.find(':')) :
+				host_with_port;
+
 	std::vector<std::string>::iterator it;
 	for (it = _config.server_names.begin();
 		 it != _config.server_names.end();
 		 it++)
 	{
+		std::cout << *it << " = " <<  host << std::endl;
 		if (RegEx::matchPattern(*it, host))
 			return (1);
 	}

@@ -15,17 +15,17 @@
 ListenSocket::ListenSocket(uint32_t ip, uint16_t port)
 	: Socket(-1), _ip(ip), _port(port)
 {
-	if (setOptions())
+	if (ListenSocket::_setOptions())
 	{
 		close();
 		return;
 	} // TODO replace with throw
-	if (ListenSocket::bind() < 0)
+	if (ListenSocket::_bind() < 0)
 	{
 		close();
 		return;
 	} // TODO replace with throw
-	if (ListenSocket::listen() < 0)
+	if (ListenSocket::_listen() < 0)
 	{
 		close();
 		return;
@@ -42,7 +42,7 @@ int ListenSocket::EventHandler(EventLoop *el)
 	// We must accept until EAGAIN, otherwise we might miss connections
 	
 	// Try to accept a new client connection
-	ClientSocket *clientSocket = accept();
+	ClientSocket *clientSocket = _accept();
 
 	if (!clientSocket)
 	{
@@ -61,7 +61,7 @@ int ListenSocket::EventHandler(EventLoop *el)
 	return 0;
 }
 
-int ListenSocket::setOptions()
+int ListenSocket::_setOptions()
 {
 	/**
 	 * ========================================================================
@@ -92,7 +92,7 @@ int ListenSocket::setOptions()
 	return (0);
 }
 
-int ListenSocket::bind()
+int ListenSocket::_bind()
 {
 	/**
 	 * ========================================================================
@@ -135,7 +135,7 @@ int ListenSocket::bind()
 	return (err);
 }
 
-int ListenSocket::listen()
+int ListenSocket::_listen()
 {
 	/**
 	 * ========================================================================
@@ -175,7 +175,7 @@ int ListenSocket::listen()
 	return err;
 }
 
-ClientSocket *ListenSocket::accept()
+ClientSocket *ListenSocket::_accept()
 {
 	/**
 	 * accept() parameters:
@@ -222,10 +222,10 @@ ClientSocket *ListenSocket::accept()
 
 void ListenSocket::addVirtualServer(VirtualServer *virtualServer)
 {
-	servers.push_back(virtualServer);
+	_servers.push_back(virtualServer);
 }
 
 const std::vector<VirtualServer *> &ListenSocket::getVirtualServer() const
 {
-	return (servers);
+	return (_servers);
 }

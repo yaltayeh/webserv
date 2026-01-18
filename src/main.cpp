@@ -20,6 +20,7 @@ int main(int argc, const char *argv[], const char *envp[])
 	GlobalConfig config = GlobalConfig();
 	try
 	{
+		// TODO: make this throw exceptions on errors not a bool return
 		if (Directive::Parser::loadConfigFile(argv[1], config, envp) == false)
 			return (1);
 

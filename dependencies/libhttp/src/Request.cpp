@@ -60,9 +60,9 @@ namespace libhttp {
 		return "";
 	}
 	const std::string &Request::getBody() const { return _body; }
-	std::multimap<std::string, std::string> Request::getHeaders() const { return _headers; }
+	const std::multimap<std::string, std::string> &Request::getHeaders() const { return _headers; }
 	bool Request::hasBodyTempFile() const { return _hasBodyTempFile; }
-	std::string Request::getBodyTempFile() const { return _bodyTempFile; }
+	const std::string &Request::getBodyTempFile() const { return _bodyTempFile; }
 
 	// Helper to convert request to string
 	std::string Request::toString() const {
