@@ -1,6 +1,6 @@
 NAME		    		= $(BUILD_PATH)/webserv
 CXX 					= c++
-CXXFLAGS 				= -Wall -Wextra -Werror -std=c++98 -Iinclude
+CXXFLAGS 				= -Wall -Wextra -Werror -std=c++98 -Iinclude -MMD -g
 BUILD_PATH	      		?= ./build
 
 # Dependencies (order matters for linking: libhttp depends on libutils and libdir)
@@ -70,6 +70,8 @@ SRCS		    		=   src/main.cpp 										\
 
 OBJS		   			 = $(SRCS:src/%.cpp=$(BUILD_PATH)/obj/%.o)
 
+DFILES = ${OBJS:.o=.d} # Dependency files
+
 all: $(NAME)
 
 $(NAME): $(OBJS) $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a)
@@ -83,6 +85,7 @@ $(BUILD_PATH)/obj/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
 clean:
+#	@rm -rf $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a)
 	@rm -rf $(BUILD_PATH)/obj
 	@rm -rf $(BUILD_PATH)/lib*/obj
 
@@ -112,3 +115,5 @@ tests_framework:
 	python3 framework/run_tests.py
 
 .PHONY: all clean re fclean test tests_framework
+
+-include $(DFILES) # Include dependency files

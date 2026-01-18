@@ -124,8 +124,6 @@ int ListenSocket::bind()
 	addr.sin_port = htons(_port); // FIX
 	addr.sin_addr.s_addr = _ip;
 
-	std::cout << "fd: " << _socketfd << std::endl;
-
 	int err = ::bind(_socketfd, (sockaddr *)&addr, sizeof(addr));
 	if (err < 0)
 	{
@@ -198,7 +196,6 @@ ClientSocket *ListenSocket::accept()
 	sockaddr_in client_addr;
 	socklen_t addr_len = sizeof(client_addr);
 
-	std::cout << "accept: fd: " << _socketfd << std::endl;
 	int client_fd = ::accept(_socketfd, (sockaddr *)&client_addr, &addr_len);
 	if (client_fd < 0)
 	{

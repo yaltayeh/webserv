@@ -3,7 +3,8 @@ BUILD_PATH ?= ./build
 NAME = $(BUILD_PATH)/libdir.a
 
 FILES = src/DirectiveFactory.cpp	\
-		src/Parser.cpp					\
+		src/Parser.cpp				\
+		src/Environ.cpp				\
 
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -MMD -g -std=c++98

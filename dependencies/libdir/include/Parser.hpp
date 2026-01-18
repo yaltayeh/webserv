@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include "Environ.hpp"
 #include "Config.hpp"
 
 /**
@@ -49,6 +50,7 @@ namespace Directive
 		 */
 		const std::string _configString;
 
+		const Environ &_environ;
 		/**
 		 * @brief Pointer to start of parsing region
 		 */
@@ -101,7 +103,7 @@ namespace Directive
 		 * @brief Constructor - parses entire string
 		 * @param configString Configuration file content
 		 */
-		Parser(const std::string &configString);
+		Parser(const std::string &configString, const Environ &environ);
 
 	public:
 		/**
@@ -141,9 +143,9 @@ namespace Directive
 		 * and creates a Parser instance.
 		 *
 		 */
-		static Parser openConfigFile(const std::string &fileName);
+		static Parser openConfigFile(const std::string &fileName, const Environ &environ);
 
-		static bool loadConfigFile(const std::string &fileName, Config &config);
+		static bool loadConfigFile(const std::string &fileName, Config &config, const Environ &environ);
 
 		void setHandler(ParserHandler handler);
 		ParserHandler getHandler() const;
@@ -199,6 +201,8 @@ namespace Directive
 		const std::string &getFilePath() const;
 		const std::string &getDirPath() const;
 
+		const Environ &getEnviron() const;
+
 		/**
 		 * @brief Skips whitespace characters
 		 * @param p Current position
@@ -244,6 +248,16 @@ namespace Directive
 		 * @note Static utility method
 		 */
 		static const char *getName(const char *p, const char *end, std::string &name);
+
+		static const char *skipVariableName(const char *p, const char *end);
+	
+		static std::string getEnvName(const std::string &str);
+
+		const std::string &getVarValue(const std::string &str, size_t dollar_sign);
+
+
+		std::string ExpantionEnviron(const std::string &str);
+		std::string ExpantionVariable(const std::string &str);
 	};
 
 }

@@ -104,7 +104,10 @@ libhttp::Response &RouteHandler::generateErrorResponse(int status_code,
         {
             std::string content = readFile(error_file_path);
 
-            response.setStatus(status_code);
+            if (error_page.customRes)
+                response.setStatus(error_page.response);
+            else
+                response.setStatus(status_code);
             response.setHeader("Content-Type", "text/html");
 
             std::ostringstream ss;

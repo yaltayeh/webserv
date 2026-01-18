@@ -1,6 +1,7 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 #include "Parser.hpp"
+#include <iostream>
 #include <fstream>
 #include <sstream>
 
@@ -29,7 +30,7 @@ struct Config *parseIncludeDirective(Directive::Parser *parser, const std::vecto
 
 	filepath = parser->getDirPath() + "/" + args[1];
 
-	Directive::Parser::loadConfigFile(filepath, *parent);
+	Directive::Parser::loadConfigFile(filepath, *parent, parser->getEnviron());
 
 	return NULL;
 }

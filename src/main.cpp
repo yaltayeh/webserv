@@ -9,7 +9,7 @@ void printUsage(const char *progName)
 	std::cout << "Usage: " << progName << " <config-file>" << std::endl;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[], const char *envp[])
 {
 	if (argc != 2)
 	{
@@ -20,11 +20,10 @@ int main(int argc, char *argv[])
 	GlobalConfig config = GlobalConfig();
 	try
 	{
-		Directive::Parser::loadConfigFile(argv[1], config);
-		std::cout << "Configuration parsed successfully" << std::endl;
+		if (Directive::Parser::loadConfigFile(argv[1], config, envp) == false)
+			return (1);
 
 		EventLoop loop(config);
-		std::cout << "Event loop initialized successfully" << std::endl;
 		loop.run();
 	}
 	catch (const std::exception &e)
@@ -32,6 +31,5 @@ int main(int argc, char *argv[])
 		std::cerr << "Error: " << e.what() << std::endl;
 		return 1;
 	}
-
 	return 0;
 }

@@ -18,8 +18,14 @@ struct CommonConfig : Config
 	// Error page mappings: error_code -> uri
 	struct ErrorPage
 	{
-		std::string response;
+		bool customRes;
+		int response;
 		std::string uri;
+
+		ErrorPage()
+			: customRes(false),
+			  response(-1),
+			  uri() {}
 	};
 	std::map<int, ErrorPage> error_pages;
 
@@ -115,7 +121,7 @@ struct CommonConfig : Config
 		this->default_type = config.default_type;
 	}
 
-	CommonConfig& operator=(const CommonConfig &config)
+	CommonConfig &operator=(const CommonConfig &config)
 	{
 		if (this != &config)
 		{
@@ -179,7 +185,7 @@ struct CommonConfigServerLocation : CommonConfig
 		this->rewrites = other.rewrites;
 	}
 
-	CommonConfigServerLocation& operator=(const CommonConfigServerLocation &other)
+	CommonConfigServerLocation &operator=(const CommonConfigServerLocation &other)
 	{
 		if (this != &other)
 		{

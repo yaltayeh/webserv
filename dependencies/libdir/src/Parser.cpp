@@ -21,8 +21,8 @@ namespace Directive
 	/**
 	 * @brief Constructs parser for entire string
 	 */
-	Parser::Parser(const std::string &configString)
-		: _configString(configString)
+	Parser::Parser(const std::string &configString, const Environ &environ)
+		: _configString(configString), _environ(environ)
 	{
 		_start = _configString.c_str();
 		_end = _start + _configString.length();
@@ -35,7 +35,8 @@ namespace Directive
 	 * @param other Parser to copy from
 	 * @note Recalculates pointers since _configString is copied
 	 */
-	Parser::Parser(const Parser &other) : _configString(other._configString)
+	Parser::Parser(const Parser &other)
+		: _configString(other._configString), _environ(other._environ)
 	{
 		_start = _configString.c_str();
 		_end = _start + _configString.length();
@@ -52,6 +53,9 @@ namespace Directive
 		_blockStart = other._blockStart;
 		_blockEnd = other._blockEnd;
 		_handler = other._handler;
+
+		_filePath = other._filePath;
+		_dirPath = other._dirPath;
 	}
 
 	/**
@@ -70,6 +74,7 @@ namespace Directive
 		// or _configString should not be const
 		// For now, we'll use const_cast (not ideal but necessary for OCF)
 		const_cast<std::string &>(_configString) = other._configString;
+		const_cast<Environ &>(_environ) = other._environ;
 
 		_start = _configString.c_str();
 		_end = _start + _configString.length();
@@ -82,6 +87,9 @@ namespace Directive
 		_p = _start + pOffset;
 		_directiveStart = _start + directiveStartOffset;
 		_directiveEnd = _start + directiveEndOffset;
+
+		_filePath = other._filePath;
+		_dirPath = other._dirPath;
 
 		return *this;
 	}
@@ -96,22 +104,10 @@ namespace Directive
 	}
 
 	/**
-	 * @brief Constructs parser for substring
-	 */
-	Parser::Parser(std::string configString,
-				   size_t start,
-				   size_t len) : _configString(configString)
-	{
-		_start = _configString.c_str() + start;
-		_end = _start + len;
-		_p = _start;
-	}
-
-	/**
 	 * @brief Opens configuration file and creates parser
 	 * @throws FileException if file cannot be opened
 	 */
-	Parser Parser::openConfigFile(const std::string &fileName)
+	Parser Parser::openConfigFile(const std::string &fileName, const Environ &environ)
 	{
 		std::ifstream file(fileName.c_str());
 		if (!file)
@@ -122,7 +118,7 @@ namespace Directive
 
 		std::string str = ss.str();
 
-		Parser parser = Parser(str);
+		Parser parser = Parser(str, environ);
 		parser._filePath = fileName;
 
 		std::string dirpath;
@@ -136,20 +132,21 @@ namespace Directive
 		return (parser);
 	}
 
-	bool Parser::loadConfigFile(const std::string &fileName, Config &config)
+	bool Parser::loadConfigFile(const std::string &fileName, Config &config, const Environ &environ)
 	{
 		try
 		{
 
-			Directive::Parser parser = Directive::Parser::openConfigFile(fileName);
+			Directive::Parser parser = Directive::Parser::openConfigFile(fileName, environ);
 			while (parser.getNextDirectives())
 			{
 				parser.parseDirective(&config);
 			}
 			return true;
 		}
-		catch (...)
+		catch (const std::exception &e)
 		{
+			std::cerr << "\033[31mError: " << e.what() << "\033[0m" << std::endl;
 			return false;
 		}
 	}
@@ -199,17 +196,19 @@ namespace Directive
 			// skip qout and double qout
 			if (*p == '\"' || *p == '\'')
 				p = nextQout(p, _end, *p);
-			if (*p == '#')
+			else if (*p == '#')
 				p = skipComment(p, _end);
-			if (*p == ';' && bracket_level == 0)
+			else if (*p == ';' && bracket_level == 0)
 				break; // Simple directive end
-			if (*p == '{')
+			else if (*p == '$')
+				p = skipVariableName(p, _end);
+			else if (*p == '{')
 			{
 				if (bracket_level == 0)
 					_blockStart = p;
 				bracket_level++;
 			}
-			if (*p == '}')
+			else if (*p == '}')
 			{
 				bracket_level--;
 				if (bracket_level <= 0)
@@ -222,10 +221,10 @@ namespace Directive
 		}
 		if (bracket_level != 0)
 			throw ParseException("Mismatched closing bracket != 0 '}'");
-		if (*p == '}' && p != _end)
+		if (p < _end && *p == '}')
 			p++;
 		_directiveEnd = p; // Mark end of directive
-		if (*p == ';' && p != _end)
+		if (p < _end && *p == ';')
 			p++;
 		_p = p;
 		return (true);
@@ -257,6 +256,11 @@ namespace Directive
 		return _dirPath;
 	}
 
+	const Environ &Parser::getEnviron() const
+	{
+		return _environ;
+	}
+
 	/**
 	 * @brief Extracts directive name and arguments from text
 	 * @return Vector with directive name as first element, followed by arguments
@@ -265,21 +269,28 @@ namespace Directive
 	{
 		const char *p;
 		const char *slice;
+		const char *end;
 		std::string name;
 		std::vector<std::string> args;
 
 		p = _directiveStart;
+		end = _blockStart ? _blockStart - 1 : _directiveEnd;
 
 		// split args
-		while (p < _directiveEnd)
+		while (p < end)
 		{
-			p = Directive::Parser::skipSpace(p, _directiveEnd);
+			p = Directive::Parser::skipSpace(p, end);
 			slice = p;
-			while (p < _directiveEnd && !std::isspace(*p) && *p != '{' && *p != ';')
+			while (p < end && !std::isspace(*p))
 				p++;
 			if (p > slice)
-				args.push_back(_configString.substr(slice - _configString.c_str(), p - slice));
-			if (p >= _directiveEnd || *p == '{' || *p == ';')
+			{
+				std::string arg = _configString.substr(slice - _configString.c_str(), p - slice);
+				if (!args.empty())
+					arg = ExpantionEnviron(arg);
+				args.push_back(arg);
+			}
+			if (p >= end)
 				break;
 			p++;
 		}
@@ -301,28 +312,14 @@ namespace Directive
 			return NULL;
 		}
 
-		const std::string &name = args[0];
-		try
-		{
-			Config *config = NULL;
-			if (_handler)
-				config = _handler(this, args, parent);
-			if (config)
-				config->parent = parent;
-			if (_blockStart)
-				parseBlockDirective(config);
-			return config;
-		}
-		catch (const std::out_of_range &e)
-		{
-			std::cerr << "\033[31mError: Directive '" << name << "' doesn't exist\033[0m" << std::endl;
-			return NULL;
-		}
-		catch (const std::exception &e)
-		{
-			std::cerr << "\033[31mError: " << e.what() << "\033[0m" << std::endl;
-			return NULL;
-		}
+		Config *config = NULL;
+		if (_handler)
+			config = _handler(this, args, parent);
+		if (config)
+			config->parent = parent;
+		if (_blockStart)
+			parseBlockDirective(config);
+		return config;
 	}
 
 	/**
@@ -341,11 +338,14 @@ namespace Directive
 		start++;
 		end--;
 		if (end < start)
-			return ;
+			return;
 		std::string block = _configString.substr(start - _configString.c_str(), end - start);
-		
-		Directive::Parser parser(block);
+
+		Directive::Parser parser(block, _environ);
+		// std::cout << block << std::endl;
 		parser.setHandler(_handler);
+		parser._filePath = _filePath;
+		parser._dirPath = _dirPath;
 		while (parser.getNextDirectives())
 			parser.parseDirective(parent);
 		_blockStart = NULL;
@@ -434,5 +434,110 @@ namespace Directive
 		}
 
 		return p;
+	}
+
+	const char *Parser::skipVariableName(const char *p, const char *end)
+	{
+		if (*p != '$')
+			return (p);
+
+		bool isEnv = false;
+		p++; // skip $
+		if (p >= end)
+			throw SyntaxException("Unexpected end directive 1");
+		if (*p == '{')
+		{
+			isEnv = true;
+			p++;
+			if (p >= end)
+				throw SyntaxException("Unexpected end directive 1");
+		}
+		while (p < end && (std::isalnum(*p) || *p == '_')) // skip variable name
+			p++;
+		if (isEnv)
+		{
+			if (p >= end)
+				throw SyntaxException("Unexpected end directive 2");
+			if (*p != '}')
+			{
+				std::cout << "Unexpected char: " << *p << std::endl;
+				throw SyntaxException("Unexpected char ");
+			}
+		}
+		return (p);
+	}
+
+	std::string Parser::getEnvName(const std::string &str)
+	{
+		if (str.length() < 4)
+			return ("");
+		if (str[0] != '$' || str[1] != '{' || str[str.length() - 1] != '}')
+			return ("");
+		return str.substr(2, str.length() - 3);
+	}
+
+	const std::string &Parser::getVarValue(const std::string &str, size_t dollar_sign)
+	{
+		size_t i = dollar_sign + 1;
+		bool isEnv = false;
+		if (i < str.length() && str[i] == '{')
+		{
+			i++;
+			isEnv = true;
+		}
+		size_t start = i;
+		while (i < str.length())
+		{
+			if (!std::isalnum(str[i]) && str[i] != '_')
+				break;
+			i++;
+		}
+		if (i < str.length() && isEnv && str[i] != '}')
+			throw SyntaxException("getVarVame: Unxpected char 2");
+		if (i >= start)
+			throw SyntaxException("getVarVame: Unxpected char 3");
+		std::string name = str.substr(start, i);
+		std::cout << "VarName: " << name << "      ";
+		const std::string &value = _environ.getEnv(name);
+		std::cout << "VarValue: " << value << std::endl;
+		return (value);
+	}
+
+	std::string Parser::ExpantionEnviron(const std::string &raw)
+	{
+		std::stringstream ss;
+
+		size_t i = 0;
+		size_t dollar_sign;
+		while (i < raw.length())
+		{
+			dollar_sign = raw.find('$', i);
+			ss << raw.substr(i, dollar_sign - i);
+			if (dollar_sign == std::string::npos)
+				break;
+			if (raw[dollar_sign + 1] == '{')
+			{
+				size_t startName = dollar_sign + 2;
+				size_t endName = raw.find_first_of('}', startName);
+				std::string name = raw.substr(startName, endName - startName);
+				const std::string &value = _environ.getEnv(name);
+				ss << value;
+				i = endName + 1;
+			}
+			else
+			{
+				ss << raw[dollar_sign];
+				i = dollar_sign + 1;
+			}
+		}
+		std::string str;
+		ss >> str;
+		return (str);
+	}
+
+	std::string Parser::ExpantionVariable(const std::string &str)
+	{
+		(void)str;
+		return std::string();
 	}
 }

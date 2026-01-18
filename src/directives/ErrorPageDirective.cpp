@@ -43,9 +43,10 @@ struct Config *parseErrorPageDirective(Directive::Parser *parser, const std::vec
 		if (response[0] == '=')
 		{
 			if (response.length() > 1)
-				getStatusCode(&response.c_str()[1]);
-			errorPage.response = response;
-			with_response = 1;
+			{
+				errorPage.response = getStatusCode(&response.c_str()[1]);
+				with_response = 1;
+			}
 		}
 	}
 
