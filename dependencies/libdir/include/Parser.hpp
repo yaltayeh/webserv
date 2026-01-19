@@ -145,7 +145,7 @@ namespace Directive
 		 */
 		static Parser openConfigFile(const std::string &fileName, const Environ &environ);
 
-		static bool loadConfigFile(const std::string &fileName, Config &config, const Environ &environ);
+		static void loadConfigFile(const std::string &fileName, Config &config, const Environ &environ);
 
 		void setHandler(ParserHandler handler);
 		ParserHandler getHandler() const;

@@ -137,22 +137,12 @@ namespace Directive
 		return (parser);
 	}
 
-	bool Parser::loadConfigFile(const std::string &fileName, Config &config, const Environ &environ)
+	void Parser::loadConfigFile(const std::string &fileName, Config &config, const Environ &environ)
 	{
-		try
+		Directive::Parser parser = Directive::Parser::openConfigFile(fileName, environ);
+		while (parser.getNextDirectives())
 		{
-
-			Directive::Parser parser = Directive::Parser::openConfigFile(fileName, environ);
-			while (parser.getNextDirectives())
-			{
-				parser.parseDirective(&config);
-			}
-			return true;
-		}
-		catch (const std::exception &e)
-		{
-			std::cerr << "\033[31mError: " << e.what() << "\033[0m" << std::endl;
-			return false;
+			parser.parseDirective(&config);
 		}
 	}
 
