@@ -312,16 +312,16 @@ void EventLoop::run()
 			handler->events = mapEpollToIOFlags(events[i].events);
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-		// macOS/BSD: Extract socket and event type from kqueue event
-		IOEventHandler *handler = (IOEventHandler *)events[i].udata;
-		if (!handler)
-			continue;
-		// Check what happened on this socket
-		// handler->isEOF = (events[i].flags & EV_EOF) != 0;		 // Connection closed
-		// handler->isRead = (events[i].filter == EVFILT_READ);	 // Data available to read
-		// handler->isWrite = (events[i].filter == EVFILT_WRITE); // Socket ready for writing
+			// macOS/BSD: Extract socket and event type from kqueue event
+			IOEventHandler *handler = (IOEventHandler *)events[i].udata;
+			if (!handler)
+				continue;
+			// Check what happened on this socket
+			// handler->isEOF = (events[i].flags & EV_EOF) != 0;		 // Connection closed
+			// handler->isRead = (events[i].filter == EVFILT_READ);	 // Data available to read
+			// handler->isWrite = (events[i].filter == EVFILT_WRITE); // Socket ready for writing
 
-		handler->events = mapKqueueToIOFlags(events[i]);
+			handler->events = mapKqueueToIOFlags(events[i]);
 #endif
 			handler->handleEvent(this);
 
