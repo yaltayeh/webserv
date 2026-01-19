@@ -8,3 +8,4 @@ framework/generated.conf
 __pycache__/
 *.pyc
 .coverage
+siege/

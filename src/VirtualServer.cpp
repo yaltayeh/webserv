@@ -1,3 +1,4 @@
+#include <iostream>
 #include "VirtualServer.hpp"
 #include "RouteHandler.hpp"
 #include "RegEx.hpp"
@@ -19,7 +20,7 @@ const ServerConfig &VirtualServer::getConfig() const
 {
 	return _config;
 }
-#include <iostream>
+
 int VirtualServer::checkRequest(const libhttp::Request &r)
 {
 	std::string host_with_port = r.getHeader("Host");
@@ -71,6 +72,23 @@ const VirtualServer *VirtualServer::findMatchServer(const std::vector<VirtualSer
  * Implements longest-prefix matching:
  * - /images/cat.jpg matches both "/" and "/images"
  * - "/images" wins because it's more specific (longer prefix)
+ * 
+ * One-line rule to remember
+ *  Exact → longest prefix → regex → prefix fallback
+ * 
+ * 
+ * 
+ * Choice algo 
+ * First: exact match =
+ * Second: longest prefix match (strings) // nginx remembers this match, but does NOT finalize yet.
+ * ^~ prefix shortcut (IMPORTANT)
+ * Third: regex locations (~ and ~*)
+ * 
+ * Final fallback
+ *		If:
+ *			no regex matched
+ *			nginx falls back to:
+ *			the best prefix match from step 2
  *
  * RETURNS:
  * - Pointer to matching LocationConfig, or NULL if no match

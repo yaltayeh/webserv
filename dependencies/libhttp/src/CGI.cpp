@@ -487,6 +487,8 @@ void CGI::setupChildProcess(int sv[2]) {
     // CRITICAL: Declare scriptName here to ensure lifetime extends until execve()
     // Using const_cast on temporary strings causes undefined behavior
     std::string scriptName = utils::getFilename(_scriptPath);
+    fprintf(stderr, "-------- CGI ---------  %s    %s\n", _interpreterPath.c_str(), scriptName.c_str());
+
     char *argv[3];
     if (!_interpreterPath.empty()) {
         argv[0] = const_cast<char *>(_interpreterPath.c_str());
@@ -499,6 +501,7 @@ void CGI::setupChildProcess(int sv[2]) {
         execve(scriptName.c_str(), argv, _envp.data());
     }
 
+    fprintf(stderr, "Execve: %s\n", strerror(errno));
     // execve only returns on failure
     _exit(1);
 }

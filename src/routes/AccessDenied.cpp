@@ -8,7 +8,6 @@
  * - true if deny_all is enabled
  * - false otherwise
  */
-#include <iostream>
 bool checkAccessDenied(const libhttp::Request &r, const LocationConfig &loc)
 {
 	(void)r;
