@@ -11,24 +11,27 @@ class ListenSocket;
 class ClientSocket : public Socket, public EventData
 {
 private:
-	const sockaddr_in addr;
-	const ListenSocket *listenSocket;
+
+	const sockaddr_in		_addr;
+	const ListenSocket 		*_listenSocket;
 
 	// From ConnectionManager (struct Connection)
-	std::string write_buffer;
-	libhttp::Parser *parser;
+	std::string			_write_buffer;
+	libhttp::Parser 	*_parser;
 
-	int isRequestRead;
-	int isResponseSent;
+	int		_isRequestRead;
+	int		_isResponseSent;
 
 public:
+
 	ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen);
 	~ClientSocket();
-	int EventHandler(EventLoop *el);
 
-	sockaddr_in getAddress();
-	const char *getHost();
-	void WriteToBuffer(char *buf, size_t len);
-	bool handleRead();
-	bool handleWrite();
+	int 			EventHandler(EventLoop *el);
+	sockaddr_in		getAddress();
+	const char 		*getHost();
+	void			WriteToBuffer(char *buf, size_t len);
+	bool			handleRead();
+	bool			handleWrite();
+
 };

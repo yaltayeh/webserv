@@ -11,6 +11,7 @@ private:
 	ServerConfig _config;
 
 public:
+
 	VirtualServer();
 	VirtualServer(const ServerConfig &config);
 	~VirtualServer();
@@ -23,4 +24,5 @@ public:
 												const libhttp::Request &request);
 
 	const LocationConfig &findMatchingLocation(const std::string &uri) const;
+
 };

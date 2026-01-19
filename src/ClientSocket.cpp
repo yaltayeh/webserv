@@ -10,28 +10,28 @@
 
 ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen)
     : Socket(client_fd),
-      addr(addr),
-      listenSocket(listen),
-      parser(NULL),
-      isRequestRead(false),
-      isResponseSent(false)
+      _addr(addr),
+      _listenSocket(listen),
+      _parser(NULL),
+      _isRequestRead(false),
+      _isResponseSent(false)
 {
     // Initialize parser with config from the first virtual server
-    const std::vector<VirtualServer *> &servers = listenSocket->getVirtualServer();
+    const std::vector<VirtualServer *> &servers = _listenSocket->getVirtualServer();
     if (!servers.empty()) {
         const ServerConfig &config = servers[0]->getConfig();
         // Create new parser with config
-        parser = new libhttp::Parser(config.client_max_body_size, config.client_body_temp_path);
+        _parser = new libhttp::Parser(config.client_max_body_size, config.client_body_temp_path);
     } else {
         // Use default parser
-        parser = new libhttp::Parser();
+        _parser = new libhttp::Parser();
     }
 }
 
 ClientSocket::~ClientSocket()
 {
-    delete parser;
-    (void)listenSocket;
+    delete _parser;
+    (void)_listenSocket;
 }
 
 int ClientSocket::EventHandler(EventLoop *el)
@@ -62,7 +62,7 @@ int ClientSocket::EventHandler(EventLoop *el)
         }
 
         // If HTTP request is complete and response is ready
-        if (isRequestRead)
+        if (_isRequestRead)
         {
             // Switch from reading to writing
             // (Stop monitoring reads, start monitoring writes)
@@ -70,8 +70,8 @@ int ClientSocket::EventHandler(EventLoop *el)
             el->addEvent(_socketfd, EVENT_WRITE, this);
 
             // Route the request and generate response
-            libhttp::Request request = parser->getRequest();
-            const std::vector<VirtualServer *> &servers = listenSocket->getVirtualServer();
+            libhttp::Request request = _parser->getRequest();
+            const std::vector<VirtualServer *> &servers = _listenSocket->getVirtualServer();
             if (servers.empty())
             {
                 std::cerr << "Error: No virtual servers configured" << std::endl;
@@ -94,18 +94,18 @@ int ClientSocket::EventHandler(EventLoop *el)
                 const libhttp::StaticResponse *response = dynamic_cast<const libhttp::StaticResponse *>(raw_response);
                 // For HEAD requests, exclude the body
                 bool includeBody = (request.getMethod() != libhttp::HEAD);
-                write_buffer = response->toString(includeBody);
+                _write_buffer = response->toString(includeBody);
             }
             else if (dynamic_cast<const libhttp::StreamResponse *>(raw_response))
             {
                 const libhttp::StreamResponse *response = dynamic_cast<const libhttp::StreamResponse *>(raw_response);
-                write_buffer = "";
+                _write_buffer = "";
                 StreamSocket *ss = new StreamSocket(response->getFD(), this);
                 el->addEvent(ss->getSocketfd(), EVENT_READ, ss);
             }
             else
             {
-                write_buffer = "WTF";
+                _write_buffer = "WTF";
             }
         }
     }
@@ -113,7 +113,7 @@ int ClientSocket::EventHandler(EventLoop *el)
     // --- Sub-case C: Socket Ready to Write (HTTP Response) ---
     else if (isWrite)
     {
-        if (write_buffer.empty())
+        if (_write_buffer.empty())
         {
             el->deleteEvent(_socketfd, EVENT_WRITE, this);
             return (1);
@@ -122,7 +122,7 @@ int ClientSocket::EventHandler(EventLoop *el)
         handleWrite();
 
         // If entire response has been sent
-        if (isResponseSent)
+        if (_isResponseSent)
         {
             // Clean up: close connection and free memory
             el->deleteEvent(_socketfd, EVENT_WRITE, this);
@@ -135,20 +135,20 @@ int ClientSocket::EventHandler(EventLoop *el)
 
 sockaddr_in ClientSocket::getAddress()
 {
-    return addr;
+    return _addr;
 }
 
 const char *ClientSocket::getHost()
 {
-    char *addr_str = inet_ntoa(addr.sin_addr);
+    char *addr_str = inet_ntoa(_addr.sin_addr);
     return addr_str;
 }
 
 void ClientSocket::WriteToBuffer(char *buf, size_t len)
 {
-    if (write_buffer.capacity() <= write_buffer.size() + len)
-        write_buffer.reserve(4096);
-    write_buffer.append(buf, len);
+    if (_write_buffer.capacity() <= _write_buffer.size() + len)
+        _write_buffer.reserve(4096);
+    _write_buffer.append(buf, len);
 }
 
 /**
@@ -186,7 +186,7 @@ bool ClientSocket::handleRead()
 
     std::cout << "Read " << bytes_read << " bytes from client " << getHost() << std::endl;
 
-    int parse_result = parser->parse(buffer, bytes_read);
+    int parse_result = _parser->parse(buffer, bytes_read);
 
     if (parse_result == -1)
     {
@@ -198,7 +198,7 @@ bool ClientSocket::handleRead()
     // STEP 5: Generate response if request is complete
     if (parse_result == 0)
     {
-        isRequestRead = 1;
+        _isRequestRead = 1;
         std::cout << "Response ready, waiting for socket to be writable"
                   << std::endl;
     }
@@ -209,12 +209,12 @@ bool ClientSocket::handleRead()
 bool ClientSocket::handleWrite()
 {
     // std::cout << "Try write to client " << write_buffer << std::endl;
-    if (write_buffer.empty())
+    if (_write_buffer.empty())
     {
         return true;
     }
 
-    ssize_t bytes_sent = send(write_buffer.c_str(), write_buffer.size());
+    ssize_t bytes_sent = send(_write_buffer.c_str(), _write_buffer.size());
 
     if (bytes_sent < 0)
     {
@@ -227,13 +227,13 @@ bool ClientSocket::handleWrite()
 
     std::cout << "Sent " << bytes_sent << " bytes to client " << getHost() << std::endl;
 
-    write_buffer.erase(0, bytes_sent);
+    _write_buffer.erase(0, bytes_sent);
 
     // STEP 6: Check if all data sent
-    if (write_buffer.empty())
+    if (_write_buffer.empty())
     {
         std::cout << "All data sent to client " << getHost() << std::endl;
-        isResponseSent = 1;
+        _isResponseSent = 1;
     }
     return true;
 }

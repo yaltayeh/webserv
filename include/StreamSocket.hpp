@@ -10,11 +10,14 @@
 class StreamSocket : public Socket, public EventData
 {
 private:
-	ClientSocket *_clientSocket;
+
+	ClientSocket	*_clientSocket;
 
 public:
+
 	StreamSocket(int fd, ClientSocket *clientSocket);
 	~StreamSocket();
 
-	int EventHandler(EventLoop *el);
+	int		EventHandler(EventLoop *el);
+
 };

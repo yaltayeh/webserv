@@ -22,24 +22,22 @@ class EventLoop;
 class EventLoop
 {
 private:
-    GlobalConfig _config;
 
-    std::vector<VirtualServer *> _virtualServers;
-    std::map<uint64_t, ListenSocket *> _listeningSockets;
+    GlobalConfig    _config;
 
-    int _eventFd; // epoll fd (Linux) or kqueue fd (macOS/BSD)
-
-    // Internal event management methods
+    std::vector<VirtualServer *>        _virtualServers;
+    std::map<uint64_t, ListenSocket *>  _listeningSockets;
+    int                                 _eventFd; // epoll fd (Linux) or kqueue fd (macOS/BSD)
 
 public:
+
     EventLoop(const GlobalConfig &config);
     ~EventLoop();
     EventLoop(const EventLoop &other);
     EventLoop &operator=(const EventLoop &other);
 
-    int addEvent(int fd, int event, EventData *udata);
-    int deleteEvent(int fd, int event, EventData *udata);
+    int     addEvent(int fd, int event, EventData *udata);
+    int     deleteEvent(int fd, int event, EventData *udata);
+    void    run(); // Main event loop
 
-    // Main event loop
-    void run();
 };
