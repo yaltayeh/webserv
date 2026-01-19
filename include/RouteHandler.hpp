@@ -31,44 +31,42 @@
 #include "libhttp/include/StreamResponse.hpp"
 #include <string>
 
-typedef bool (*RouteChecherFunc)(const libhttp::Request &, const LocationConfig &);
+typedef bool (*RouteCheckerFunc)(const libhttp::Request &, const LocationConfig &);
 typedef libhttp::Response &(*RouteHandlerFunc)(const libhttp::Request &, const LocationConfig &);
 
 struct Route
 {
-    RouteChecherFunc checker;
+    RouteCheckerFunc checker;
     RouteHandlerFunc handler;
 };
 
 class RouteHandler
 {
 private:
-    static std::vector<struct Route> permissionRoutes;
-    static std::vector<struct Route> normalRoutes;
-    static RouteHandlerFunc defualtHandler;
-    // Disable constractor and copy
-    RouteHandler();
-    RouteHandler(const RouteHandler &other);
-    RouteHandler &operator=(const RouteHandler &other);
 
+    static std::vector<struct Route> _permissionRoutes;
+    static std::vector<struct Route> _normalRoutes;
+    static RouteHandlerFunc _defaultHandler;
+    
 public:
+
     virtual ~RouteHandler() = 0;
 
     static void addNormalRouteHandler(const struct Route &handler);
     static void addPermissionRouteHandler(const struct Route &handler);
-    static void setDefualtHandler(const RouteHandlerFunc handler);
+    static void setDefaultHandler(const RouteHandlerFunc handler);
 
     static const libhttp::Response &route(const libhttp::Request &request, const LocationConfig &location);
 
-    // ===== ERROR HANDLING =====
 
+    // ===== ERROR HANDLING =====
     static libhttp::Response &generateErrorResponse(int status_code,
                                                     const LocationConfig &loc);
 
     static libhttp::Response &generateDefaultErrorPage(int status_code);
 
-    // ===== UTILITIES =====
 
+    // ===== UTILITIES =====
     static std::string resolvePath(const std::string &uri,
                                    const std::string &location_path,
                                    const LocationConfig &loc);
@@ -84,6 +82,7 @@ public:
 
     static const std::string &getMimeType(const std::string &path,
                                           const LocationConfig &loc);
+
 };
 
 #define DEFINE_NORMAL_ROUTE_HANDLER(checkHandler, routeHandler) \
@@ -111,6 +110,6 @@ public:
     {                                                      \
         _##routeHandler()                                  \
         {                                                  \
-            RouteHandler::setDefualtHandler(routeHandler); \
+            RouteHandler::setDefaultHandler(routeHandler); \
         }                                                  \
     } __##routeHandler

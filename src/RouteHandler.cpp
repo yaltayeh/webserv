@@ -7,27 +7,25 @@
 #include <fstream>
 #include <sys/stat.h>
 
-std::vector<struct Route> RouteHandler::permissionRoutes;
-std::vector<struct Route> RouteHandler::normalRoutes;
-RouteHandlerFunc RouteHandler::defualtHandler;
-
-RouteHandler::RouteHandler() {}
+std::vector<struct Route> RouteHandler::_permissionRoutes;
+std::vector<struct Route> RouteHandler::_normalRoutes;
+RouteHandlerFunc RouteHandler::_defaultHandler;
 
 RouteHandler::~RouteHandler() {}
 
 void RouteHandler::addNormalRouteHandler(const struct Route &handler)
 {
-    normalRoutes.push_back(handler);
+    _normalRoutes.push_back(handler);
 }
 
 void RouteHandler::addPermissionRouteHandler(const struct Route &handler)
 {
-    permissionRoutes.push_back(handler);
+    _permissionRoutes.push_back(handler);
 }
 
-void RouteHandler::setDefualtHandler(const RouteHandlerFunc handler)
+void RouteHandler::setDefaultHandler(const RouteHandlerFunc handler)
 {
-    defualtHandler = handler;
+    _defaultHandler = handler;
 }
 
 const std::string &RouteHandler::getMimeType(const std::string &path,
@@ -50,24 +48,24 @@ const libhttp::Response &RouteHandler::route(const libhttp::Request &request, co
 {
     std::vector<struct Route>::iterator it;
 
-    for (it = permissionRoutes.begin();
-         it != permissionRoutes.end();
+    for (it = _permissionRoutes.begin();
+         it != _permissionRoutes.end();
          it++)
     {
         if ((*it).checker(request, location))
             return ((*it).handler(request, location));
     }
 
-    for (it = normalRoutes.begin();
-         it != normalRoutes.end();
+    for (it = _normalRoutes.begin();
+         it != _normalRoutes.end();
          it++)
     {
         if ((*it).checker(request, location))
             return ((*it).handler(request, location));
     }
 
-    if (defualtHandler)
-        return defualtHandler(request, location);
+    if (_defaultHandler)
+        return _defaultHandler(request, location);
 
     return generateDefaultErrorPage(500);
 }

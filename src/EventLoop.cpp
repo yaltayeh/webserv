@@ -92,21 +92,6 @@ EventLoop::~EventLoop()
 	_listeningSockets.clear();
 }
 
-EventLoop::EventLoop(const EventLoop &other)
-	: _eventFd(-1)
-{
-	this->_config = other._config;
-}
-
-EventLoop &EventLoop::operator=(const EventLoop &other)
-{
-	if (this != &other)
-	{
-		this->_config = other._config;
-	}
-	return (*this);
-}
-
 /**
  * Add a file descriptor to the event loop for monitoring
  *
