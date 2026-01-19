@@ -35,10 +35,10 @@ public:
     EventLoop(const GlobalConfig &config);
     ~EventLoop();
     EventLoop(const EventLoop &other);
+    EventLoop &operator=(const EventLoop &other);
 
     int addEvent(int fd, int event, EventData *udata);
     int deleteEvent(int fd, int event, EventData *udata);
-    EventLoop &operator=(const EventLoop &other);
 
     // Main event loop
     void run();
