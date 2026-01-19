@@ -5,11 +5,11 @@ class ListenSocket;
 #include "Socket.hpp"
 #include "VirtualServer.hpp"
 #include "ClientSocket.hpp"
-#include "EventData.hpp"
+#include "IOEventHandler.hpp"
 
 class ClientSocket;
 
-class ListenSocket : public Socket, public EventData
+class ListenSocket : public Socket, public IOEventHandler
 {
 private:
 
@@ -27,7 +27,7 @@ public:
 	ListenSocket(uint32_t ip, uint16_t port);
 	~ListenSocket();
 
-	int 	EventHandler(EventLoop *el);
+	int 	handleEvent(EventLoop *el);
 	void    addVirtualServer(VirtualServer *virtualServer);
 	const	std::vector<VirtualServer *> &getVirtualServer() const;
 

@@ -11,15 +11,15 @@ StreamSocket::~StreamSocket()
 {
 }
 
-int StreamSocket::EventHandler(EventLoop *el)
+int StreamSocket::handleEvent(EventLoop *el)
 {
-	if (isEOF)
+	if (events & (IO_ERROR | IO_HUP))
 	{
-		el->deleteEvent(_socketfd, EVENT_READ, this);
-		el->deleteEvent(_socketfd, EVENT_WRITE, this);
+		el->deleteEvent(_socketfd, IO_READ, this);
+		el->deleteEvent(_socketfd, IO_WRITE, this);
 		delete this;
 	}
-	if (isRead)
+	if (events & IO_READ)
 	{
 		char buf[4096];
 
@@ -27,7 +27,7 @@ int StreamSocket::EventHandler(EventLoop *el)
 		if (nbytes <= 0)
 			return (1);
 		_clientSocket->WriteToBuffer(buf, nbytes);
-		el->addEvent(_clientSocket->getSocketfd(), EVENT_WRITE, _clientSocket);
+		el->addEvent(_clientSocket->getSocketfd(), IO_WRITE, _clientSocket);
 	}
 	return 0;
 }

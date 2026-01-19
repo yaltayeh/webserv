@@ -34,8 +34,8 @@ public:
     EventLoop(const GlobalConfig &config);
     ~EventLoop();
 
-    int     addEvent(int fd, int event, EventData *udata);
-    int     deleteEvent(int fd, int event, EventData *udata);
+    int     addEvent(int fd, int event, IOEventHandler *udata);
+    int     deleteEvent(int fd, int event, IOEventHandler *udata);
     void    run(); // Main event loop
 
 };

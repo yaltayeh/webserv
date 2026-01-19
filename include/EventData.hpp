@@ -22,16 +22,29 @@ class EventLoop;
 #define EVENT_WRITE EVFILT_WRITE // Monitor for write readiness
 #endif
 
-struct EventData
+/**
+ * Abstract base class for I/O event handling in the event loop.
+ * 
+ * Combines two responsibilities:
+ * 1. Event state (which I/O events were triggered)
+ * 2. Event registration tracking (which events are being monitored)
+ * 
+ * Subclasses: ListenSocket, ClientSocket, StreamSocket
+ */
+struct IOEventHandler
 {
-	bool isEOF;
-	bool isWrite;
-	bool isRead;
+	// --- Event State (set by EventLoop before calling handleEvent) ---
+	bool eof;         // Connection closed/error detected
+	bool readable;    // Socket has data available to read
+	bool writable;    // Socket is ready to accept writes
 
-	bool isEnableReadEvent;
-	bool isEnableWriteEvent;
+	// --- Event Registration State (managed by EventLoop) ---
+	bool monitoringRead;   // Currently monitoring for read events
+	bool monitoringWrite;  // Currently monitoring for write events
 
-	EventData();
-	virtual ~EventData() = 0;
-	virtual int EventHandler(EventLoop *el) = 0;
+	IOEventHandler();
+	virtual ~IOEventHandler() = 0;
+	
+	// Handle the triggered I/O event (polymorphic dispatcher)
+	virtual int handleEvent(EventLoop *el) = 0;
 };

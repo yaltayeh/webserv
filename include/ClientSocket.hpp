@@ -4,11 +4,11 @@
 #include <netinet/in.h>
 #include "ListenSocket.hpp"
 #include "libhttp/include/Parser.hpp"
-#include "EventData.hpp"
+#include "IOEventHandler.hpp"
 
 class ListenSocket;
 
-class ClientSocket : public Socket, public EventData
+class ClientSocket : public Socket, public IOEventHandler
 {
 private:
 
@@ -27,7 +27,7 @@ public:
 	ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen);
 	~ClientSocket();
 
-	int 			EventHandler(EventLoop *el);
+	int 			handleEvent(EventLoop *el);
 	sockaddr_in		getAddress();
 	const char 		*getHost();
 	void			WriteToBuffer(char *buf, size_t len);

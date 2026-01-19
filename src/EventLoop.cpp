@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "EventLoop.hpp"
+#include "IOEventHandler.hpp"
 
 /**
  * Constructor: Initialize event loop with configuration
@@ -97,27 +98,30 @@ EventLoop::~EventLoop()
  *
  *
  * @param fd     File descriptor to monitor (socket)
- * @param event  Type of event (EVENT_READ or EVENT_WRITE)
+ * @param event  Type of event (IO_READ or IO_WRITE)
  * @param udata  User data pointer (EventData* to identify which socket triggered)
  *
  * Edge-triggered mode means:
  * - Notification happens once per state change
  * - Must read/write until EAGAIN to avoid missing events
  */
-int EventLoop::addEvent(int fd, int event, EventData *udata)
+int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 {
 	if (_eventFd < 0)
 		return (-1);
 
-	if (event == EVENT_READ && udata->isEnableReadEvent)
+	if (event == IO_READ && udata->monitoringRead)
 		return (0);
-	if (event == EVENT_WRITE && udata->isEnableWriteEvent)
+	if (event == IO_WRITE && udata->monitoringWrite)
 		return (0);
 
 #if defined(__linux__)
 	// Linux: Use epoll to add file descriptor
 	struct epoll_event ev;
-	ev.events = event | EPOLLET; // Combine requested event with edge-triggered flag
+	// Map portable IO flags to epoll flags
+	ev.events = EPOLLET; // Start with edge-triggered flag
+	if (event & IO_READ)  ev.events |= EPOLLIN;
+	if (event & IO_WRITE) ev.events |= EPOLLOUT;
 	ev.data.ptr = udata;		 // Store Socket* for later retrieval
 
 	if (epoll_ctl(_eventFd, EPOLL_CTL_ADD, fd, &ev) == -1)
@@ -128,8 +132,13 @@ int EventLoop::addEvent(int fd, int event, EventData *udata)
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 	// macOS/BSD: Use kqueue to add file descriptor
+	// Map portable IO flags to kqueue filters
+	int filter = 0;
+	if (event & IO_READ)  filter = EVFILT_READ;
+	if (event & IO_WRITE) filter = EVFILT_WRITE;
+	
 	struct kevent kev;
-	EV_SET(&kev, fd, event,
+	EV_SET(&kev, fd, filter,
 		   EV_ADD | EV_ENABLE | EV_CLEAR, // Add, enable, and clear (edge-triggered)
 		   0, 0, udata);				  // Store Socket* for later retrieval
 
@@ -137,10 +146,10 @@ int EventLoop::addEvent(int fd, int event, EventData *udata)
 		perror("kevent ADD");
 #endif
 
-	if (event == EVENT_READ)
-		udata->isEnableReadEvent = true;
-	if (event == EVENT_WRITE)
-		udata->isEnableWriteEvent = true;
+	if (event == IO_READ)
+		udata->monitoringRead = true;
+	if (event == IO_WRITE)
+		udata->monitoringWrite = true;
 	return 0;
 }
 
@@ -149,20 +158,20 @@ int EventLoop::addEvent(int fd, int event, EventData *udata)
  *
  *
  * @param fd     File descriptor to stop monitoring
- * @param event  Type of event (EVENT_READ or EVENT_WRITE)
+ * @param event  Type of event (IO_READ or IO_WRITE)
  *
  *
  * Note: On Linux, epoll removes the entire fd (not just one event type)
  *       On macOS/BSD, kqueue removes the specific filter
  */
-int EventLoop::deleteEvent(int fd, int event, EventData *udata)
+int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
 {
 	if (_eventFd < 0)
 		return (-1);
 
-	if (event == EVENT_READ && !(udata->isEnableReadEvent))
+	if (event == IO_READ && !(udata->monitoringRead))
 		return (0);
-	if (event == EVENT_WRITE && !(udata->isEnableWriteEvent))
+	if (event == IO_WRITE && !(udata->monitoringWrite))
 		return (0);
 
 #if defined(__linux__)
@@ -174,17 +183,22 @@ int EventLoop::deleteEvent(int fd, int event, EventData *udata)
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 	// macOS/BSD: kqueue removes specific filter (READ or WRITE)
+	// Map portable IO flags to kqueue filters
+	int filter = 0;
+	if (event & IO_READ)  filter = EVFILT_READ;
+	if (event & IO_WRITE) filter = EVFILT_WRITE;
+	
 	struct kevent kev;
-	EV_SET(&kev, fd, event, EV_DELETE, 0, 0, NULL);
+	EV_SET(&kev, fd, filter, EV_DELETE, 0, 0, NULL);
 
 	if (kevent(_eventFd, &kev, 1, NULL, 0, NULL) == -1)
 		perror("kevent DEL");
 #endif
 
-	if (event == EVENT_READ)
-		udata->isEnableReadEvent = false;
-	if (event == EVENT_WRITE)
-		udata->isEnableWriteEvent = false;
+	if (event == IO_READ)
+		udata->monitoringRead = false;
+	if (event == IO_WRITE)
+		udata->monitoringWrite = false;
 
 	return 0;
 }
@@ -235,7 +249,7 @@ void EventLoop::run()
 		 it != _listeningSockets.end();
 		 ++it)
 	{
-		addEvent((*it).second->getSocketfd(), EVENT_READ, (*it).second);
+		addEvent((*it).second->getSocketfd(), IO_READ, (*it).second);
 	}
 
 #if defined(__linux__)
@@ -286,26 +300,30 @@ void EventLoop::run()
 		{
 #if defined(__linux__)
 			// Linux: Extract socket and event type from epoll event
-			EventData *event = (EventData *)events[i].data.ptr;
-			if (!event)
+			IOEventHandler *handler = (IOEventHandler *)events[i].data.ptr;
+			if (!handler)
 				continue;
 
 			// Check what happened on this socket
-			event->isEOF = (events[i].events & (EPOLLHUP | EPOLLRDHUP)) != 0; // Connection closed
-			event->isRead = (events[i].events & EPOLLIN) != 0;				  // Data available to read
-			event->isWrite = (events[i].events & EPOLLOUT) != 0;			  // Socket ready for writing
+			// handler->eof = (events[i].events & (EPOLLHUP | EPOLLRDHUP)) != 0; // Connection closed
+			// handler->readable = (events[i].events & EPOLLIN) != 0;				  // Data available to read
+			// handler->writable = (events[i].events & EPOLLOUT) != 0;			  // Socket ready for writing
+
+			handler->events = mapEpollToIOFlags(events[i].events);
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-			// macOS/BSD: Extract socket and event type from kqueue event
-			EventData *event = (EventData *)events[i].udata;
-			if (!event)
-				continue;
-			// Check what happened on this socket
-			event->isEOF = (events[i].flags & EV_EOF) != 0;		 // Connection closed
-			event->isRead = (events[i].filter == EVFILT_READ);	 // Data available to read
-			event->isWrite = (events[i].filter == EVFILT_WRITE); // Socket ready for writing
+		// macOS/BSD: Extract socket and event type from kqueue event
+		IOEventHandler *handler = (IOEventHandler *)events[i].udata;
+		if (!handler)
+			continue;
+		// Check what happened on this socket
+		// handler->isEOF = (events[i].flags & EV_EOF) != 0;		 // Connection closed
+		// handler->isRead = (events[i].filter == EVFILT_READ);	 // Data available to read
+		// handler->isWrite = (events[i].filter == EVFILT_WRITE); // Socket ready for writing
+
+		handler->events = mapKqueueToIOFlags(events[i]);
 #endif
-			event->EventHandler(this);
+			handler->handleEvent(this);
 
 		} // End of event processing loop
 	} // End of infinite while loop

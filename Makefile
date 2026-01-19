@@ -27,7 +27,6 @@ SRCS		    		=   src/main.cpp 										\
 							src/EventLoop.cpp									\
 							src/RouteHandler.cpp								\
 							src/RegEx.cpp										\
-							src/EventData.cpp									\
 							\
 							src/routes/DefualtRoute.cpp							\
 							src/routes/ReturnRoute.cpp							\
@@ -39,8 +38,8 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/Core/LocationDirective.cpp			\
 							src/directives/Core/ServerDirective.cpp				\
 							src/directives/Core/HttpDirective.cpp				\
-							src/directives/TypesDirective.cpp		\
-							src/directives/DefaultTypeDirective.cpp		\
+							src/directives/TypesDirective.cpp					\
+							src/directives/DefaultTypeDirective.cpp				\
 							src/directives/AutoindexExactSizeDirective.cpp		\
 							src/directives/ErrorPageDirective.cpp				\
 							src/directives/ClientBodyTempPathDirective.cpp		\
@@ -86,12 +85,12 @@ $(BUILD_PATH)/obj/%.o: src/%.cpp
 
 clean:
 	@rm -rf $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a)
-#	@rm -rf $(BUILD_PATH)/obj
-#	@rm -rf $(BUILD_PATH)/lib*/obj
+	@rm -rf $(BUILD_PATH)/obj
+	@rm -rf $(BUILD_PATH)/lib*/obj
 
 fclean: clean
-#	@rm -rf $(NAME)
-#	@rm -rf $(BUILD_PATH)
+	@rm -rf $(NAME)
+	@rm -rf $(BUILD_PATH)
 
 re: fclean all
 

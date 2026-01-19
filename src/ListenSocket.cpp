@@ -32,11 +32,9 @@ ListenSocket::ListenSocket(uint32_t ip, uint16_t port)
 	} // TODO replace with throw
 }
 
-ListenSocket::~ListenSocket()
-{
-}
+ListenSocket::~ListenSocket() { }
 
-int ListenSocket::EventHandler(EventLoop *el)
+int ListenSocket::handleEvent(EventLoop *el)
 {
 	// Accept ALL pending connections (important for edge-triggered mode)
 	// We must accept until EAGAIN, otherwise we might miss connections
@@ -56,7 +54,7 @@ int ListenSocket::EventHandler(EventLoop *el)
 	}
 
 	// Add new client to event loop (start monitoring for HTTP request)
-	el->addEvent(clientSocket->getSocketfd(), EVENT_READ, clientSocket);
+	el->addEvent(clientSocket->getSocketfd(), IO_READ, clientSocket);
 	std::cout << "add client " << clientSocket->getHost() << std::endl;
 	return 0;
 }

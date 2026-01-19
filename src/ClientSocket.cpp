@@ -34,29 +34,31 @@ ClientSocket::~ClientSocket()
     (void)_listenSocket;
 }
 
-int ClientSocket::EventHandler(EventLoop *el)
+int ClientSocket::handleEvent(EventLoop *el)
 {
     // --- Sub-case A: Client Disconnected ---
-    if (isEOF)
+    if (events & (IO_ERROR | IO_HUP))
     {
         std::cout << "client [" << getHost() << "]: disconnected" << std::endl;
 
         // Clean up: remove from event loop and free memory
-        el->deleteEvent(_socketfd, EVENT_READ, this);
-        el->deleteEvent(_socketfd, EVENT_WRITE, this);
+        el->deleteEvent(_socketfd, IO_READ, this);
+        el->deleteEvent(_socketfd, IO_WRITE, this);
         delete this;
         return 0;
     }
 
     // --- Sub-case B: Data Ready to Read (HTTP Request) ---
-    if (isRead)
+    if (events & IO_READ)
     {
         // Read data and parse HTTP request
         if (handleRead() == false) // Returns false on error
         {
+            // TODO: Generate 400 Bad Request response
+            
             // Error occurred, close connection
-            el->deleteEvent(_socketfd, EVENT_WRITE, this);
-            el->deleteEvent(_socketfd, EVENT_READ, this);
+            el->deleteEvent(_socketfd, IO_WRITE, this);
+            el->deleteEvent(_socketfd, IO_READ, this);
             delete this;
             return (0);
         }
@@ -66,8 +68,8 @@ int ClientSocket::EventHandler(EventLoop *el)
         {
             // Switch from reading to writing
             // (Stop monitoring reads, start monitoring writes)
-            el->deleteEvent(_socketfd, EVENT_READ, this);
-            el->addEvent(_socketfd, EVENT_WRITE, this);
+            el->deleteEvent(_socketfd, IO_READ, this);
+            el->addEvent(_socketfd, IO_WRITE, this);
 
             // Route the request and generate response
             libhttp::Request request = _parser->getRequest();
@@ -101,7 +103,7 @@ int ClientSocket::EventHandler(EventLoop *el)
                 const libhttp::StreamResponse *response = dynamic_cast<const libhttp::StreamResponse *>(raw_response);
                 _write_buffer = "";
                 StreamSocket *ss = new StreamSocket(response->getFD(), this);
-                el->addEvent(ss->getSocketfd(), EVENT_READ, ss);
+                el->addEvent(ss->getSocketfd(), IO_READ, ss);
             }
             else
             {
@@ -111,11 +113,11 @@ int ClientSocket::EventHandler(EventLoop *el)
     }
 
     // --- Sub-case C: Socket Ready to Write (HTTP Response) ---
-    else if (isWrite)
+    if (events & IO_WRITE)
     {
         if (_write_buffer.empty())
         {
-            el->deleteEvent(_socketfd, EVENT_WRITE, this);
+            el->deleteEvent(_socketfd, IO_WRITE, this);
             return (1);
         }
         // Send HTTP response data
@@ -125,8 +127,8 @@ int ClientSocket::EventHandler(EventLoop *el)
         if (_isResponseSent)
         {
             // Clean up: close connection and free memory
-            el->deleteEvent(_socketfd, EVENT_WRITE, this);
-            el->deleteEvent(_socketfd, EVENT_READ, this);
+            el->deleteEvent(_socketfd, IO_WRITE, this);
+            el->deleteEvent(_socketfd, IO_READ, this);
             delete this; // defualt close _socketfd
         }
     }

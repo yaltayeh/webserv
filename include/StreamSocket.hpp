@@ -4,10 +4,10 @@
 #include <netinet/in.h>
 #include "ListenSocket.hpp"
 #include "libhttp/include/Parser.hpp"
-#include "EventData.hpp"
+#include "IOEventHandler.hpp"
 #include "ClientSocket.hpp"
 
-class StreamSocket : public Socket, public EventData
+class StreamSocket : public Socket, public IOEventHandler
 {
 private:
 
@@ -18,6 +18,6 @@ public:
 	StreamSocket(int fd, ClientSocket *clientSocket);
 	~StreamSocket();
 
-	int		EventHandler(EventLoop *el);
+	int		handleEvent(EventLoop *el);
 
 };
