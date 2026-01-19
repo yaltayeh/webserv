@@ -4,16 +4,11 @@
 #include "EventLoop.hpp"
 #include "Parser.hpp"
 
-void printUsage(const char *progName)
-{
-	std::cout << "Usage: " << progName << " <config-file>" << std::endl;
-}
-
 int main(int argc, const char *argv[], const char *envp[])
 {
 	if (argc != 2)
 	{
-		printUsage(argv[0]);
+		std::cout << "Usage: " << argv[0] << " <config-file>" << std::endl;
 		return 1;
 	}
 
@@ -28,7 +23,7 @@ int main(int argc, const char *argv[], const char *envp[])
 	catch (const std::exception &e)
 	{
 		std::cerr << "Error: " << e.what() << std::endl;
-		return 1;
+		return 2;
 	}
 	return 0;
 }
