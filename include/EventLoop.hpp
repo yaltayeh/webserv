@@ -6,6 +6,7 @@ class EventLoop;
 #include <map>
 #include "ListenSocket.hpp"
 #include "Config/GlobalConfig.hpp"
+#include <queue>
 
 // Platform-specific includes
 #if defined(__linux__)
