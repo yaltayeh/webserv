@@ -7,7 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+// TODO: Your server must be compatible with standard web browsers of your choice.
 namespace libhttp {
 
 	Parser::Parser() : 	_state(REQUEST_LINE),

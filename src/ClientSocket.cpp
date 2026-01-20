@@ -21,6 +21,7 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
     if (!servers.empty()) {
         const ServerConfig &config = servers[0]->getConfig();
         // Create new parser with config
+        // TODO: handle this better and make it work
         _parser = new libhttp::Parser(config.client_max_body_size, config.client_body_temp_path);
     } else {
         // Use default parser

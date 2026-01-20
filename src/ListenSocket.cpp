@@ -194,6 +194,7 @@ ClientSocket *ListenSocket::_accept()
 	sockaddr_in client_addr;
 	socklen_t addr_len = sizeof(client_addr);
 
+	// TODO: make this a worker_connections in the config
 	int client_fd = ::accept(_socketfd, (sockaddr *)&client_addr, &addr_len);
 	if (client_fd < 0)
 	{

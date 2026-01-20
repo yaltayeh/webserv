@@ -21,7 +21,7 @@ int StreamSocket::handleEvent(EventLoop *el)
 	}
 	if (events & IO_READ)
 	{
-		char buf[4096];
+		char buf[4096]; // TODO: unify buffer size for read and write in all places
 
 		ssize_t nbytes = recv(buf, sizeof(buf));
 		if (nbytes <= 0)

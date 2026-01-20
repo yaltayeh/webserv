@@ -224,6 +224,7 @@ int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
  */
 void EventLoop::run()
 {
+	// TODO: add keepalive_timeout from config. and a simple queue to manage it
 #if defined(__linux__)
 	// Linux: Create epoll instance (event notification facility)
 	_eventFd = epoll_create(1);
@@ -303,12 +304,6 @@ void EventLoop::run()
 			IOEventHandler *handler = (IOEventHandler *)events[i].data.ptr;
 			if (!handler)
 				continue;
-
-			// Check what happened on this socket
-			// handler->eof = (events[i].events & (EPOLLHUP | EPOLLRDHUP)) != 0; // Connection closed
-			// handler->readable = (events[i].events & EPOLLIN) != 0;				  // Data available to read
-			// handler->writable = (events[i].events & EPOLLOUT) != 0;			  // Socket ready for writing
-
 			handler->events = mapEpollToIOFlags(events[i].events);
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
@@ -316,11 +311,6 @@ void EventLoop::run()
 			IOEventHandler *handler = (IOEventHandler *)events[i].udata;
 			if (!handler)
 				continue;
-			// Check what happened on this socket
-			// handler->isEOF = (events[i].flags & EV_EOF) != 0;		 // Connection closed
-			// handler->isRead = (events[i].filter == EVFILT_READ);	 // Data available to read
-			// handler->isWrite = (events[i].filter == EVFILT_WRITE); // Socket ready for writing
-
 			handler->events = mapKqueueToIOFlags(events[i]);
 #endif
 			handler->handleEvent(this);
