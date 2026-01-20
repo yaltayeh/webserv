@@ -3,13 +3,9 @@
 #include <iostream>
 
 StreamSocket::StreamSocket(int fd, ClientSocket *clientSocket)
-	: Socket(fd), _clientSocket(clientSocket)
-{
-}
+	: Socket(fd), _clientSocket(clientSocket) {}
 
-StreamSocket::~StreamSocket()
-{
-}
+StreamSocket::~StreamSocket() {}
 
 int StreamSocket::handleEvent(EventLoop *el)
 {

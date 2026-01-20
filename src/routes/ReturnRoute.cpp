@@ -26,8 +26,8 @@ static libhttp::Response &handleRedirect(const libhttp::Request &request,
 										 const LocationConfig &loc)
 {
 	(void)request;
-	static libhttp::StaticResponse response;
-    response = libhttp::StaticResponse();
+	static libhttp::DefaultResponse response;
+    response = libhttp::DefaultResponse();
 
 	response.setStatus(loc.return_code);
 	response.setHeader("Location", loc.return_url);

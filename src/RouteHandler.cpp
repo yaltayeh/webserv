@@ -85,9 +85,9 @@ const libhttp::Response &RouteHandler::route(const libhttp::Request &request, co
 libhttp::Response &RouteHandler::generateErrorResponse(int status_code,
                                                        const LocationConfig &loc)
 {
-    static libhttp::StaticResponse response;
+    static libhttp::DefaultResponse response;
 
-    response = libhttp::StaticResponse();
+    response = libhttp::DefaultResponse();
     // Check for custom error page
     std::map<int, CommonConfig::ErrorPage>::const_iterator it =
         loc.error_pages.find(status_code);
@@ -128,8 +128,8 @@ libhttp::Response &RouteHandler::generateErrorResponse(int status_code,
  */
 libhttp::Response &RouteHandler::generateDefaultErrorPage(int status_code)
 {
-    static libhttp::StaticResponse response;
-    response = libhttp::StaticResponse();
+    static libhttp::DefaultResponse response;
+    response = libhttp::DefaultResponse();
     
     std::string message = libhttp::getStatusMessage(status_code);
 
