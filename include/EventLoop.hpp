@@ -29,10 +29,16 @@ private:
     std::map<uint64_t, ListenSocket *>  _listeningSockets;
     int                                 _eventFd; // epoll fd (Linux) or kqueue fd (macOS/BSD)
 
+
+    std::queue<ClientSocket *>   _clientQueue;
+
 public:
 
     EventLoop(const GlobalConfig &config);
     ~EventLoop();
+
+    void    addToQueue(ClientSocket *client);
+    void    removeFromQueue(ClientSocket *client);
 
     int     addEvent(int fd, int event, IOEventHandler *udata);
     int     deleteEvent(int fd, int event, IOEventHandler *udata);

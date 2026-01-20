@@ -5,6 +5,7 @@
 #include "ListenSocket.hpp"
 #include "libhttp/include/Parser.hpp"
 #include "IOEventHandler.hpp"
+#include <chrono>
 
 class ListenSocket;
 
@@ -21,6 +22,8 @@ private:
 
 	int		_isRequestRead;
 	int		_isResponseSent;
+
+	std::chrono::system_clock::time_point expiryDate;
 
 public:
 

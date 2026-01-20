@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include "EventLoop.hpp"
 #include "IOEventHandler.hpp"
+#include <chrono>
 
 /**
  * Constructor: Initialize event loop with configuration
@@ -19,46 +20,43 @@ EventLoop::EventLoop(const GlobalConfig &config)
 	VirtualServer *virtualServer = NULL;
 
 	// Loop through all HTTP configurations
-	for (size_t i = 0; i < _config.https.size(); i++)
+	const std::vector<ServerConfig> &servers = _config.http.servers;
+
+	// Loop through all server blocks
+	for (size_t j = 0; j < servers.size(); j++)
 	{
-		const std::vector<ServerConfig> &servers = _config.https[i].servers;
+		// Create virtual server (handles routing for this server block)
+		virtualServer = new VirtualServer(servers[j]);
+		_virtualServers.push_back(virtualServer);
 
-		// Loop through all server blocks
-		for (size_t j = 0; j < servers.size(); j++)
+		// Loop through all listen addresses for this server
+		const std::vector<ServerConfig::ListenAddr> &addrs = servers[j].listenAddresses;
+		for (size_t l = 0; l < addrs.size(); l++)
 		{
-			// Create virtual server (handles routing for this server block)
-			virtualServer = new VirtualServer(servers[j]);
-			_virtualServers.push_back(virtualServer);
+			ServerConfig::ListenAddr addr = addrs[l];
 
-			// Loop through all listen addresses for this server
-			const std::vector<ServerConfig::ListenAddr> &addrs = servers[j].listenAddresses;
-			for (size_t l = 0; l < addrs.size(); l++)
+			// Check if we already have a socket for this host:port
+			if (_listeningSockets.find(addr) == _listeningSockets.end())
 			{
-				ServerConfig::ListenAddr addr = addrs[l];
-
-				// Check if we already have a socket for this host:port
-				if (_listeningSockets.find(addr) == _listeningSockets.end())
+				// Create new listen socket (bind to host:port)
+				socket = new ListenSocket(addr.ip, addr.port);
+				if (socket->getSocketfd() < 0)
 				{
-					// Create new listen socket (bind to host:port)
-					socket = new ListenSocket(addr.ip, addr.port);
-					if (socket->getSocketfd() < 0)
-					{
-						delete socket;
-						std::ostringstream oss;
-						oss << "Failed to create listen socket for " << addr.ip << ":" << addr.port;
-						throw std::runtime_error(oss.str());
-					}
-					_listeningSockets[(uint64_t)addr] = socket;
+					delete socket;
+					std::ostringstream oss;
+					oss << "Failed to create listen socket for " << addr.ip << ":" << addr.port;
+					throw std::runtime_error(oss.str());
 				}
-				else
-				{
-					// Reuse existing socket for this host:port
-					socket = _listeningSockets[(uint64_t)addr];
-				}
-
-				// Associate this virtual server with the listen socket
-				socket->addVirtualServer(virtualServer);
+				_listeningSockets[(uint64_t)addr] = socket;
 			}
+			else
+			{
+				// Reuse existing socket for this host:port
+				socket = _listeningSockets[(uint64_t)addr];
+			}
+
+			// Associate this virtual server with the listen socket
+			socket->addVirtualServer(virtualServer);
 		}
 	}
 }
@@ -93,6 +91,16 @@ EventLoop::~EventLoop()
 	_listeningSockets.clear();
 }
 
+void EventLoop::addToQueue(ClientSocket *client)
+{
+	(void)client;
+}
+
+void EventLoop::removeFromQueue(ClientSocket *client)
+{
+	(void)client;
+}
+
 /**
  * Add a file descriptor to the event loop for monitoring
  *
@@ -120,9 +128,11 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 	struct epoll_event ev;
 	// Map portable IO flags to epoll flags
 	ev.events = EPOLLET; // Start with edge-triggered flag
-	if (event & IO_READ)  ev.events |= EPOLLIN;
-	if (event & IO_WRITE) ev.events |= EPOLLOUT;
-	ev.data.ptr = udata;		 // Store Socket* for later retrieval
+	if (event & IO_READ)
+		ev.events |= EPOLLIN;
+	if (event & IO_WRITE)
+		ev.events |= EPOLLOUT;
+	ev.data.ptr = udata; // Store Socket* for later retrieval
 
 	if (epoll_ctl(_eventFd, EPOLL_CTL_ADD, fd, &ev) == -1)
 	{
@@ -134,9 +144,11 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 	// macOS/BSD: Use kqueue to add file descriptor
 	// Map portable IO flags to kqueue filters
 	int filter = 0;
-	if (event & IO_READ)  filter = EVFILT_READ;
-	if (event & IO_WRITE) filter = EVFILT_WRITE;
-	
+	if (event & IO_READ)
+		filter = EVFILT_READ;
+	if (event & IO_WRITE)
+		filter = EVFILT_WRITE;
+
 	struct kevent kev;
 	EV_SET(&kev, fd, filter,
 		   EV_ADD | EV_ENABLE | EV_CLEAR, // Add, enable, and clear (edge-triggered)
@@ -185,9 +197,11 @@ int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
 	// macOS/BSD: kqueue removes specific filter (READ or WRITE)
 	// Map portable IO flags to kqueue filters
 	int filter = 0;
-	if (event & IO_READ)  filter = EVFILT_READ;
-	if (event & IO_WRITE) filter = EVFILT_WRITE;
-	
+	if (event & IO_READ)
+		filter = EVFILT_READ;
+	if (event & IO_WRITE)
+		filter = EVFILT_WRITE;
+
 	struct kevent kev;
 	EV_SET(&kev, fd, filter, EV_DELETE, 0, 0, NULL);
 
@@ -266,6 +280,7 @@ void EventLoop::run()
 	// Infinite event loop
 	while (1)
 	{
+		// const auto now = std::chrono::system_clock::now();
 #if defined(__linux__)
 		// Linux: Wait for events (blocks until something happens)
 		// Returns number of triggered events

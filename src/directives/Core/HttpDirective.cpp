@@ -23,11 +23,12 @@ struct Config *parserHttpDirective(Directive::Parser *parser, const std::vector<
 	if (!global)
 		throw Directive::InvalidNesting("http", "can only be used in global context");
 
+	if (global->init_http)
+		throw Directive::ConfigException("you can only have one http directive");
 	// Create new HTTP config block
-	HttpConfig http = HttpConfig();
-	global->https.push_back(http);
+	global->http = HttpConfig();
 	
-	return &global->https[global->https.size() - 1];
+	return &global->http;
 }
 
 DEFINE_DIRECTIVE("http", parserHttpDirective);

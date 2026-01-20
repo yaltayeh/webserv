@@ -52,7 +52,7 @@ int ListenSocket::handleEvent(EventLoop *el)
 					<< strerror(errno) << std::endl;
 		return 1;
 	}
-
+	el->addToQueue(clientSocket);
 	// Add new client to event loop (start monitoring for HTTP request)
 	el->addEvent(clientSocket->getSocketfd(), IO_READ, clientSocket);
 	std::cout << "add client " << clientSocket->getHost() << std::endl;

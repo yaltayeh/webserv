@@ -6,14 +6,16 @@
 
 struct GlobalConfig : public Config
 {
-	std::vector<struct HttpConfig> https;
+	bool init_http;
+	HttpConfig http;
 
-	GlobalConfig() : Config() {};
+	GlobalConfig() : Config(), init_http(false) {};
 
 	GlobalConfig(const GlobalConfig &other)
 		: Config(other)
 	{
-		this->https = other.https;
+		this->http = other.http;
+		this->init_http = other.init_http;
 	}
 
 	GlobalConfig& operator=(const GlobalConfig &other)
@@ -21,7 +23,8 @@ struct GlobalConfig : public Config
 		if (this != &other)
 		{
 			Config::operator=(other);
-			this->https = other.https;
+			this->http = other.http;
+			this->init_http = other.init_http;
 		}
 		return *this;
 	}
