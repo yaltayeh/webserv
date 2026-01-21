@@ -35,6 +35,15 @@ SRCS		    		=   src/main.cpp 										\
 							src/EventLoop.cpp									\
 							src/RegEx.cpp										\
 							\
+							src/routing/RouteHandler.cpp						\
+							src/routing/RouteUtils.cpp							\
+							src/routing/RoutingInit.cpp							\
+							src/routing/middleware/AccessControlMiddleware.cpp	\
+							src/routing/middleware/MethodCheckMiddleware.cpp	\
+							src/routing/middleware/RedirectMiddleware.cpp		\
+							src/routing/middleware/CGIMiddleware.cpp			\
+							src/routing/middleware/StaticFileMiddleware.cpp		\
+							\
 							src/directives/Core/LocationDirective.cpp			\
 							src/directives/Core/ServerDirective.cpp				\
 							src/directives/Core/HttpDirective.cpp				\

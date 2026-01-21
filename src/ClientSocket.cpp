@@ -216,7 +216,7 @@ bool ClientSocket::handleWrite()
     // If buffer is empty and we have a file to send, read next chunk
     if (_write_buffer.empty() && _file_fd != -1)
     {
-        char file_buffer[8192];
+        char file_buffer[READ_BUFFER_SIZE];
         ssize_t bytes_read = read(_file_fd, file_buffer, sizeof(file_buffer));
         
         if (bytes_read < 0)
