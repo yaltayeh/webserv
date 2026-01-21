@@ -6,6 +6,7 @@
 #include "DefaultResponse.hpp"
 #include "FileResponse.hpp"
 #include "StreamSocket.hpp"
+#include <unistd.h>
 
 #define READ_BUFFER_SIZE 128
 
@@ -17,8 +18,9 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
     : Socket(client_fd),
       _addr(addr),
       _listenSocket(listen),
+      _file_fd(-1),
+      _write_buffer(""),
       _parser(NULL),
-      _isRequestRead(false),
       _isResponseSent(false)
 {
     // Initialize parser with config from the first virtual server
@@ -31,6 +33,8 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
 ClientSocket::~ClientSocket()
 {
     delete _parser;
+    if (_file_fd != -1)
+        ::close(_file_fd);
     (void)_listenSocket;
 }
 
@@ -126,7 +130,7 @@ int ClientSocket::handleEvent(EventLoop *el)
                 _listenSocket->getVirtualServers(),
                 request
             );
-            const libhttp::Response *raw_response = &owner_server->handleRequest(request);
+            const libhttp::Response *raw_response = owner_server->handleRequest(request);
             
             if (dynamic_cast<const libhttp::DefaultResponse *>(raw_response))
             { 
@@ -148,6 +152,8 @@ int ClientSocket::handleEvent(EventLoop *el)
                 _write_buffer = response->toString();
                 _file_fd = response->getFd();
             }
+            
+            delete raw_response;
         }
     }
 
@@ -156,7 +162,8 @@ int ClientSocket::handleEvent(EventLoop *el)
     {
         std::cout << "WE ARE READY TO WRITE BOSS " << getHost() << std::endl;
 
-        if (_write_buffer.empty())
+        // Only remove write event if buffer is empty AND no file to send
+        if (_write_buffer.empty() && _file_fd == -1)
         {
             el->deleteEvent(_socketfd, IO_WRITE, this);
             return (1);
@@ -206,7 +213,34 @@ libhttp::State ClientSocket::handleRead()
 
 bool ClientSocket::handleWrite()
 {
-    std::cout << "Try write to client " << _write_buffer << std::endl;
+    // If buffer is empty and we have a file to send, read next chunk
+    if (_write_buffer.empty() && _file_fd != -1)
+    {
+        char file_buffer[8192];
+        ssize_t bytes_read = read(_file_fd, file_buffer, sizeof(file_buffer));
+        
+        if (bytes_read < 0)
+        {
+            std::cerr << "Error reading from file for client " << getHost() << std::endl;
+            ::close(_file_fd);
+            _file_fd = -1;
+            return false;
+        }
+        
+        if (bytes_read == 0)
+        {
+            // End of file reached
+            std::cout << "File completely sent to client " << getHost() << std::endl;
+            ::close(_file_fd);
+            _file_fd = -1;
+            _isResponseSent = 1;
+            return true;
+        }
+        
+        _write_buffer.append(file_buffer, bytes_read);
+        std::cout << "Read " << bytes_read << " bytes from file for client " << getHost() << std::endl;
+    }
+    
     if (_write_buffer.empty())
         return true;
 
@@ -225,11 +259,16 @@ bool ClientSocket::handleWrite()
 
     _write_buffer.erase(0, bytes_sent);
 
-    // STEP 6: Check if all data sent
+    // Check if all data sent
     if (_write_buffer.empty())
     {
-        std::cout << "All data sent to client " << getHost() << std::endl;
-        _isResponseSent = 1;
+        // If no more file to send, we're done
+        if (_file_fd == -1)
+        {
+            std::cout << "All data sent to client " << getHost() << std::endl;
+            _isResponseSent = 1;
+        }
+        // Otherwise, we'll read more from the file on next write event
     }
     return true;
 }

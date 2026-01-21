@@ -22,7 +22,6 @@ private:
 	std::string			_write_buffer;
 	libhttp::Parser 	*_parser;
 
-	int		_isRequestRead;
 	int		_isResponseSent;
 
 	// std::chrono::system_clock::time_point expiryDate;

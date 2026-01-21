@@ -40,7 +40,7 @@ int VirtualServer::checkRequest(const libhttp::Request &r)
 	return 0;
 }
 
-const libhttp::Response &VirtualServer::handleRequest(const libhttp::Request &request) const
+libhttp::Response *VirtualServer::handleRequest(const libhttp::Request &request) const
 {
 	(void)request;
 	// // const std::string &uri = request.getUri();
@@ -49,7 +49,7 @@ const libhttp::Response &VirtualServer::handleRequest(const libhttp::Request &re
 	// // return RouteHandler::route(request, location);
 	// libhttp::DefaultResponse res = libhttp::DefaultResponse();
 
-	// return res;
+	return new libhttp::DefaultResponse(200);
 }
 
 const VirtualServer *VirtualServer::findMatchServer(const std::vector<VirtualServer *> &servers,
