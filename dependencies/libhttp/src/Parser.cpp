@@ -9,14 +9,6 @@
 #include <unistd.h>
 // TODO: Your server must be compatible with standard web browsers of your choice.
 namespace libhttp {
-
-	Parser::Parser() : 	_state(REQUEST_LINE),
-						_buffer(""),
-						_expectedBodyLength(0),
-						_receivedBodyLength(0),
-						_maxBodySize(1024 * 1024), // Default 1MB
-						_tempPath("client_body_temp"),
-						_usesTempFile(false) {}
 	
 	Parser::Parser(size_t maxBodySize, const std::string& tempPath) :
 						_state(REQUEST_LINE),
@@ -40,30 +32,28 @@ namespace libhttp {
 	
 	//// //// parsing functions
 	// int 0 -> success, 1 -> incomplete, -1 -> error
-	int Parser::parse(const char* partial_request, size_t size) {
+	State Parser::parse(const char* partial_request, size_t size) {
 		if (_state == COMPLETE || _state == ERROR)
-			return (_state == COMPLETE) ? 0 : -1;
+			return _state;
 
 		_buffer.append(partial_request, size);
 
 		if (_state == REQUEST_LINE) {
 			if (processRequestLine() != 0)
-				return -1;
+				return ERROR;
 		}
 
 		if (_state == HEADERS) {
 			if (processHeaders() != 0)
-				return -1;
+				return ERROR;
 		}
 
 		if (_state == BODY) {
 			if (processBody() != 0)
-				return -1;
+				return ERROR;
 		}
 
-		if (_state == COMPLETE)
-			return 0; // completed
-		return 1; // incomplete
+		return _state;
 	}
 
 	int Parser::processRequestLine() {
@@ -139,6 +129,8 @@ namespace libhttp {
 			_state = COMPLETE;
 			return 0;
 		}
+
+		if (_maxBodySize )
 		
 		// Determine if we need to use temp file for this body
 		// Use temp file if body will exceed max size OR if we already started using one
@@ -229,4 +221,17 @@ namespace libhttp {
 		}
 	}
 
+}
+
+std::ostream& operator<<(std::ostream& os, libhttp::State s) {
+    switch (s) {
+        case libhttp::REQUEST_LINE: return os << "REQUEST_LINE";
+        case libhttp::HEADERS: return os << "HEADERS";
+        case libhttp::BODY: return os << "BODY";
+        case libhttp::COMPLETE: return os << "COMPLETE";
+        case libhttp::ERROR: return os << "ERROR";
+        case libhttp::CLOSED: return os << "CLOSED";
+        case libhttp::BODY_EXCEEDED_MAX_SIZE: return os << "BODY_EXCEEDED_MAX_SIZE";
+        default: return os << "UNKNOWN";
+    }
 }

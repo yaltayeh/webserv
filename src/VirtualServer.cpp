@@ -1,7 +1,7 @@
 #include <iostream>
 #include "VirtualServer.hpp"
-#include "RouteHandler.hpp"
 #include "RegEx.hpp"
+#include "DefaultResponse.hpp"
 
 VirtualServer::VirtualServer()
 {
@@ -40,13 +40,17 @@ int VirtualServer::checkRequest(const libhttp::Request &r)
 	return 0;
 }
 
-const libhttp::Response &VirtualServer::handleRequest(const libhttp::Request &request) const
-{
-	const std::string &uri = request.getUri();
-	const LocationConfig &location = findMatchingLocation(uri);
+// const libhttp::Response &VirtualServer::handleRequest(const libhttp::Request &request) const
+// {
+// 	// (void)request;
+// 	// // const std::string &uri = request.getUri();
+// 	// // const LocationConfig &location = findMatchingLocation(uri);
 
-	return RouteHandler::route(request, location);
-}
+// 	// // return RouteHandler::route(request, location);
+// 	// libhttp::DefaultResponse res = libhttp::DefaultResponse();
+
+// 	// return res;
+// }
 
 const VirtualServer *VirtualServer::findMatchServer(const std::vector<VirtualServer *> &servers,
 													const libhttp::Request &request)

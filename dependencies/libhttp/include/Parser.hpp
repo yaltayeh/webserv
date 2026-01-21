@@ -4,11 +4,22 @@
 #include <fstream>
 #include "Request.hpp"
 
+
 namespace libhttp {
+	
+	enum State {
+		REQUEST_LINE,
+		HEADERS,
+		BODY,
+		COMPLETE,
+
+		ERROR,
+		CLOSED,
+		BODY_EXCEEDED_MAX_SIZE
+	};
 
 	class Parser {
 	public:
-		Parser();
 		Parser(size_t maxBodySize, const std::string& tempPath);
 		~Parser();
 		
@@ -17,25 +28,12 @@ namespace libhttp {
 		bool isError() const;
 
 		// parsing function
-		// returns: 0=complete, 1=incomplete, -1=error
-		int parse(const char* data, size_t size);
+		State parse(const char* data, size_t size);
 
 		// get the parsed request
 		Request getRequest() const;
 
 	private:
-		// Non-copyable due to ofstream member
-		Parser(const Parser&);
-		Parser& operator=(const Parser&);
-
-		enum State {
-            REQUEST_LINE,
-            HEADERS,
-            BODY,
-            COMPLETE,
-            ERROR
-        };
-
 		State _state;
 		std::string _buffer;
 		size_t _expectedBodyLength; // from Content-Length header
@@ -62,3 +60,5 @@ namespace libhttp {
 	};
 
 }
+
+std::ostream& operator<<(std::ostream& os, libhttp::State s);

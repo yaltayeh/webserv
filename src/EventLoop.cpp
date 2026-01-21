@@ -126,8 +126,8 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 #if defined(__linux__)
 	// Linux: Use epoll to add file descriptor
 	struct epoll_event ev;
-	// Map portable IO flags to epoll flags
-	ev.events = EPOLLET; // Start with edge-triggered flag
+	// Map portable IO flags to epoll flags (level-triggered for one read per event)
+	ev.events = 0;
 	if (event & IO_READ)
 		ev.events |= EPOLLIN;
 	if (event & IO_WRITE)
