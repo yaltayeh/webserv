@@ -33,8 +33,20 @@ class MimeTypesTest(BaseTest):
         self.create_file("readme.md", "# Markdown file", subdir="assets")
         self.create_file("data.csv", "name,value\ntest,123", subdir="assets")
 
-        # Create configuration
+        # Create configuration with inline types
         conf = f"""http {{
+    types {{
+        text/html html htm;
+        text/css css;
+        application/javascript js;
+        application/json json;
+        text/xml xml;
+        text/plain txt;
+        text/markdown md;
+        text/csv csv;
+    }}
+    default_type application/octet-stream;
+    
     server {{
         listen {self.port};
         server_name localhost;

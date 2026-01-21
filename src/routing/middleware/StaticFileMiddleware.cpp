@@ -46,18 +46,63 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 	(void)context; // Not used in this middleware
 
 	const std::string &uri = request.getUri();
+	libhttp::Method method = request.getMethod();
 
 	std::cout << "staticFileHandler: " << uri << std::endl;
 
 	// Get location path
 	std::string location_path = location.path;
+	
+	// Strip query string from URI for file resolution
+	std::string uri_path = uri;
+	size_t query_pos = uri_path.find('?');
+	if (query_pos != std::string::npos)
+	{
+		uri_path = uri_path.substr(0, query_pos);
+	}
 
 	// Resolve URI to filesystem path
-	std::string file_path = utils::resolvePath(uri, location_path, location);
+	std::string file_path = utils::resolvePath(uri_path, location_path, location);
 
-	std::cout << "Resolving URI '" << uri << "' to path: " << file_path << std::endl;
+	std::cout << "Resolving URI '" << uri_path << "' to path: " << file_path << std::endl;
 
-	// Check if path exists
+	// Handle DELETE method
+	if (method == libhttp::DELETE)
+	{
+		// Check if file exists
+		if (!utils::fileExists(file_path))
+		{
+			return utils::generateErrorResponse(404, location);
+		}
+		
+		// Check if it's a directory (can't delete directories)
+		if (utils::isDirectory(file_path))
+		{
+			return utils::generateErrorResponse(403, location);
+		}
+		
+		// Delete the file
+		if (unlink(file_path.c_str()) != 0)
+		{
+			// Failed to delete file (permission error, etc.)
+			return utils::generateErrorResponse(500, location);
+		}
+		
+		// Success - return 204 No Content
+		libhttp::DefaultResponse *response = new libhttp::DefaultResponse();
+		response->setStatus(204);
+		return response;
+	}
+
+	// Handle PUT method (file upload)
+	if (method == libhttp::PUT)
+	{
+		// For now, return 501 Not Implemented
+		// Full PUT implementation would write request body to file
+		return utils::generateErrorResponse(501, location);
+	}
+
+	// Check if path exists (for GET requests)
 	if (!utils::fileExists(file_path))
 	{
 		return utils::generateErrorResponse(404, location);

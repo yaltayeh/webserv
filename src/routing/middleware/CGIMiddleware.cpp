@@ -70,12 +70,30 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 	// Resolve script path
 	// HACK: If cgi_pass is a directory, use it as the CGI root instead
 	std::string script_path;
+	
 	if (!location.cgi_pass.empty() && utils::isDirectory(location.cgi_pass))
 	{
 		// cgi_pass is being misused as a root directory
 		// Strip location path from URI and append to cgi_pass
+		
+		// Safety check: ensure uri is long enough
+		if (uri.length() < location_path.length())
+		{
+			std::cerr << "CGI ERROR: URI shorter than location path" << std::endl;
+			return utils::generateErrorResponse(500, location);
+		}
+		
 		std::string remaining = uri.substr(location_path.length());
-		script_path = location.cgi_pass + remaining;
+		
+		// Add separator if remaining doesn't start with /
+		if (!remaining.empty() && remaining[0] != '/')
+		{
+			script_path = location.cgi_pass + "/" + remaining;
+		}
+		else
+		{
+			script_path = location.cgi_pass + remaining;
+		}
 	}
 	else
 	{

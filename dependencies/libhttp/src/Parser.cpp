@@ -1,5 +1,6 @@
 #include "../include/Parser.hpp"
 #include "../include/Utils.hpp"
+#include <StringUtils.hpp>  // from libutils (utils:: namespace)
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -66,15 +67,29 @@ namespace libhttp {
 			// parse method, uri, version with spilt
 			std::vector<std::string> request_line_parts = split(request_line, ' ');
 
-			if (request_line_parts.size() != 3 
-				// || request_line_parts[2] != HTTP_1_0
-				)
-				{ _state = ERROR; return -1; }
-			_request.setMethod(stringToMethod(request_line_parts[0]));
-			_request.setUri(request_line_parts[1]);
+		if (request_line_parts.size() != 3 
+			// || request_line_parts[2] != HTTP_1_0
+			)
+			{ _state = ERROR; return -1; }
+		_request.setMethod(stringToMethod(request_line_parts[0]));
+		
+		// Decode URI - split path and query string first
+		std::string uri = request_line_parts[1];
+		std::string path, query;
+		size_t query_pos = uri.find('?');
+		if (query_pos != std::string::npos) {
+			path = uri.substr(0, query_pos);
+			query = uri.substr(query_pos); // includes the '?'
+		} else {
+			path = uri;
+		}
+		
+		// Decode only the path part, keep query string as-is
+		std::string decoded_path = utils::urlDecode(path);
+		_request.setUri(decoded_path + query);
 
-			if (_request.getMethod() == INVALID)
-				{ _state = ERROR; return -1; }
+		if (_request.getMethod() == INVALID)
+			{ _state = ERROR; return -1; }
 
 			_state = HEADERS;
 		}
