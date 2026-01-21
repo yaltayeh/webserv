@@ -11,6 +11,7 @@ namespace libhttp {
     class DefaultResponse: public Response {
     public:
         DefaultResponse();
+        DefaultResponse(int statusCode);
         ~DefaultResponse();
 
 		// Setters

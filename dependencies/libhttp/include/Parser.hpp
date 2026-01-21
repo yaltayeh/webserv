@@ -31,7 +31,7 @@ namespace libhttp {
 		State parse(const char* data, size_t size);
 
 		// get the parsed request
-		Request getRequest() const;
+		const Request &getRequest() const;
 
 	private:
 		State _state;

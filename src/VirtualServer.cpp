@@ -40,17 +40,17 @@ int VirtualServer::checkRequest(const libhttp::Request &r)
 	return 0;
 }
 
-// const libhttp::Response &VirtualServer::handleRequest(const libhttp::Request &request) const
-// {
-// 	// (void)request;
-// 	// // const std::string &uri = request.getUri();
-// 	// // const LocationConfig &location = findMatchingLocation(uri);
+const libhttp::Response &VirtualServer::handleRequest(const libhttp::Request &request) const
+{
+	(void)request;
+	// // const std::string &uri = request.getUri();
+	// // const LocationConfig &location = findMatchingLocation(uri);
 
-// 	// // return RouteHandler::route(request, location);
-// 	// libhttp::DefaultResponse res = libhttp::DefaultResponse();
+	// // return RouteHandler::route(request, location);
+	// libhttp::DefaultResponse res = libhttp::DefaultResponse();
 
-// 	// return res;
-// }
+	// return res;
+}
 
 const VirtualServer *VirtualServer::findMatchServer(const std::vector<VirtualServer *> &servers,
 													const libhttp::Request &request)

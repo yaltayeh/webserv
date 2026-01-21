@@ -4,9 +4,14 @@
 #include "EventLoop.hpp"
 #include "StreamResponse.hpp"
 #include "DefaultResponse.hpp"
+#include "FileResponse.hpp"
 #include "StreamSocket.hpp"
 
-#define READ_BUFFER_SIZE 2
+#define READ_BUFFER_SIZE 128
+
+
+
+
 
 ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen)
     : Socket(client_fd),
@@ -17,7 +22,7 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
       _isResponseSent(false)
 {
     // Initialize parser with config from the first virtual server
-    const std::vector<VirtualServer *> &servers = _listenSocket->getVirtualServer();
+    const std::vector<VirtualServer *> &servers = _listenSocket->getVirtualServers();
     const ServerConfig &config = servers[0]->getConfig();
 
     _parser = new libhttp::Parser(config.client_max_body_size, config.client_body_temp_path);
@@ -28,6 +33,9 @@ ClientSocket::~ClientSocket()
     delete _parser;
     (void)_listenSocket;
 }
+
+
+
 
 
 
@@ -60,6 +68,8 @@ void ClientSocket::WriteToBuffer(char *buf, size_t len)
 
 
 
+
+
 int ClientSocket::handleEvent(EventLoop *el)
 {
     // --- Sub-case A: Client Disconnected ---
@@ -77,94 +87,68 @@ int ClientSocket::handleEvent(EventLoop *el)
     // --- Sub-case B: Data Ready to Read (HTTP Request) ---
     if (events & IO_READ)
     {
-        std::cout << "HERE WE HAVE A COMPLETE REQUEST FROM " << getHost() << std::endl;
-
         libhttp::State state = handleRead();
+        // std::cout << "Parser state after read: " << state << std::endl;
 
-        std::cout << "Parser state after read: " << state << std::endl;
-        
-        if (state == libhttp::COMPLETE)
+        if (state == libhttp::CLOSED)
         {
-            // el->deleteEvent(_socketfd, IO_WRITE, this);
-            // el->deleteEvent(_socketfd, IO_READ, this);
-            // delete this;
-            // return (0);
-
             el->deleteEvent(_socketfd, IO_READ, this);
-            el->addEvent(_socketfd, IO_WRITE, this);
-
-            std::cout << std::endl;
-            std::cout << std::endl;
-            std::cout << _parser->getRequest();
-            std::cout << std::endl;
-
-            libhttp::DefaultResponse def = libhttp::DefaultResponse();
-            def.setDefaultPage(200);
-            _write_buffer = def.toString();
-        }
-        /*
-        // Read data and parse HTTP request
-        if (handleRead() == false) // Returns false on error
-        {
-            // TODO: Generate 400 Bad Request response
-            
-            // Error occurred, close connection
             el->deleteEvent(_socketfd, IO_WRITE, this);
-            el->deleteEvent(_socketfd, IO_READ, this);
             delete this;
             return (0);
         }
-        */
 
-        /*
-        // If HTTP request is complete and response is ready
-        if (_isRequestRead)
+        if (state == libhttp::BODY_EXCEEDED_MAX_SIZE)
         {
-            // Switch from reading to writing
-            // (Stop monitoring reads, start monitoring writes)
             el->deleteEvent(_socketfd, IO_READ, this);
             el->addEvent(_socketfd, IO_WRITE, this);
 
-            // Route the request and generate response
-            libhttp::Request request = _parser->getRequest();
-            const std::vector<VirtualServer *> &servers = _listenSocket->getVirtualServer();
-            if (servers.empty())
-            {
-                std::cerr << "Error: No virtual servers configured" << std::endl;
-                return false;
-            }
-
-            
-            // TODO: assign virtual server function
-            // TODO: turn the request ownership to the selected virtual server
-
-            // const VirtualServer *server = VirtualServer::findMatchServer(servers, request);
-            // if (!server)
-            // {
-            //     std::cerr << "Virtual Server Not Found" << std::endl;
-            //     return (0);
-            // }
-            // const libhttp::Response *raw_response = &server->handleRequest(request);
-            // if (dynamic_cast<const libhttp::DefaultResponse *>(raw_response))
-            // {
-            //     const libhttp::DefaultResponse *response = dynamic_cast<const libhttp::DefaultResponse *>(raw_response);
-            //     // For HEAD requests, exclude the body
-            //     bool includeBody = (request.getMethod() != libhttp::HEAD);
-            //     _write_buffer = response->toString(includeBody);
-            // }
-            // else if (dynamic_cast<const libhttp::StreamResponse *>(raw_response))
-            // {
-            //     const libhttp::StreamResponse *response = dynamic_cast<const libhttp::StreamResponse *>(raw_response);
-            //     _write_buffer = "";
-            //     StreamSocket *ss = new StreamSocket(response->getFD(), this);
-            //     el->addEvent(ss->getSocketfd(), IO_READ, ss);
-            // }
-            // else
-            // {
-            //     _write_buffer = "WTF";
-            // }
+            libhttp::DefaultResponse def = libhttp::DefaultResponse(413);
+            _write_buffer = def.toString();
         }
-        */
+
+        if (state == libhttp::ERROR)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            el->addEvent(_socketfd, IO_WRITE, this);
+
+            libhttp::DefaultResponse def = libhttp::DefaultResponse(400);
+            _write_buffer = def.toString();
+        }
+        
+        if (state == libhttp::COMPLETE)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            el->addEvent(_socketfd, IO_WRITE, this);
+
+            const libhttp::Request request = _parser->getRequest();
+            const VirtualServer *owner_server = VirtualServer::findMatchServer(
+                _listenSocket->getVirtualServers(),
+                request
+            );
+            const libhttp::Response *raw_response = &owner_server->handleRequest(request);
+            
+            if (dynamic_cast<const libhttp::DefaultResponse *>(raw_response))
+            { 
+                const libhttp::DefaultResponse *response = dynamic_cast<const libhttp::DefaultResponse *>(raw_response);
+                _write_buffer = response->toString();
+            }
+            
+            else if (dynamic_cast<const libhttp::StreamResponse *>(raw_response))
+            {
+                const libhttp::StreamResponse *response = dynamic_cast<const libhttp::StreamResponse *>(raw_response);
+                _write_buffer = "";
+                StreamSocket *ss = new StreamSocket(response->getFd(), this);
+                el->addEvent(ss->getSocketfd(), IO_READ, ss);
+            }
+            
+            else if (dynamic_cast<const libhttp::FileResponse *>(raw_response))
+            {
+                const libhttp::FileResponse *response = dynamic_cast<const libhttp::FileResponse *>(raw_response);
+                _write_buffer = response->toString();
+                _file_fd = response->getFd();
+            }
+        }
     }
 
     // --- Sub-case C: Socket Ready to Write (HTTP Response) ---
@@ -193,9 +177,20 @@ int ClientSocket::handleEvent(EventLoop *el)
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 libhttp::State ClientSocket::handleRead()
 {
-    // STEP 2: Read data from socket into buffer
     char buffer[READ_BUFFER_SIZE];
     ssize_t bytes_read = recv(buffer, READ_BUFFER_SIZE);
 
@@ -211,11 +206,9 @@ libhttp::State ClientSocket::handleRead()
 
 bool ClientSocket::handleWrite()
 {
-    // std::cout << "Try write to client " << write_buffer << std::endl;
+    std::cout << "Try write to client " << _write_buffer << std::endl;
     if (_write_buffer.empty())
-    {
         return true;
-    }
 
     ssize_t bytes_sent = send(_write_buffer.c_str(), _write_buffer.size());
 

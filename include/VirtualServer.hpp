@@ -18,7 +18,7 @@ public:
 
 	const ServerConfig &getConfig() const;
 	int checkRequest(const libhttp::Request &r);
-	// const libhttp::Response &handleRequest(const libhttp::Request &r) const;
+	const libhttp::Response &handleRequest(const libhttp::Request &r) const;
 
 	static const VirtualServer *findMatchServer(const std::vector<VirtualServer *> &servers,
 												const libhttp::Request &request);

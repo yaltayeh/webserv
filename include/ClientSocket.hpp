@@ -18,6 +18,7 @@ private:
 	const ListenSocket 		*_listenSocket;
 
 	// From ConnectionManager (struct Connection)
+	int					_file_fd;
 	std::string			_write_buffer;
 	libhttp::Parser 	*_parser;
 

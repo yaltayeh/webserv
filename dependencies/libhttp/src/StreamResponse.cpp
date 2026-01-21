@@ -7,12 +7,12 @@ libhttp::StreamResponse::StreamResponse(int fd, int pid)
 libhttp::StreamResponse::~StreamResponse() { }
 
 
-int libhttp::StreamResponse::getFD() const
+int libhttp::StreamResponse::getFd() const
 {
 	return _fd;
 }
 
-int libhttp::StreamResponse::getPID() const
+int libhttp::StreamResponse::getPid() const
 {
 	return _pid;
 }

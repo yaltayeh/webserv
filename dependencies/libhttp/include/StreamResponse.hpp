@@ -17,8 +17,8 @@ namespace libhttp
 		StreamResponse(int fd, int pid);
 		~StreamResponse();
 
-		int getFD() const;
-		int getPID() const;
+		int getFd() const;
+		int getPid() const;
 	};
 
 }

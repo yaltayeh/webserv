@@ -11,6 +11,8 @@ namespace libhttp {
 	DefaultResponse::DefaultResponse()
 		: _statusCode(200), _headers(), _body() {}
 
+	DefaultResponse::DefaultResponse(int statusCode) { setDefaultPage(statusCode); }
+
 	DefaultResponse::~DefaultResponse() {}
 
 	// Setters

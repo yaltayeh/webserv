@@ -181,7 +181,7 @@ namespace libhttp {
 	// Getters
 	bool Parser::isComplete() const { return _state == COMPLETE; }
 	bool Parser::isError() const { return _state == ERROR; }
-	Request Parser::getRequest() const { return _request; }
+	const Request &Parser::getRequest() const { return _request; }
 
 	// Temp file helpers
 	void Parser::createTempFile() {
