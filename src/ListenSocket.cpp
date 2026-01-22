@@ -13,8 +13,17 @@
 #include "EventLoop.hpp"
 
 ListenSocket::ListenSocket(uint32_t ip, uint16_t port)
-	: Socket(-1), _ip(ip), _port(port)
+	: Socket(-1)
 {
+	/*
+	 * Initialize the sockaddr_in structure with the provided IP and port.
+	 * This structure will be used for binding the listening socket.
+	 */
+	std::memset(&_addr, 0, sizeof(_addr));
+	_addr.sin_family = AF_INET;
+	_addr.sin_port = htons(port);
+	_addr.sin_addr.s_addr = ip;
+
 	if (ListenSocket::_setOptions())
 	{
 		close();
@@ -52,10 +61,11 @@ int ListenSocket::handleEvent(EventLoop *el)
 					<< strerror(errno) << std::endl;
 		return 1;
 	}
-	el->addToQueue(clientSocket);
+	el->markClientActive(clientSocket);
 	// Add new client to event loop (start monitoring for HTTP request)
 	el->addEvent(clientSocket->getSocketfd(), IO_READ, clientSocket);
-	std::cout << "add client " << clientSocket->getHost() << std::endl;
+	el->addEvent(clientSocket->getSocketfd(), IO_WRITE, clientSocket);
+	std::cout << *clientSocket << " add client " << std::endl;
 	return 0;
 }
 
@@ -82,7 +92,7 @@ int ListenSocket::_setOptions()
 	int opt = 1;
 	if (setsockopt(_socketfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
 	{
-		std::cerr << "Error: Failed to set SO_REUSEADDR on "
+		std::cerr << *this << "Error: Failed to set SO_REUSEADDR on "
 				  << strerror(errno) << std::endl;
 		Socket::close();
 		return (-1);
@@ -116,17 +126,10 @@ int ListenSocket::_bind()
 	 * specific interfaces. This requires inet_pton() to convert string
 	 * IP to binary format.
 	 */
-	sockaddr_in addr;
-	std::memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(_port); // FIX
-	addr.sin_addr.s_addr = _ip;
-
-	int err = ::bind(_socketfd, (sockaddr *)&addr, sizeof(addr));
+	int err = ::bind(_socketfd, (sockaddr *)&_addr, sizeof(_addr));
 	if (err < 0)
 	{
-		std::cerr << "Error: Failed to bind socket to port "
-				  << _ip << ":" << _port << " (errno: " << strerror(errno) << ")" << std::endl;
+		std::cerr << *this << "Error: Failed to bind socket to port " << " (errno: " << strerror(errno) << ")" << std::endl;
 		Socket::close();
 	}
 
@@ -157,8 +160,7 @@ int ListenSocket::_listen()
 	int err = ::listen(_socketfd, 128);
 	if (err < 0)
 	{
-		std::cerr << "Error: Failed to listen on "
-				  << _ip << _port << std::endl;
+		std::cerr << *this << "Error: Failed to listen on " << std::endl;
 		Socket::close();
 	}
 	/**
@@ -166,10 +168,7 @@ int ListenSocket::_listen()
 	 * SUCCESS: Listening socket is ready
 	 * ========================================================================
 	 */
-	std::cout << "Socket listening on "
-			  << _ip << ":" << _port
-			  << " (fd " << _socketfd << ")" << std::endl;
-
+	std::cout << *this << " is now listening" << std::endl;
 	return err;
 }
 
@@ -211,10 +210,7 @@ ClientSocket *ListenSocket::_accept()
 	/**
 	 * Log successful connection (useful for debugging)
 	 */
-	std::cout << "client address: " << clientSocket->getHost() << std::endl;
-	std::cout << "Socket on " << _ip << ":" << _port
-			  << " accepted connection (fd " << client_fd << ")"
-			  << std::endl;
+	std::cout << *this << " accepted connection " << *clientSocket << std::endl;
 
 	return clientSocket;
 }
@@ -227,4 +223,27 @@ void ListenSocket::addVirtualServer(VirtualServer *virtualServer)
 const std::vector<VirtualServer *> &ListenSocket::getVirtualServer() const
 {
 	return (_servers);
+}
+
+sockaddr_in ListenSocket::getAddress() const
+{
+	return _addr;
+}
+
+const char *ListenSocket::getHost() const
+{
+	return inet_ntoa(_addr.sin_addr);
+}
+
+int ListenSocket::getPort() const
+{
+	return ntohs(_addr.sin_port);
+}
+
+std::ostream &operator<<(std::ostream &os, const ListenSocket &ls)
+{
+	os << "ListenSocket(fd=" << ls.getSocketfd()
+	   << ", addr=" << ls.getHost()
+	   << ":" << ls.getPort() << ")";
+	return os;
 }

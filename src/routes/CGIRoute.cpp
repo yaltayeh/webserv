@@ -123,6 +123,8 @@ static libhttp::Response &generateResponse(const libhttp::Request &request,
 			std::cerr << "Failed to write to CGI script" << std::endl;
 		}
 	}
+	
+	shutdown(socketFd, SHUT_WR); // Signal end of input
 
 	response = libhttp::StreamResponse(socketFd, pid);
 	return (response);

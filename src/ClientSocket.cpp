@@ -18,12 +18,15 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
 {
     // Initialize parser with config from the first virtual server
     const std::vector<VirtualServer *> &servers = _listenSocket->getVirtualServer();
-    if (!servers.empty()) {
+    if (!servers.empty())
+    {
         const ServerConfig &config = servers[0]->getConfig();
         // Create new parser with config
         // TODO: handle this better and make it work
         _parser = new libhttp::Parser(config.client_max_body_size, config.client_body_temp_path);
-    } else {
+    }
+    else
+    {
         // Use default parser
         _parser = new libhttp::Parser();
     }
@@ -56,7 +59,7 @@ int ClientSocket::handleEvent(EventLoop *el)
         if (handleRead() == false) // Returns false on error
         {
             // TODO: Generate 400 Bad Request response
-            
+
             // Error occurred, close connection
             el->deleteEvent(_socketfd, IO_WRITE, this);
             el->deleteEvent(_socketfd, IO_READ, this);
@@ -136,15 +139,20 @@ int ClientSocket::handleEvent(EventLoop *el)
     return (0);
 }
 
-sockaddr_in ClientSocket::getAddress()
+sockaddr_in ClientSocket::getAddress() const
 {
     return _addr;
 }
 
-const char *ClientSocket::getHost()
+const char *ClientSocket::getHost() const
 {
     char *addr_str = inet_ntoa(_addr.sin_addr);
     return addr_str;
+}
+
+int ClientSocket::getPort() const
+{
+    return ntohs(_addr.sin_port);
 }
 
 void ClientSocket::WriteToBuffer(char *buf, size_t len)
@@ -177,24 +185,24 @@ bool ClientSocket::handleRead()
 
     if (bytes_read == 0)
     {
-        std::cout << "Client " << getHost() << " closed connection" << std::endl;
+        std::cout << "Client " << *this << " closed connection" << std::endl;
         return false;
     }
 
     if (bytes_read < 0)
     {
-        std::cerr << "Error reading from client " << getHost() << std::endl;
+        std::cerr << "Error reading from client " << *this << std::endl;
         return false;
     }
 
-    std::cout << "Read " << bytes_read << " bytes from client " << getHost() << std::endl;
+    std::cout << *this << " Read " << bytes_read << " bytes from client " << std::endl;
 
     int parse_result = _parser->parse(buffer, bytes_read);
 
     if (parse_result == -1)
     {
         // TODO: Generate 400 Bad Request response instead of just closing
-        std::cerr << "Parse error for client " << getHost() << std::endl;
+        std::cerr << "Parse error for client " << *this << std::endl;
         return false;
     }
 
@@ -221,14 +229,14 @@ bool ClientSocket::handleWrite()
 
     if (bytes_sent < 0)
     {
-        std::cerr << "Error writing to client " << getHost() << std::endl;
+        std::cerr << "Error writing to client " << *this << std::endl;
         return false;
     }
 
     if (bytes_sent == 0)
         return true;
 
-    std::cout << "Sent " << bytes_sent << " bytes to client " << getHost() << std::endl;
+    std::cout << *this << " Sent " << bytes_sent << " bytes to client " << std::endl;
 
     _write_buffer.erase(0, bytes_sent);
 
@@ -239,4 +247,12 @@ bool ClientSocket::handleWrite()
         _isResponseSent = 1;
     }
     return true;
+}
+
+std::ostream &operator<<(std::ostream &os, const ClientSocket &client)
+{
+    os << "ClientSocket(fd=" << client.getSocketfd()
+       << ", addr=" << client.getHost()
+       << ":" << client.getPort() << ")";
+    return os;
 }

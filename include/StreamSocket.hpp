@@ -11,11 +11,13 @@ class StreamSocket : public Socket, public IOEventHandler
 {
 private:
 
-	ClientSocket	*_clientSocket;
+	// Non-owning pointer back to ClientSocket (ClientSocket owns this StreamSocket)
+	ClientSocket*	_clientSocket;
 
 public:
 
-	StreamSocket(int fd, ClientSocket *clientSocket);
+	// Constructor takes raw pointer - does NOT take ownership of ClientSocket
+	StreamSocket(int fd, ClientSocket* clientSocket);
 	~StreamSocket();
 
 	int		handleEvent(EventLoop *el);

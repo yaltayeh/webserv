@@ -13,9 +13,9 @@ class ListenSocket : public Socket, public IOEventHandler
 {
 private:
 
-	uint32_t						_ip;
-	uint16_t						_port;
 	std::vector<VirtualServer *>	_servers;
+	sockaddr_in				_addr;
+
 
 	int 			_setOptions();
 	ClientSocket 	*_accept();
@@ -31,4 +31,10 @@ public:
 	void    addVirtualServer(VirtualServer *virtualServer);
 	const	std::vector<VirtualServer *> &getVirtualServer() const;
 
+	sockaddr_in		getAddress() const;
+	const char 		*getHost() const;
+	int				getPort() const;
+
 };
+
+std::ostream &operator<<(std::ostream &os, const ListenSocket &ls);

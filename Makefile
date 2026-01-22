@@ -42,6 +42,7 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/DefaultTypeDirective.cpp				\
 							src/directives/AutoindexExactSizeDirective.cpp		\
 							src/directives/ErrorPageDirective.cpp				\
+							src/directives/IdleTimeoutDirective.cpp				\
 							src/directives/ClientBodyTempPathDirective.cpp		\
 							src/directives/RewriteDirective.cpp					\
 							src/directives/AutoindexFormatDirective.cpp			\

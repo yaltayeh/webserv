@@ -23,18 +23,25 @@ private:
 	int		_isRequestRead;
 	int		_isResponseSent;
 
-	std::chrono::system_clock::time_point expiryDate;
+	// Timeout tracking: when this connection should be closed if inactive
+	time_t _expiryDate;
 
 public:
 
 	ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen);
 	~ClientSocket();
 
-	int 			handleEvent(EventLoop *el);
-	sockaddr_in		getAddress();
-	const char 		*getHost();
+	int 		handleEvent(EventLoop *el);
+	sockaddr_in		getAddress() const;
 	void			WriteToBuffer(char *buf, size_t len);
+	const char 		*getHost() const;
+	int				getPort() const;
 	bool			handleRead();
 	bool			handleWrite();
 
+	// Timeout management
+	time_t			getExpiryDate() const { return _expiryDate; }
+	void			setExpiryDate(time_t expiry) { _expiryDate = expiry; }
 };
+
+std::ostream &operator<<(std::ostream &os, const ClientSocket &client);

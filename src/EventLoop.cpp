@@ -7,14 +7,16 @@
 #include <fcntl.h>
 #include "EventLoop.hpp"
 #include "IOEventHandler.hpp"
+#include "StreamSocket.hpp"
 #include <chrono>
 
 /**
  * Constructor: Initialize event loop with configuration
  * _eventFd is set to -1 (invalid) until run() creates the epoll/kqueue fd
+ * Initializes IndexedQueue with estimated capacity for 1024 concurrent connections
  */
 EventLoop::EventLoop(const GlobalConfig &config)
-	: _config(config), _eventFd(-1)
+	: _config(config), _eventFd(-1), _clientQueue(1024)
 {
 	ListenSocket *socket = NULL;
 	VirtualServer *virtualServer = NULL;
@@ -91,14 +93,85 @@ EventLoop::~EventLoop()
 	_listeningSockets.clear();
 }
 
-void EventLoop::addToQueue(ClientSocket *client)
+/**
+ * Mark client as active by updating its position in the queue
+ * If client exists: moves to back (most recent activity)
+ * If new: adds to back
+ * O(1) operation using IndexedQueue
+ */
+void EventLoop::markClientActive(ClientSocket *client)
 {
-	(void)client;
+	if (!client)
+		return;
+
+	// Update expiry date: current time + timeout
+	client->setExpiryDate(time(NULL) + _config.http.idle_timeout);
+
+	// O(1): Push to back (or move to back if already exists)
+	// Parameters: (key, data) where key=fd, data=ClientSocket*
+	_clientQueue.push(client->getSocketfd(), client);
 }
 
-void EventLoop::removeFromQueue(ClientSocket *client)
+/**
+ * Remove client from activity queue
+ * Called by ClientSocket::cleanUp()
+ */
+void EventLoop::removeClient(ClientSocket *client)
 {
-	(void)client;
+	if (!client)
+		return;
+	
+	_clientQueue.remove(client->getSocketfd());
+}
+
+/**
+ * Request to close a client connection (EventLoop is the owner)
+ * Removes from queue, deletes events, and frees memory
+ * This is the ONLY way to delete a ClientSocket
+ */
+void EventLoop::clientDisconnect(ClientSocket *client)
+{
+	if (!client)
+		return;
+
+	std::cout << *client << " Closing client " << std::endl;
+
+	// Remove from activity queue (O(1) average)
+	_clientQueue.remove(client->getSocketfd());
+
+	// Remove from event monitoring
+	deleteEvent(client->getSocketfd(), IO_READ, client);
+	deleteEvent(client->getSocketfd(), IO_WRITE, client);
+
+	// Delete the client (EventLoop is the owner)
+	delete client;
+}
+
+/**
+ * Check for timed-out clients and close them
+ * Front of queue = oldest (least recently active) connection
+ * O(1) per timeout check, stops when we hit a non-expired connection
+ */
+void EventLoop::checkClientTimeouts()
+{
+	time_t now = time(NULL);
+
+	// Check oldest connections first (front of queue)
+	while (!_clientQueue.isEmpty())
+	{
+		ClientSocket *oldest = _clientQueue.front();
+
+		// If oldest is not expired, none of the others are either
+		if (oldest->getExpiryDate() > now)
+			break;
+
+		// Timed out - pop from queue and close
+		std::cout << *oldest << " Timeout: closing idle connection " << std::endl;
+		_clientQueue.pop(); // Remove from front
+
+		// Request closure
+		clientDisconnect(oldest);
+	}
 }
 
 /**
@@ -127,7 +200,7 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 	// Linux: Use epoll to add file descriptor
 	struct epoll_event ev;
 	// Map portable IO flags to epoll flags
-	ev.events = EPOLLET; // Start with edge-triggered flag
+	ev.events = 0; // level-triggered by default
 	if (event & IO_READ)
 		ev.events |= EPOLLIN;
 	if (event & IO_WRITE)
@@ -151,11 +224,15 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 
 	struct kevent kev;
 	EV_SET(&kev, fd, filter,
-		   EV_ADD | EV_ENABLE | EV_CLEAR, // Add, enable, and clear (edge-triggered)
+		   EV_ADD | EV_ENABLE, // Add, enable level-triggered
 		   0, 0, udata);				  // Store Socket* for later retrieval
 
 	if (kevent(_eventFd, &kev, 1, NULL, 0, NULL) == -1)
-		perror("kevent ADD");
+	{
+		std::cerr << "Error adding event for fd " << fd << ": "
+				  << strerror(errno) << std::endl;
+		return -1;
+	}
 #endif
 
 	if (event == IO_READ)
@@ -280,11 +357,13 @@ void EventLoop::run()
 	// Infinite event loop
 	while (1)
 	{
-		// const auto now = std::chrono::system_clock::now();
+		// Check for timed-out clients before waiting for new events
+		checkClientTimeouts();
+
 #if defined(__linux__)
-		// Linux: Wait for events (blocks until something happens)
+		// Linux: Wait for events with timeout for periodic cleanup
 		// Returns number of triggered events
-		int n = epoll_wait(_eventFd, events, maxevents, -1); // -1 = wait forever
+		int n = epoll_wait(_eventFd, events, maxevents, 1000); // 1 second timeout
 
 		if (n == -1)
 		{
@@ -295,9 +374,12 @@ void EventLoop::run()
 		}
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-		// macOS/BSD: Wait for events (blocks until something happens)
+		// macOS/BSD: Wait for events with timeout for periodic cleanup
 		// Returns number of triggered events
-		int n = kevent(_eventFd, NULL, 0, events, maxevents, NULL); // NULL = wait forever
+		struct timespec timeout;
+		timeout.tv_sec = 1; // 1 second timeout
+		timeout.tv_nsec = 0;
+		int n = kevent(_eventFd, NULL, 0, events, maxevents, &timeout);
 
 		if (n == -1)
 		{
