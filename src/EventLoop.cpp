@@ -310,7 +310,7 @@ int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
  *      * Listen socket → accept new connections
  *      * Client socket read → receive HTTP request
  *      * Client socket write → send HTTP response
- * 4. Use edge-triggered I/O for efficiency
+ * 4. Use level-triggered I/O to avoid missing events
  */
 void EventLoop::run()
 {

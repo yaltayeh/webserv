@@ -2,13 +2,17 @@
 #include "Constants.hpp"
 #include "Utils.hpp"
 #include <sstream>
+#include <unistd.h>
 
 namespace libhttp {
 
 	FileResponse::FileResponse()
 		: _statusCode(200), _headers(), _fd(-1) {}
 
-	FileResponse::~FileResponse() {}
+	FileResponse::~FileResponse() 
+	{
+		close(_fd);
+	}
 
 	// Setters
 	void FileResponse::setStatus(int statusCode) {

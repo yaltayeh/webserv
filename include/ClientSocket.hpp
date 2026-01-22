@@ -16,13 +16,11 @@ private:
 
 	const sockaddr_in		_addr;
 	const ListenSocket 		*_listenSocket;
-
-	// From ConnectionManager (struct Connection)
-	int					_file_fd;
+	
 	std::string			_write_buffer;
 	libhttp::Parser 	*_parser;
-
-	int		_isResponseSent;
+	
+	libhttp::Response	*_response;
 
 	// // Timeout tracking: when this connection should be closed if inactive
 	time_t _expiryDate;
