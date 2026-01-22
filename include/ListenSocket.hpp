@@ -29,6 +29,6 @@ public:
 
 	int 	handleEvent(EventLoop *el);
 	void    addVirtualServer(VirtualServer *virtualServer);
-	const	std::vector<VirtualServer *> &getVirtualServer() const;
+	const	std::vector<VirtualServer *> &getVirtualServers() const;
 
 };

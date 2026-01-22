@@ -1,5 +1,6 @@
 #include "../include/Parser.hpp"
 #include "../include/Utils.hpp"
+#include <StringUtils.hpp>  // from libutils (utils:: namespace)
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -9,14 +10,6 @@
 #include <unistd.h>
 // TODO: Your server must be compatible with standard web browsers of your choice.
 namespace libhttp {
-
-	Parser::Parser() : 	_state(REQUEST_LINE),
-						_buffer(""),
-						_expectedBodyLength(0),
-						_receivedBodyLength(0),
-						_maxBodySize(1024 * 1024), // Default 1MB
-						_tempPath("client_body_temp"),
-						_usesTempFile(false) {}
 	
 	Parser::Parser(size_t maxBodySize, const std::string& tempPath) :
 						_state(REQUEST_LINE),
@@ -40,30 +33,28 @@ namespace libhttp {
 	
 	//// //// parsing functions
 	// int 0 -> success, 1 -> incomplete, -1 -> error
-	int Parser::parse(const char* partial_request, size_t size) {
+	State Parser::parse(const char* partial_request, size_t size) {
 		if (_state == COMPLETE || _state == ERROR)
-			return (_state == COMPLETE) ? 0 : -1;
+			return _state;
 
 		_buffer.append(partial_request, size);
 
 		if (_state == REQUEST_LINE) {
 			if (processRequestLine() != 0)
-				return -1;
+				return ERROR;
 		}
 
 		if (_state == HEADERS) {
 			if (processHeaders() != 0)
-				return -1;
+				return ERROR;
 		}
 
 		if (_state == BODY) {
 			if (processBody() != 0)
-				return -1;
+				return ERROR;
 		}
 
-		if (_state == COMPLETE)
-			return 0; // completed
-		return 1; // incomplete
+		return _state;
 	}
 
 	int Parser::processRequestLine() {
@@ -76,15 +67,29 @@ namespace libhttp {
 			// parse method, uri, version with spilt
 			std::vector<std::string> request_line_parts = split(request_line, ' ');
 
-			if (request_line_parts.size() != 3 
-				// || request_line_parts[2] != HTTP_1_0
-				)
-				{ _state = ERROR; return -1; }
-			_request.setMethod(stringToMethod(request_line_parts[0]));
-			_request.setUri(request_line_parts[1]);
+		if (request_line_parts.size() != 3 
+			// || request_line_parts[2] != HTTP_1_0
+			)
+			{ _state = ERROR; return -1; }
+		_request.setMethod(stringToMethod(request_line_parts[0]));
+		
+		// Decode URI - split path and query string first
+		std::string uri = request_line_parts[1];
+		std::string path, query;
+		size_t query_pos = uri.find('?');
+		if (query_pos != std::string::npos) {
+			path = uri.substr(0, query_pos);
+			query = uri.substr(query_pos); // includes the '?'
+		} else {
+			path = uri;
+		}
+		
+		// Decode only the path part, keep query string as-is
+		std::string decoded_path = utils::urlDecode(path);
+		_request.setUri(decoded_path + query);
 
-			if (_request.getMethod() == INVALID)
-				{ _state = ERROR; return -1; }
+		if (_request.getMethod() == INVALID)
+			{ _state = ERROR; return -1; }
 
 			_state = HEADERS;
 		}
@@ -139,6 +144,8 @@ namespace libhttp {
 			_state = COMPLETE;
 			return 0;
 		}
+
+		if (_maxBodySize )
 		
 		// Determine if we need to use temp file for this body
 		// Use temp file if body will exceed max size OR if we already started using one
@@ -189,7 +196,7 @@ namespace libhttp {
 	// Getters
 	bool Parser::isComplete() const { return _state == COMPLETE; }
 	bool Parser::isError() const { return _state == ERROR; }
-	Request Parser::getRequest() const { return _request; }
+	const Request &Parser::getRequest() const { return _request; }
 
 	// Temp file helpers
 	void Parser::createTempFile() {
@@ -229,4 +236,17 @@ namespace libhttp {
 		}
 	}
 
+}
+
+std::ostream& operator<<(std::ostream& os, libhttp::State s) {
+    switch (s) {
+        case libhttp::REQUEST_LINE: return os << "REQUEST_LINE";
+        case libhttp::HEADERS: return os << "HEADERS";
+        case libhttp::BODY: return os << "BODY";
+        case libhttp::COMPLETE: return os << "COMPLETE";
+        case libhttp::ERROR: return os << "ERROR";
+        case libhttp::CLOSED: return os << "CLOSED";
+        case libhttp::BODY_EXCEEDED_MAX_SIZE: return os << "BODY_EXCEEDED_MAX_SIZE";
+        default: return os << "UNKNOWN";
+    }
 }

@@ -3,6 +3,7 @@
 #include "libdir/include/Parser.hpp"
 #include "EventLoop.hpp"
 #include "Parser.hpp"
+#include "routing/RoutingInit.hpp"
 
 int main(int argc, const char *argv[], const char *envp[])
 {
@@ -19,12 +20,19 @@ int main(int argc, const char *argv[], const char *envp[])
 	{
 		Directive::Parser::loadConfigFile(argv[1], config, envp);
 
+		// Initialize routing system before starting event loop
+		routing::initializeRouting();
+
 		EventLoop loop(config);
 		loop.run();
+
+		// Cleanup routing when done
+		routing::cleanupRouting();
 	}
 	catch (const std::exception &e)
 	{
 		std::cerr << "Error: " << e.what() << std::endl;
+		routing::cleanupRouting(); // Cleanup even on error
 		return 2;
 	}
 	return 0;

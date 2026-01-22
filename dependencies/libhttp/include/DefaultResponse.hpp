@@ -2,17 +2,17 @@
 
 #include <string>
 #include <map>
+#include <vector>
 #include "Response.hpp"
 #include "Constants.hpp"
 
 namespace libhttp {
 
-    class StaticResponse: public Response {
+    class DefaultResponse: public Response {
     public:
-        StaticResponse();
-        StaticResponse(const StaticResponse& other);
-        StaticResponse& operator=(const StaticResponse& other);
-        ~StaticResponse();
+        DefaultResponse();
+        DefaultResponse(int statusCode);
+        ~DefaultResponse();
 
 		// Setters
         void setStatus(int statusCode);
@@ -24,9 +24,12 @@ namespace libhttp {
 		std::multimap<std::string, std::string> getHeaders() const;
 		std::string getBody() const;
 
-		// Helper to convert StaticResponse to string
 		std::string toString() const;
-		std::string toString(bool includeBody) const;		
+
+		// Helper methods for generating responses
+		void setDefaultPage(int status_code);
+		void setAutoindexPage(const std::string& directory_path, const std::string& uri);
+
     private:
         int _statusCode;
         std::multimap<std::string, std::string> _headers;
@@ -36,4 +39,4 @@ namespace libhttp {
 }
 
 // Stream insertion operator
-std::ostream &operator<<(std::ostream &os, const libhttp::StaticResponse &StaticResponse);
+std::ostream &operator<<(std::ostream &os, const libhttp::DefaultResponse &response);
