@@ -47,6 +47,10 @@ class HTTPRequest:
         self.headers = headers or {}
         self.data = data
         self.http_version = http_version
+        self.concurrent = False  # Whether this is part of concurrent requests
+        self.concurrent_group: Optional[int] = (
+            None  # ID to group concurrent requests together
+        )
 
     def __repr__(self):
         return f"HTTPRequest({self.method} {self.path})"
@@ -84,10 +88,14 @@ class HTTPRequestParser:
                 if isinstance(node, ast.Call):
                     if isinstance(node.func, ast.Attribute):
                         method_name = node.func.attr
-                        if method_name in ["get", "post", "put", "delete"]:
+                        if method_name in ["get", "post", "put", "delete", "head"]:
                             request = self._extract_request(method_name, node)
                             if request:
                                 self.requests.append(request)
+                        # Detect concurrent_get calls
+                        elif method_name == "concurrent_get":
+                            concurrent_requests = self._extract_concurrent_get(node)
+                            self.requests.extend(concurrent_requests)
 
             return self.requests
         except Exception as e:
@@ -143,6 +151,36 @@ class HTTPRequestParser:
                 result[key_str] = value_str
             return result
         return None
+
+    def _extract_concurrent_get(self, node: ast.Call) -> List[HTTPRequest]:
+        """Extract concurrent GET requests from concurrent_get() call."""
+        requests = []
+        try:
+            # concurrent_get() first argument is a list of URLs
+            if node.args and isinstance(node.args[0], ast.List):
+                urls_list = node.args[0]
+                for idx, url_node in enumerate(urls_list.elts):
+                    url = self._extract_arg_value(url_node)
+                    # Extract headers and http_version from keywords if present
+                    headers = None
+                    http_version = "1.0"
+                    for keyword in node.keywords:
+                        if keyword.arg == "headers":
+                            headers = self._extract_dict_value(keyword.value)
+                        elif keyword.arg == "http_version":
+                            http_version = self._extract_arg_value(keyword.value)
+
+                    # Mark as concurrent request in the path
+                    request = HTTPRequest("GET", url, headers, None, http_version)
+                    request.concurrent = True
+                    request.concurrent_group = id(
+                        node
+                    )  # Group ID for concurrent requests
+                    requests.append(request)
+        except Exception as e:
+            print(f"Warning: Could not extract concurrent_get requests: {e}")
+
+        return requests
 
 
 class CommandGenerator:
@@ -254,6 +292,86 @@ class CommandGenerator:
 
         return "\n".join(lines)
 
+    def generate_parallel_script(self) -> str:
+        """
+        Generate executable bash script with parallel execution for concurrent requests.
+        Uses background jobs (&) and wait for concurrent groups.
+        """
+        lines = [
+            "#!/bin/bash",
+            f"# Test: {self.test_name}",
+            f"# Description: {self.description}",
+            f"# Port: {self.port}",
+            "#",
+            "# This script executes requests in parallel where appropriate",
+            "",
+            f'echo "=== Test: {self.test_name} (Parallel Execution) ==="',
+            f'echo "Start webserv with: ./build/webserv {self.test_name}/{self.test_name}.conf"',
+            'echo ""',
+            "",
+        ]
+
+        # Group requests by concurrent_group
+        from collections import defaultdict
+
+        concurrent_groups = defaultdict(list)
+        sequential_requests = []
+
+        for idx, request in enumerate(self.requests):
+            if request.concurrent and request.concurrent_group is not None:
+                concurrent_groups[request.concurrent_group].append((idx, request))
+            else:
+                sequential_requests.append((idx, request))
+
+        # Process all requests in order, but handle concurrent groups specially
+        processed_groups = set()
+
+        for idx, request in enumerate(self.requests):
+            # If this is part of a concurrent group and we haven't processed it yet
+            if request.concurrent and request.concurrent_group is not None:
+                if request.concurrent_group not in processed_groups:
+                    processed_groups.add(request.concurrent_group)
+                    group_requests = concurrent_groups[request.concurrent_group]
+
+                    lines.append(
+                        f"# Concurrent group: {len(group_requests)} parallel requests"
+                    )
+                    lines.append('echo ">>> Starting concurrent requests..."')
+
+                    # Launch all requests in the group as background jobs
+                    for req_idx, req in group_requests:
+                        lines.append(
+                            f"# Background request {req_idx + 1}: {req.method} {req.path}"
+                        )
+                        lines.append(self._generate_curl_command(req) + " &")
+
+                    # Wait for all background jobs
+                    lines.append("")
+                    lines.append(
+                        'echo ">>> Waiting for concurrent requests to complete..."'
+                    )
+                    lines.append("wait")
+                    lines.append('echo ">>> Concurrent requests completed"')
+                    lines.append('echo ""')
+                    lines.append('echo "---"')
+                    lines.append('echo ""')
+                    lines.append("")
+
+            # Handle sequential requests
+            elif not request.concurrent:
+                lines.append(
+                    f"# Sequential request {idx + 1}: {request.method} {request.path}"
+                )
+                lines.append(
+                    f'echo ">>> Request {idx + 1}: {request.method} {request.path}"'
+                )
+                lines.append(self._generate_curl_command(request))
+                lines.append('echo ""')
+                lines.append('echo "---"')
+                lines.append('echo ""')
+
+        return "\n".join(lines)
+
 
 class TestExtractor:
     """Main extractor class that orchestrates the extraction process."""
@@ -327,6 +445,14 @@ class TestExtractor:
                 f.write(curl_script)
             os.chmod(curl_path, 0o755)
             print(f"✓ Generated curl commands: {curl_path}")
+
+            # Generate parallel script
+            parallel_script = generator.generate_parallel_script()
+            parallel_path = os.path.join(self.output_dir, ".runme.parallel.sh")
+            with open(parallel_path, "w") as f:
+                f.write(parallel_script)
+            os.chmod(parallel_path, 0o755)
+            print(f"✓ Generated parallel script: {parallel_path}")
 
             telnet_file = generator.generate_telnet_file()
             telnet_path = os.path.join(self.output_dir, ".runme.telnet")
@@ -479,8 +605,9 @@ class TestExtractor:
         print("=" * 60)
         print("To test manually:")
         print(f"1. Start webserv: ./build/webserv {test_name}/{test_name}.conf")
-        print(f"2. Run curl tests: ./{test_name}/.runme.curl")
-        print(f"3. Or use telnet: telnet localhost {port}")
+        print(f"2. Run curl tests (sequential): ./{test_name}/.runme.curl")
+        print(f"3. Run curl tests (parallel): ./{test_name}/.runme.parallel.sh")
+        print(f"4. Or use telnet: telnet localhost {port}")
         print(f"   (Then copy/paste requests from {test_name}/.runme.telnet)")
         print("=" * 60)
 

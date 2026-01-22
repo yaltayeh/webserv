@@ -10,7 +10,7 @@ WEBSERV_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, WEBSERV_PATH)
 
 from luka import logger, assertions
-from luka.utilities import process, network, http
+from luka.utilities import process, network, http, concurrent
 from luka.base_test import BaseTest
 
 TESTS_DIR = os.path.join(WEBSERV_PATH, "luka", "tests")
@@ -73,12 +73,25 @@ def run_test(test_class):
     webserv_process = None
     try:
         # Inject HTTP and assertion methods
-        def get_wrapper(path, headers=None, http_version="1.0"):
+        def get_wrapper(path, headers=None, http_version="1.0", timeout=5):
             url = test_instance.get_url(path)
-            response = http.get(url, headers=headers, http_version=http_version)
+            response = http.get(
+                url, headers=headers, http_version=http_version, timeout=timeout
+            )
             if response is None:
                 raise AssertionError(
                     f"GET request to {url} failed - no response received"
+                )
+            return response
+
+        def head_wrapper(path, headers=None, http_version="1.0", timeout=5):
+            url = test_instance.get_url(path)
+            response = http.head(
+                url, headers=headers, http_version=http_version, timeout=timeout
+            )
+            if response is None:
+                raise AssertionError(
+                    f"HEAD request to {url} failed - no response received"
                 )
             return response
 
@@ -123,11 +136,18 @@ def run_test(test_class):
                 )
 
         test_instance.get = get_wrapper
+        test_instance.head = head_wrapper
         test_instance.post = post_wrapper
         test_instance.delete = delete_wrapper
         test_instance.put = put_wrapper
         test_instance.assert_equal = assert_equal_wrapper
         test_instance.assert_contains = assert_contains_wrapper
+
+        # Inject concurrent request helpers
+        test_instance.concurrent_get = concurrent.make_concurrent_get_helper(http)
+        test_instance.concurrent_requests = concurrent.make_concurrent_requests_helper(
+            http
+        )
 
         # Run test setup
         test_instance.setup()

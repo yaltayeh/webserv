@@ -127,7 +127,7 @@ def send_http10_request(method, url, data=None, headers=None):
 def create_http10_session():
     """
     Create a session object for HTTP/1.0 requests.
-    Returns an object with get(), post(), delete(), and put() methods.
+    Returns an object with get(), post(), delete(), put(), and head() methods.
     """
 
     class HTTP10Session:
@@ -158,5 +158,9 @@ def create_http10_session():
                 headers = headers or {}
                 headers["Content-Type"] = "application/json"
             return send_http10_request("PUT", url, data=data, headers=headers)
+
+        @staticmethod
+        def head(url, headers=None, **kwargs):
+            return send_http10_request("HEAD", url, headers=headers)
 
     return HTTP10Session()
