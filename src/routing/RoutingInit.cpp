@@ -21,7 +21,7 @@ void initializeRouting()
 		// NOTE: Body size is already checked in ClientSocket.cpp:105-112
 		.use(middleware::accessControlCheck, 100)
 		.use(middleware::methodCheck, 90)
-		
+
 		// Content handlers (Priority: 50)
 		.use(middleware::redirectHandler, 50)
 		

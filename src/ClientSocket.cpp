@@ -8,7 +8,7 @@
 #include "StreamSocket.hpp"
 #include <unistd.h>
 
-#define READ_BUFFER_SIZE 128
+#define READ_BUFFER_SIZE 16384
 
 
 
@@ -58,6 +58,7 @@ const char *ClientSocket::getHost()
     return addr_str;
 }
 
+// this is from the stream socket
 void ClientSocket::WriteToBuffer(char *buf, size_t len)
 {
     if (_write_buffer.capacity() <= _write_buffer.size() + len)

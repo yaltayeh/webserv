@@ -142,6 +142,7 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 	}
 
 	// Get file size for Content-Length
+	// TODO: use stat here please
 	off_t file_size = lseek(fd, 0, SEEK_END);
 	lseek(fd, 0, SEEK_SET);
 
