@@ -10,6 +10,7 @@ namespace libhttp {
 		GET,
 		HEAD,
 		POST,
+		PUT,
 		DELETE,
 		INVALID
 	};

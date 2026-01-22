@@ -1,20 +1,15 @@
 #include <iostream>
 #include "VirtualServer.hpp"
-#include "RouteHandler.hpp"
 #include "RegEx.hpp"
+#include "DefaultResponse.hpp"
+#include "routing/RouteHandler.hpp"
 
-VirtualServer::VirtualServer()
-{
-}
+VirtualServer::VirtualServer() { }
 
 VirtualServer::VirtualServer(const ServerConfig &config)
-	: _config(config)
-{
-}
+	: _config(config) { }
 
-VirtualServer::~VirtualServer()
-{
-}
+VirtualServer::~VirtualServer() { }
 
 const ServerConfig &VirtualServer::getConfig() const
 {
@@ -40,12 +35,13 @@ int VirtualServer::checkRequest(const libhttp::Request &r)
 	return 0;
 }
 
-const libhttp::Response &VirtualServer::handleRequest(const libhttp::Request &request) const
+libhttp::Response *VirtualServer::handleRequest(const libhttp::Request &request) const
 {
 	const std::string &uri = request.getUri();
 	const LocationConfig &location = findMatchingLocation(uri);
 
-	return RouteHandler::route(request, location);
+	// Use the new RouteHandler singleton to process the request
+	return routing::RouteHandler::getInstance().process(request, location);
 }
 
 const VirtualServer *VirtualServer::findMatchServer(const std::vector<VirtualServer *> &servers,

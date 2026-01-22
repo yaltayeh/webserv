@@ -5,7 +5,8 @@
 #include "ListenSocket.hpp"
 #include "libhttp/include/Parser.hpp"
 #include "IOEventHandler.hpp"
-#include <chrono>
+// #include <chrono>
+#include <ctime>
 
 class ListenSocket;
 
@@ -17,13 +18,13 @@ private:
 	const ListenSocket 		*_listenSocket;
 
 	// From ConnectionManager (struct Connection)
+	int					_file_fd;
 	std::string			_write_buffer;
 	libhttp::Parser 	*_parser;
 
-	int		_isRequestRead;
 	int		_isResponseSent;
 
-	// Timeout tracking: when this connection should be closed if inactive
+	// // Timeout tracking: when this connection should be closed if inactive
 	time_t _expiryDate;
 
 public:
@@ -36,8 +37,9 @@ public:
 	void			WriteToBuffer(char *buf, size_t len);
 	const char 		*getHost() const;
 	int				getPort() const;
-	bool			handleRead();
-	bool			handleWrite();
+	
+	libhttp::State			handleRead();
+	bool					handleWrite();
 
 	// Timeout management
 	time_t			getExpiryDate() const { return _expiryDate; }

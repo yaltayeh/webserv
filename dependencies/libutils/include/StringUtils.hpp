@@ -39,6 +39,13 @@ std::string toUpper(const std::string& str);
  */
 std::string toLower(const std::string& str);
 
+/**
+ * @brief Decode URL-encoded string (e.g., %20 to space)
+ * @param str URL-encoded string
+ * @return Decoded string
+ */
+std::string urlDecode(const std::string& str);
+
 // ============================================================================
 // Path Utilities
 // ============================================================================

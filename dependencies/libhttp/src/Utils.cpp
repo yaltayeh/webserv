@@ -26,6 +26,7 @@ namespace libhttp {
 		if (methodStr == "GET") return GET;
 		if (methodStr == "HEAD") return HEAD;
 		if (methodStr == "POST") return POST;
+		if (methodStr == "PUT") return PUT;
 		if (methodStr == "DELETE") return DELETE;
 		return INVALID; // Default to INVALID for unknown methods
 	}
@@ -35,6 +36,7 @@ namespace libhttp {
 			case GET: return "GET";
 			case HEAD: return "HEAD";
 			case POST: return "POST";
+			case PUT: return "PUT";
 			case DELETE: return "DELETE";
 			default: return "INVALID";
 		}

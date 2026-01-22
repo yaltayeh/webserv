@@ -3,6 +3,7 @@
 #include "libdir/include/Parser.hpp"
 #include "EventLoop.hpp"
 #include "Parser.hpp"
+#include "routing/RoutingInit.hpp"
 
 int main(int argc, const char *argv[], const char *envp[])
 {
@@ -19,12 +20,19 @@ int main(int argc, const char *argv[], const char *envp[])
 	{
 		Directive::Parser::loadConfigFile(argv[1], config, envp);
 
+		// Initialize routing system before starting event loop
+		routing::initializeRouting();
+
 		EventLoop loop(config);
 		loop.run();
+
+		// Cleanup routing when done
+		routing::cleanupRouting();
 	}
 	catch (const std::exception &e)
 	{
 		std::cerr << "Error: " << e.what() << std::endl;
+		routing::cleanupRouting(); // Cleanup even on error
 		return 2;
 	}
 	return 0;
@@ -37,3 +45,22 @@ int main(int argc, const char *argv[], const char *envp[])
 
 // TODO: You must provide configuration files and default files to test and demonstrate that
 // 	every feature works during the evaluation.
+
+
+
+
+/*
+	yacob
+	- worker_connections
+	- idle_timeout
+	- the queue system.
+	- the level trigger/trigger mode.
+	- the handleDistroy for IOEventHandler.
+
+	ahmed
+	- getChunk implementation
+	- checkChunk implementation
+	- HEAD method implementation
+	- fix luka extract test case
+	- signale to stop the server gracefully
+*/

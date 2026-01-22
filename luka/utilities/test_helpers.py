@@ -2,10 +2,70 @@
 Helper utilities for creating test resources.
 """
 
+import os
+import random
+
+
+class FileBuilder:
+    """Helper class for building test files."""
+
+    @staticmethod
+    def create_large_file(filepath: str, size_mb: int, content_type: str = "random"):
+        """
+        Create a large file for testing downloads.
+
+        Args:
+            filepath: Path where file will be created
+            size_mb: Size of file in megabytes
+            content_type: Type of content ('random', 'text', 'sequential')
+                - 'random': Random binary data (not compressible)
+                - 'text': Repeated text pattern (compressible)
+                - 'sequential': Sequential bytes 0x00-0xFF repeated
+        """
+        chunk_size = 1024 * 1024  # 1 MB chunks
+        bytes_written = 0
+        target_bytes = size_mb * 1024 * 1024
+
+        with open(filepath, "wb") as f:
+            while bytes_written < target_bytes:
+                # Determine how much to write this iteration
+                remaining = target_bytes - bytes_written
+                this_chunk_size = min(chunk_size, remaining)
+
+                # Generate content based on type
+                if content_type == "random":
+                    # Random bytes - not compressible
+                    chunk = bytes(random.getrandbits(8) for _ in range(this_chunk_size))
+                elif content_type == "text":
+                    # Repeated text pattern - compressible
+                    pattern = b"This is test data for webserv download testing. " * 100
+                    chunk = (pattern * (this_chunk_size // len(pattern) + 1))[
+                        :this_chunk_size
+                    ]
+                elif content_type == "sequential":
+                    # Sequential bytes - somewhat compressible
+                    chunk = bytes((i % 256) for i in range(this_chunk_size))
+                else:
+                    raise ValueError(f"Unknown content_type: {content_type}")
+
+                f.write(chunk)
+                bytes_written += len(chunk)
+
+    @staticmethod
+    def create_binary_file(filepath: str, size_mb: int):
+        """
+        Create a binary file with random data (alias for create_large_file with random content).
+
+        Args:
+            filepath: Path where file will be created
+            size_mb: Size of file in megabytes
+        """
+        FileBuilder.create_large_file(filepath, size_mb, content_type="random")
+
 
 class HTMLBuilder:
     """Helper class for building HTML content."""
-    
+
     @staticmethod
     def simple_page(title: str, body: str) -> str:
         """Create a simple HTML page."""
@@ -18,7 +78,7 @@ class HTMLBuilder:
     {body}
 </body>
 </html>"""
-    
+
     @staticmethod
     def index_page(heading: str = "Welcome") -> str:
         """Create a basic index page."""
@@ -32,7 +92,7 @@ class HTMLBuilder:
     <p>This is the index page.</p>
 </body>
 </html>"""
-    
+
     @staticmethod
     def error_page(code: int, message: str) -> str:
         """Create an error page."""
@@ -46,7 +106,7 @@ class HTMLBuilder:
     <p>{message}</p>
 </body>
 </html>"""
-    
+
     @staticmethod
     def form_page(action: str = "/upload", method: str = "POST") -> str:
         """Create a page with a file upload form."""
@@ -67,7 +127,7 @@ class HTMLBuilder:
 
 class CGIBuilder:
     """Helper class for building CGI scripts."""
-    
+
     @staticmethod
     def python_hello_world() -> str:
         """Create a simple Python CGI script."""
@@ -80,7 +140,7 @@ print("<html><body>")
 print("<h1>Hello from CGI!</h1>")
 print("</body></html>")
 """
-    
+
     @staticmethod
     def python_echo_env() -> str:
         """Create a Python CGI script that echoes environment variables."""
@@ -98,7 +158,7 @@ for key in sorted(os.environ.keys()):
 print("</ul>")
 print("</body></html>")
 """
-    
+
     @staticmethod
     def python_query_string() -> str:
         """Create a Python CGI script that processes query strings."""
@@ -124,7 +184,7 @@ else:
     print("<p>No query parameters found.</p>")
 print("</body></html>")
 """
-    
+
     @staticmethod
     def python_post_data() -> str:
         """Create a Python CGI script that processes POST data."""
@@ -151,7 +211,35 @@ else:
     print("<p>No POST data found.</p>")
 print("</body></html>")
 """
-    
+
+    @staticmethod
+    def python_sleep(seconds: int) -> str:
+        """
+        Create a Python CGI script that sleeps for specified seconds.
+        Useful for testing server behavior under slow CGI execution.
+
+        Args:
+            seconds: Number of seconds to sleep
+
+        Returns:
+            CGI script content
+        """
+        return f"""#!/usr/bin/env python3
+import sys
+import time
+
+# Sleep for {seconds} seconds to simulate slow processing
+time.sleep({seconds})
+
+print("Content-Type: text/html")
+print()
+print("<html><body>")
+print("<h1>Slow CGI Response</h1>")
+print(f"<p>This CGI script slept for {seconds} seconds before responding.</p>")
+print(f"<p>Current time: {{time.strftime('%Y-%m-%d %H:%M:%S')}}</p>")
+print("</body></html>")
+"""
+
     @staticmethod
     def bash_hello_world() -> str:
         """Create a simple Bash CGI script."""
@@ -163,7 +251,7 @@ echo "<html><body>"
 echo "<h1>Hello from Bash CGI!</h1>"
 echo "</body></html>"
 """
-    
+
     @staticmethod
     def php_hello_world() -> str:
         """Create a simple PHP script (for FastCGI testing)."""
@@ -181,7 +269,7 @@ header("Content-Type: text/html");
 
 class ConfigBuilder:
     """Helper class for building configuration snippets."""
-    
+
     @staticmethod
     def basic_server(port: int, root: str, server_name: str = "localhost") -> str:
         """Create a basic server configuration."""
@@ -197,9 +285,11 @@ class ConfigBuilder:
         }}
     }}
 }}"""
-    
+
     @staticmethod
-    def server_with_autoindex(port: int, root: str, server_name: str = "localhost") -> str:
+    def server_with_autoindex(
+        port: int, root: str, server_name: str = "localhost"
+    ) -> str:
         """Create a server configuration with autoindex enabled."""
         return f"""http {{
     server {{
@@ -215,10 +305,11 @@ class ConfigBuilder:
         }}
     }}
 }}"""
-    
+
     @staticmethod
-    def server_with_cgi(port: int, root: str, cgi_dir: str, 
-                       server_name: str = "localhost") -> str:
+    def server_with_cgi(
+        port: int, root: str, cgi_dir: str, server_name: str = "localhost"
+    ) -> str:
         """Create a server configuration with CGI support."""
         return f"""http {{
     server {{
@@ -238,10 +329,11 @@ class ConfigBuilder:
         }}
     }}
 }}"""
-    
+
     @staticmethod
-    def server_with_upload(port: int, root: str, upload_dir: str,
-                          server_name: str = "localhost") -> str:
+    def server_with_upload(
+        port: int, root: str, upload_dir: str, server_name: str = "localhost"
+    ) -> str:
         """Create a server configuration with upload support."""
         return f"""http {{
     server {{
@@ -262,11 +354,11 @@ class ConfigBuilder:
         }}
     }}
 }}"""
-    
+
     @staticmethod
-    def server_with_error_pages(port: int, root: str, 
-                                error_pages: dict,
-                                server_name: str = "localhost") -> str:
+    def server_with_error_pages(
+        port: int, root: str, error_pages: dict, server_name: str = "localhost"
+    ) -> str:
         """Create a server configuration with custom error pages."""
         error_page_directives = "\n        ".join(
             f"error_page {code} {page};" for code, page in error_pages.items()

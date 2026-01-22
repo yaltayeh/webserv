@@ -209,8 +209,24 @@ class BaseTest(ABC):
         return f"http://localhost:{self.port}{path}"
 
     # HTTP helper methods (will be injected by runner)
-    def get(self, path: str, headers: Optional[Dict] = None, http_version: str = "1.0"):
+    def get(
+        self,
+        path: str,
+        headers: Optional[Dict] = None,
+        http_version: str = "1.0",
+        timeout: int = 5,
+    ):
         """Make a GET request (implemented by runner)."""
+        raise NotImplementedError("HTTP methods are injected by runner")
+
+    def head(
+        self,
+        path: str,
+        headers: Optional[Dict] = None,
+        http_version: str = "1.0",
+        timeout: int = 5,
+    ):
+        """Make a HEAD request (implemented by runner)."""
         raise NotImplementedError("HTTP methods are injected by runner")
 
     def post(
@@ -240,6 +256,23 @@ class BaseTest(ABC):
     ):
         """Make a PUT request (implemented by runner)."""
         raise NotImplementedError("HTTP methods are injected by runner")
+
+    def concurrent_get(
+        self,
+        urls: List[str],
+        headers: Optional[Dict] = None,
+        http_version: str = "1.0",
+        max_workers: Optional[int] = None,
+        timeout: int = 5,
+    ):
+        """Make multiple concurrent GET requests (implemented by runner)."""
+        raise NotImplementedError("Concurrent methods are injected by runner")
+
+    def concurrent_requests(
+        self, request_list: List[Dict], max_workers: Optional[int] = None
+    ):
+        """Make multiple concurrent HTTP requests with different methods (implemented by runner)."""
+        raise NotImplementedError("Concurrent methods are injected by runner")
 
     def assert_equal(self, expected, actual, message: str = ""):
         """Assert two values are equal (implemented by runner)."""

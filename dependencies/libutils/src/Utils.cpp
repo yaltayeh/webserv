@@ -48,6 +48,56 @@ std::string toLower(const std::string& str) {
     return result;
 }
 
+std::string urlDecode(const std::string& str) {
+    std::string result;
+    result.reserve(str.length());
+    
+    for (size_t i = 0; i < str.length(); ++i) {
+        if (str[i] == '%' && i + 2 < str.length()) {
+            // Check if next two characters are valid hex digits
+            char hex1 = str[i + 1];
+            char hex2 = str[i + 2];
+            
+            if (isxdigit(static_cast<unsigned char>(hex1)) && 
+                isxdigit(static_cast<unsigned char>(hex2))) {
+                // Convert hex to decimal
+                int value = 0;
+                
+                // First hex digit
+                if (hex1 >= '0' && hex1 <= '9') {
+                    value = (hex1 - '0') * 16;
+                } else if (hex1 >= 'a' && hex1 <= 'f') {
+                    value = (hex1 - 'a' + 10) * 16;
+                } else if (hex1 >= 'A' && hex1 <= 'F') {
+                    value = (hex1 - 'A' + 10) * 16;
+                }
+                
+                // Second hex digit
+                if (hex2 >= '0' && hex2 <= '9') {
+                    value += (hex2 - '0');
+                } else if (hex2 >= 'a' && hex2 <= 'f') {
+                    value += (hex2 - 'a' + 10);
+                } else if (hex2 >= 'A' && hex2 <= 'F') {
+                    value += (hex2 - 'A' + 10);
+                }
+                
+                result += static_cast<char>(value);
+                i += 2; // Skip the two hex digits
+            } else {
+                // Not valid hex, keep the % as-is
+                result += str[i];
+            }
+        } else if (str[i] == '+') {
+            // Convert + to space (common in query strings)
+            result += ' ';
+        } else {
+            result += str[i];
+        }
+    }
+    
+    return result;
+}
+
 // ============================================================================
 // Path Utilities
 // ============================================================================
