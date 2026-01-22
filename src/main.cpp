@@ -45,3 +45,22 @@ int main(int argc, const char *argv[], const char *envp[])
 
 // TODO: You must provide configuration files and default files to test and demonstrate that
 // 	every feature works during the evaluation.
+
+
+
+
+/*
+	yacob
+	- worker_connections
+	- idle_timeout
+	- the queue system.
+	- the level trigger/trigger mode.
+	- the handleDistroy for IOEventHandler.
+
+	ahmed
+	- getChunk implementation
+	- checkChunk implementation
+	- HEAD method implementation
+	- fix luka extract test case
+	- signale to stop the server gracefully
+*/
