@@ -7,13 +7,15 @@ StreamSocket::StreamSocket(int fd, ClientSocket *clientSocket)
 
 StreamSocket::~StreamSocket() {}
 
-int StreamSocket::handleEvent(EventLoop *el)
+IOEventState StreamSocket::handleEvent(EventLoop *el)
 {
+	(void)el;
+	
+	// --- Sub-case A: StreamSocket Disconnected ---
 	if (events & (IO_ERROR | IO_HUP))
 	{
-		el->deleteEvent(_socketfd, IO_READ, this);
-		el->deleteEvent(_socketfd, IO_WRITE, this);
-		delete this;
+		std::cout << "StreamSocket for client " << *_clientSocket << " disconnected" << std::endl;
+		return IO_EVENT_CLOSE;
 	}
 	if (events & IO_READ)
 	{
@@ -21,9 +23,14 @@ int StreamSocket::handleEvent(EventLoop *el)
 
 		ssize_t nbytes = recv(buf, sizeof(buf));
 		if (nbytes <= 0)
-			return (1);
+			return IO_EVENT_CLOSE;
 		_clientSocket->WriteToBuffer(buf, nbytes);
-		el->addEvent(_clientSocket->getSocketfd(), IO_WRITE, _clientSocket);
 	}
-	return 0;
+	return IO_EVENT_CONTINUE;
+}
+
+void StreamSocket::handleDestroy(EventLoop *el)
+{
+	el->deleteEvent(_socketfd, IO_READ, this);
+	el->deleteEvent(_socketfd, IO_WRITE, this);
 }

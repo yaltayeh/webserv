@@ -43,7 +43,7 @@ ListenSocket::ListenSocket(uint32_t ip, uint16_t port)
 
 ListenSocket::~ListenSocket() { }
 
-int ListenSocket::handleEvent(EventLoop *el)
+IOEventState ListenSocket::handleEvent(EventLoop *el)
 {
 	// Accept ALL pending connections (important for edge-triggered mode)
 	// We must accept until EAGAIN, otherwise we might miss connections
@@ -55,18 +55,24 @@ int ListenSocket::handleEvent(EventLoop *el)
 	{
 		// EAGAIN/EWOULDBLOCK means no more connections (normal)
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return 0;
+			return IO_EVENT_CONTINUE;
 
 		std::cerr << "Error: accept() failed: "
 					<< strerror(errno) << std::endl;
-		return 1;
+		return IO_EVENT_CLOSE;
 	}
 	el->markClientActive(clientSocket);
 	// Add new client to event loop (start monitoring for HTTP request)
 	el->addEvent(clientSocket->getSocketfd(), IO_READ, clientSocket);
 	el->addEvent(clientSocket->getSocketfd(), IO_WRITE, clientSocket);
 	std::cout << *clientSocket << " add client " << std::endl;
-	return 0;
+	return IO_EVENT_CONTINUE;
+}
+
+void ListenSocket::handleDestroy(EventLoop *el)
+{
+	el->deleteEvent(_socketfd, IO_READ, this);
+	el->deleteEvent(_socketfd, IO_WRITE, this);
 }
 
 int ListenSocket::_setOptions()

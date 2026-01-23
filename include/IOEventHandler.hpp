@@ -22,6 +22,11 @@ enum IOEventFlags {
     IO_HUP   = 1 << 3
 };
 
+enum IOEventState {
+    IO_EVENT_CONTINUE = 0,
+    IO_EVENT_CLOSE    = 1,
+};
+
 // Convert Linux epoll events to portable flags
 #if defined(__linux__)
 inline uint32_t mapEpollToIOFlags(uint32_t epollEvents) {
@@ -75,5 +80,7 @@ struct IOEventHandler
 	virtual ~IOEventHandler() { };
 	
 	// Handle the triggered I/O event (polymorphic dispatcher)
-	virtual int handleEvent(EventLoop *el) = 0;
+	virtual IOEventState handleEvent(EventLoop *el) = 0;
+    // Handle cleanup when the handler is being destroyed
+    virtual void handleDestroy(EventLoop *el) = 0;
 };

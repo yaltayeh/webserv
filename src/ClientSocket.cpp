@@ -40,16 +40,13 @@ void ClientSocket::WriteToBuffer(char *buf, size_t len)
     _write_buffer.append(buf, len);
 }
 
-int ClientSocket::handleEvent(EventLoop *el)
+IOEventState ClientSocket::handleEvent(EventLoop *el)
 {
     // --- Sub-case A: Client Disconnected ---
     if (events & (IO_ERROR | IO_HUP))
     {
-        std::cout << "client [" << getHost() << "]: disconnected" << std::endl;
-
-        // Clean up: remove from event loop and free memory
-        el->clientDisconnect(this);
-        return 0;
+        std::cout << *this << " disconnected" << std::endl;
+        return IO_EVENT_CLOSE;
     }
 
     // --- Sub-case B: Data Ready to Read (HTTP Request) ---
@@ -59,33 +56,23 @@ int ClientSocket::handleEvent(EventLoop *el)
         // std::cout << "Parser state after read: " << state << std::endl;
 
         if (state == libhttp::CLOSED)
-        {
-            el->clientDisconnect(this);
-            return (0);
-        }
+            return IO_EVENT_CLOSE;
 
         if (state == libhttp::BODY_EXCEEDED_MAX_SIZE)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            el->addEvent(_socketfd, IO_WRITE, this);
-
-            libhttp::DefaultResponse def = libhttp::DefaultResponse(413);
-            _write_buffer = def.toString();
+            _response = new libhttp::DefaultResponse(413);
         }
 
         if (state == libhttp::ERROR)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            el->addEvent(_socketfd, IO_WRITE, this);
-
-            libhttp::DefaultResponse def = libhttp::DefaultResponse(400);
-            _write_buffer = def.toString();
+            _response = new libhttp::DefaultResponse(400);
         }
 
         if (state == libhttp::COMPLETE)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            el->addEvent(_socketfd, IO_WRITE, this);
 
             const libhttp::Request request = _parser->getRequest();
             const VirtualServer *owner_server = VirtualServer::findMatchServer(
@@ -131,13 +118,16 @@ int ClientSocket::handleEvent(EventLoop *el)
 
         // If entire response has been sent
         if (_write_buffer.empty() && _response && _response->isComplete())
-        {
-            // Clean up: close connection and free memory
-            el->clientDisconnect(this);
-            return 0;
-        }
+            return IO_EVENT_CLOSE;
     }
-    return 0;
+    return IO_EVENT_CONTINUE;
+}
+
+void ClientSocket::handleDestroy(EventLoop *el)
+{
+    el->deleteEvent(_socketfd, IO_READ, this);
+    el->deleteEvent(_socketfd, IO_WRITE, this);
+    el->clientDisconnect(this);
 }
 
 /**
@@ -180,18 +170,18 @@ bool ClientSocket::handleWrite()
     }
 
     if (_write_buffer.empty())
-        return true;
+        return 0;
 
     ssize_t bytes_sent = send(_write_buffer.c_str(), _write_buffer.size());
 
     if (bytes_sent < 0)
     {
         std::cerr << "Error writing to client " << *this << std::endl;
-        return false;
+        return 0;
     }
 
     if (bytes_sent == 0)
-        return true;
+        return 1;
 
     std::cout << "Sent " << bytes_sent << " bytes to client " << *this << std::endl;
 
@@ -202,7 +192,7 @@ bool ClientSocket::handleWrite()
     {
         std::cout << "All data sent to client " << *this << std::endl;
     }
-    return true;
+    return 1;
 }
 
 sockaddr_in ClientSocket::getAddress() const

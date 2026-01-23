@@ -30,18 +30,23 @@ public:
 	ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen);
 	~ClientSocket();
 
-	int 		handleEvent(EventLoop *el);
-	sockaddr_in		getAddress() const;
-	void			WriteToBuffer(char *buf, size_t len);
-	const char 		*getHost() const;
-	int				getPort() const;
-	
+	// I/O Event Handling
+	IOEventState 	handleEvent(EventLoop *el);
+	void			handleDestroy(EventLoop *el);
+
+	// HTTP handling
 	libhttp::State			handleRead();
 	bool					handleWrite();
-
+	void			WriteToBuffer(char *buf, size_t len);
+	
 	// Timeout management
 	time_t			getExpiryDate() const { return _expiryDate; }
 	void			setExpiryDate(time_t expiry) { _expiryDate = expiry; }
+	
+	// Address info
+	const char 		*getHost() const;
+	int				getPort() const;
+	sockaddr_in		getAddress() const;
 };
 
 std::ostream &operator<<(std::ostream &os, const ClientSocket &client);

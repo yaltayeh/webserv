@@ -20,6 +20,6 @@ public:
 	StreamSocket(int fd, ClientSocket* clientSocket);
 	~StreamSocket();
 
-	int		handleEvent(EventLoop *el);
-
+	IOEventState	handleEvent(EventLoop *el);
+	void 		  	handleDestroy(EventLoop *el);
 };

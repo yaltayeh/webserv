@@ -119,7 +119,7 @@ void EventLoop::removeClient(ClientSocket *client)
 {
 	if (!client)
 		return;
-	
+
 	_clientQueue.remove(client->getSocketfd());
 }
 
@@ -224,7 +224,7 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 	struct kevent kev;
 	EV_SET(&kev, fd, filter,
 		   EV_ADD | EV_ENABLE, // Add, enable level-triggered
-		   0, 0, udata);				  // Store Socket* for later retrieval
+		   0, 0, udata);	   // Store Socket* for later retrieval
 
 	if (kevent(_eventFd, &kev, 1, NULL, 0, NULL) == -1)
 	{
@@ -409,8 +409,11 @@ void EventLoop::run()
 				continue;
 			handler->events = mapKqueueToIOFlags(events[i]);
 #endif
-			handler->handleEvent(this);
-
+			IOEventState state = handler->handleEvent(this);
+			if (state == IO_EVENT_CONTINUE)
+				continue;
+			else if (state == IO_EVENT_CLOSE)
+				handler->handleDestroy(this);
 		} // End of event processing loop
 	} // End of infinite while loop
 }

@@ -27,9 +27,11 @@ public:
 	ListenSocket(uint32_t ip, uint16_t port);
 	~ListenSocket();
 
-	int 	handleEvent(EventLoop *el);
-	void    addVirtualServer(VirtualServer *virtualServer);
-	const	std::vector<VirtualServer *> &getVirtualServers() const;
+	IOEventState 	handleEvent(EventLoop *el);
+	void handleDestroy(EventLoop *el);
+
+	void    		addVirtualServer(VirtualServer *virtualServer);
+	const			std::vector<VirtualServer *> &getVirtualServers() const;
 
 	sockaddr_in		getAddress() const;
 	const char 		*getHost() const;
