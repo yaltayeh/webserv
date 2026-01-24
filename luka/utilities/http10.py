@@ -15,7 +15,7 @@ class HTTP10Response:
         return self.status_code < 400
 
 
-def send_http10_request(method, url, data=None, headers=None):
+def send_http10_request(method, url, data=None, headers=None, timeout=5):
     """
     Send a raw HTTP/1.0 request using sockets.
     Returns an HTTP10Response object mimicking requests.Response.
@@ -54,7 +54,7 @@ def send_http10_request(method, url, data=None, headers=None):
 
     # Send request
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(5)
+    sock.settimeout(timeout)
 
     try:
         sock.connect((host, port))
@@ -64,7 +64,8 @@ def send_http10_request(method, url, data=None, headers=None):
         response_data = b""
         while True:
             try:
-                chunk = sock.recv(4096)
+                chunk 
+                # print(chunk)= sock.recv(4096)
                 if not chunk:
                     break
                 response_data += chunk
@@ -141,35 +142,35 @@ def create_http10_session():
 
     class HTTP10Session:
         @staticmethod
-        def get(url, headers=None, **kwargs):
-            return send_http10_request("GET", url, headers=headers)
+        def get(url, headers=None, timeout=5, **kwargs):
+            return send_http10_request("GET", url, headers=headers, timeout=timeout)
 
         @staticmethod
-        def post(url, data=None, json=None, headers=None, **kwargs):
+        def post(url, data=None, json=None, headers=None, timeout=5, **kwargs):
             if json:
                 import json as json_module
 
                 data = json_module.dumps(json)
                 headers = headers or {}
                 headers["Content-Type"] = "application/json"
-            return send_http10_request("POST", url, data=data, headers=headers)
+            return send_http10_request("POST", url, data=data, headers=headers, timeout=timeout)
 
         @staticmethod
-        def delete(url, headers=None, **kwargs):
-            return send_http10_request("DELETE", url, headers=headers)
+        def delete(url, headers=None, timeout=5, **kwargs):
+            return send_http10_request("DELETE", url, headers=headers, timeout=timeout)
 
         @staticmethod
-        def put(url, data=None, json=None, headers=None, **kwargs):
+        def put(url, data=None, json=None, headers=None, timeout=5, **kwargs):
             if json:
                 import json as json_module
 
                 data = json_module.dumps(json)
                 headers = headers or {}
                 headers["Content-Type"] = "application/json"
-            return send_http10_request("PUT", url, data=data, headers=headers)
+            return send_http10_request("PUT", url, data=data, headers=headers, timeout=timeout)
 
         @staticmethod
-        def head(url, headers=None, **kwargs):
-            return send_http10_request("HEAD", url, headers=headers)
+        def head(url, headers=None, timeout=5, **kwargs):
+            return send_http10_request("HEAD", url, headers=headers, timeout=timeout)
 
     return HTTP10Session()

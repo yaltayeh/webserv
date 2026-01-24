@@ -189,7 +189,7 @@ bool ClientSocket::handleWrite()
     if (bytes_sent == 0)
         return 1;
 
-    std::cout << "Sent " << bytes_sent << " bytes to client " << *this << std::endl;
+    // std::cout << "Sent " << bytes_sent << " bytes to client " << *this << std::endl;
 
     _write_buffer.erase(0, bytes_sent);
 
