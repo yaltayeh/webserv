@@ -62,7 +62,13 @@ class HTTPRequestParser:
     def __init__(self, test_instance: BaseTest):
         self.test_instance = test_instance
         self.requests: List[HTTPRequest] = []
-        self.variables: Dict[str, str] = {}  # Track variable assignments
+        self.variables: Dict[
+            str, str
+        ] = {}  # Track variable assignments (string values)
+        self.variable_nodes: Dict[
+            str, ast.AST
+        ] = {}  # Track variable AST nodes for complex values
+        self.list_variables: Dict[str, ast.AST] = {}  # Track list variable AST nodes
 
     def parse(self) -> List[HTTPRequest]:
         """Parse all HTTP requests from the run() method."""
@@ -82,6 +88,13 @@ class HTTPRequestParser:
                             var_name = target.id
                             var_value = self._extract_arg_value(node.value)
                             self.variables[var_name] = var_value
+                            # Store the AST node for later processing
+                            self.variable_nodes[var_name] = node.value
+                            # Also store the AST node if it's a list-like structure
+                            if isinstance(
+                                node.value, (ast.List, ast.ListComp, ast.BinOp)
+                            ):
+                                self.list_variables[var_name] = node.value
 
             # Second pass: extract HTTP requests
             for node in ast.walk(tree):
@@ -156,31 +169,158 @@ class HTTPRequestParser:
         """Extract concurrent GET requests from concurrent_get() call."""
         requests = []
         try:
-            # concurrent_get() first argument is a list of URLs
-            if node.args and isinstance(node.args[0], ast.List):
-                urls_list = node.args[0]
-                for idx, url_node in enumerate(urls_list.elts):
-                    url = self._extract_arg_value(url_node)
-                    # Extract headers and http_version from keywords if present
-                    headers = None
-                    http_version = "1.0"
-                    for keyword in node.keywords:
-                        if keyword.arg == "headers":
-                            headers = self._extract_dict_value(keyword.value)
-                        elif keyword.arg == "http_version":
-                            http_version = self._extract_arg_value(keyword.value)
+            # concurrent_get() first argument can be:
+            # 1. Direct list: [url1, url2, ...]
+            # 2. Variable reference to a list
+            if not node.args:
+                return requests
 
-                    # Mark as concurrent request in the path
-                    request = HTTPRequest("GET", url, headers, None, http_version)
-                    request.concurrent = True
-                    request.concurrent_group = id(
-                        node
-                    )  # Group ID for concurrent requests
-                    requests.append(request)
+            first_arg = node.args[0]
+            url_list_node = None
+
+            # Handle direct list
+            if isinstance(first_arg, ast.List):
+                url_list_node = first_arg
+            # Handle variable reference
+            elif isinstance(first_arg, ast.Name):
+                var_name = first_arg.id
+                # Look up the variable in our tracked list variables
+                if var_name in self.list_variables:
+                    url_list_node = self.list_variables[var_name]
+
+            if url_list_node is None:
+                # Can't extract - print info for debugging
+                print(
+                    f"  Note: concurrent_get uses dynamic list construction - generating placeholder requests"
+                )
+                # Create a placeholder request to show that concurrent_get is used
+                request = HTTPRequest(
+                    "GET", "/concurrent_request_placeholder", None, None, "1.0"
+                )
+                request.concurrent = True
+                request.concurrent_group = id(node)
+                requests.append(request)
+                return requests
+
+            # Extract URLs from the list node
+            urls = self._extract_urls_from_list_node(url_list_node)
+
+            # Extract headers and http_version from keywords if present
+            headers = None
+            http_version = "1.0"
+            for keyword in node.keywords:
+                if keyword.arg == "headers":
+                    headers = self._extract_dict_value(keyword.value)
+                elif keyword.arg == "http_version":
+                    http_version = self._extract_arg_value(keyword.value)
+
+            # Create request for each URL
+            for url in urls:
+                request = HTTPRequest("GET", url, headers, None, http_version)
+                request.concurrent = True
+                request.concurrent_group = id(node)
+                requests.append(request)
+
         except Exception as e:
             print(f"Warning: Could not extract concurrent_get requests: {e}")
+            import traceback
+
+            traceback.print_exc()
 
         return requests
+
+    def _extract_urls_from_list_node(self, list_node: ast.AST) -> List[str]:
+        """Extract URL strings from a list AST node."""
+        urls = []
+
+        # Handle ast.List - direct list like [url1, url2]
+        if isinstance(list_node, ast.List):
+            for url_node in list_node.elts:
+                url = self._extract_url_from_node(url_node)
+                if url:
+                    urls.append(url)
+
+        # Handle ast.BinOp - list concatenation like [url1] + simple_urls
+        elif isinstance(list_node, ast.BinOp) and isinstance(list_node.op, ast.Add):
+            # Recursively extract from left and right sides
+            left_urls = self._extract_urls_from_list_node(list_node.left)
+            right_urls = self._extract_urls_from_list_node(list_node.right)
+            urls.extend(left_urls)
+            urls.extend(right_urls)
+
+        # Handle ast.Name - variable reference
+        elif isinstance(list_node, ast.Name):
+            var_name = list_node.id
+            if var_name in self.list_variables:
+                # Recursively extract from the variable's value
+                urls = self._extract_urls_from_list_node(self.list_variables[var_name])
+            else:
+                # Variable not found, create placeholder
+                urls.append(f"/{var_name}_placeholder")
+
+        # Handle ast.ListComp - list comprehension like [url for _ in range(20)]
+        elif isinstance(list_node, ast.ListComp):
+            # Extract the template URL from the comprehension
+            template_url = self._extract_url_from_node(list_node.elt)
+
+            # Try to determine the count
+            count = self._extract_list_comp_count(list_node)
+
+            # Generate URLs
+            for i in range(count):
+                if template_url:
+                    urls.append(template_url)
+
+        return urls
+
+    def _extract_url_from_node(self, node: ast.AST) -> Optional[str]:
+        """Extract a single URL from an AST node."""
+        # Handle method calls like self.get_url("/path")
+        if isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Attribute) and node.func.attr == "get_url":
+                if node.args:
+                    path = self._extract_arg_value(node.args[0])
+                    return path
+
+        # Handle direct strings
+        elif isinstance(node, ast.Constant):
+            return str(node.value)
+
+        # Handle variables - look up the AST node first
+        elif isinstance(node, ast.Name):
+            var_name = node.id
+            # First try to get the AST node and extract from it
+            if var_name in self.variable_nodes:
+                return self._extract_url_from_node(self.variable_nodes[var_name])
+            # Fallback to string value
+            elif var_name in self.variables:
+                return self.variables[var_name]
+            return f"/{var_name}_placeholder"
+
+        return None
+
+    def _extract_list_comp_count(self, list_comp: ast.ListComp) -> int:
+        """Try to extract the count from a list comprehension like [x for _ in range(N)]."""
+        # Default count if we can't determine
+        default_count = 5
+
+        try:
+            # Look for range() call in generators
+            for generator in list_comp.generators:
+                if isinstance(generator.iter, ast.Call):
+                    if (
+                        isinstance(generator.iter.func, ast.Name)
+                        and generator.iter.func.id == "range"
+                    ):
+                        # Get the range argument
+                        if generator.iter.args:
+                            count_node = generator.iter.args[0]
+                            if isinstance(count_node, ast.Constant):
+                                return int(count_node.value)
+        except:
+            pass
+
+        return default_count
 
 
 class CommandGenerator:
