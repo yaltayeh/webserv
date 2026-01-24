@@ -160,11 +160,6 @@ def run_test(test_class):
         with open(test_instance.conf_path, "r") as f:
             conf_content = f.read()
 
-        # Debug: print config
-        logger.info(f"Config content:\n{conf_content}")
-        logger.info(f"Test dir: {test_instance.test_dir}")
-        logger.info(f"WWW dir: {test_instance.www_dir}")
-
         port_match = re.search(r"listen\s+(\d+);", conf_content)
         if not port_match:
             logger.error("Could not find port in test config.")
@@ -233,8 +228,8 @@ def run_test(test_class):
             except:
                 pass
 
-        # Cleanup test environment - DISABLED FOR DEBUGGING
-        # test_instance.cleanup_test_env()
+        # Cleanup test environment
+        test_instance.cleanup_test_env()
 
 
 def main():
