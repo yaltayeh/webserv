@@ -63,16 +63,14 @@ IOEventState ListenSocket::handleEvent(EventLoop *el)
 	}
 	el->markClientActive(clientSocket);
 	// Add new client to event loop (start monitoring for HTTP request)
-	el->addEvent(clientSocket->getSocketfd(), IO_READ, clientSocket);
-	el->addEvent(clientSocket->getSocketfd(), IO_WRITE, clientSocket);
+	el->addEvent(clientSocket->getSocketfd(), IO_READ | IO_WRITE, clientSocket);
 	std::cout << *clientSocket << " add client " << std::endl;
 	return IO_EVENT_CONTINUE;
 }
 
 void ListenSocket::handleDestroy(EventLoop *el)
 {
-	el->deleteEvent(_socketfd, IO_READ, this);
-	el->deleteEvent(_socketfd, IO_WRITE, this);
+	el->deleteEvent(_socketfd, IO_READ | IO_WRITE, this);
 }
 
 int ListenSocket::_setOptions()

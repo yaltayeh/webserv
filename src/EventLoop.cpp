@@ -134,22 +134,29 @@ void EventLoop::clientDisconnect(ClientSocket *client)
 	if (!client)
 		return;
 
+	// Check if already marked for deletion (prevent double-disconnect)
+	for (std::list<ClientSocket *>::iterator it = _deleteClients.begin();
+		 it != _deleteClients.end(); ++it)
+	{
+		if (*it == client)
+			return; // Already marked for deletion
+	}
+
 	// Remove from activity queue (O(1) average)
 	if (!_clientQueue.remove(client->getSocketfd()))
 		return;
-	_deleteClients[client->getSocketfd()] = client;
 
-	std::cout << *client << " Closing client " << std::endl;
+	std::cout << *client << " Marking client for deletion" << std::endl;
 
 	// Remove from event monitoring
-	if (client->getSocketfd() < 0)
-		return;
-	deleteEvent(client->getSocketfd(), IO_READ, client);
-	deleteEvent(client->getSocketfd(), IO_WRITE, client);
+	if (client->getSocketfd() >= 0)
+		deleteEvent(client->getSocketfd(), IO_READ | IO_WRITE, client);
 
-	// Delete the client (EventLoop is the owner)
+	// Close the socket but don't delete yet
 	client->close();
-	// delete client;
+	
+	// Add to deletion list - will be deleted at end of event loop iteration
+	_deleteClients.push_back(client);
 }
 
 void EventLoop::addChildProcess(ChildProcessHandler *handler)
@@ -524,5 +531,16 @@ void EventLoop::run()
 				// delete handler;
 			}
 		} // End of event processing loop
+
+		// Clean up all clients marked for deletion in this iteration
+		// This prevents double-deletion issues on macOS where handleDestroy might be called twice
+		for (std::list<ClientSocket *>::iterator it = _deleteClients.begin();
+			 it != _deleteClients.end(); ++it)
+		{
+			ClientSocket *client = *it;
+			std::cout << "Deleting client (fd: " << client->getSocketfd() << ")" << std::endl;
+			delete client;
+		}
+		_deleteClients.clear();
 	} // End of infinite while loop
 }

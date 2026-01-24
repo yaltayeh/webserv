@@ -38,6 +38,7 @@ private:
     // Front = oldest (least recently active), Back = newest (most recently active)
     IndexedQueue<int, ClientSocket *>   _clientQueue;
     std::map<pid_t, ChildProcessHandler *>     _childProcesses;
+    std::list<ClientSocket *>              _deleteClients;
 
     // Check for timed-out clients and close them
     void checkClientTimeouts();
@@ -61,7 +62,6 @@ public:
 
     void    addChildProcess(ChildProcessHandler *handler);
     void    removeChildProcess(ChildProcessHandler *handler);
-    void    unregisterChildProcess(ChildProcessHandler *handler);
 
     int     addEvent(int fd, int event, IOEventHandler *udata);
     int     deleteEvent(int fd, int event, IOEventHandler *udata);

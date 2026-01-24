@@ -45,8 +45,7 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 void StreamSocket::handleDestroy(EventLoop *el)
 {
 	std::cout << "StreamSocket::handleDestroy called for fd " << _socketfd << std::endl;
-	el->deleteEvent(_socketfd, IO_READ, this);
-	el->deleteEvent(_socketfd, IO_WRITE, this);
+	el->deleteEvent(_socketfd, IO_READ | IO_WRITE, this);
 	if (_response)
 	{
 		_response->_eof = 1;

@@ -61,7 +61,6 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
         if (state == libhttp::BODY_EXCEEDED_MAX_SIZE)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-
             // _response = new libhttp::DefaultResponse(413);
             return IO_EVENT_CLOSE; // TODO: fix error handling later
         }
@@ -89,8 +88,7 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
                 StreamResponse *response = dynamic_cast<StreamResponse *>(_response);
                 StreamSocket *ss = response->getStreamSocket();
                 _write_buffer = "";
-                el->addEvent(ss->getSocketfd(), IO_READ, ss);
-                el->addEvent(ss->getSocketfd(), IO_WRITE, ss);
+                el->addEvent(ss->getSocketfd(), IO_READ | IO_WRITE, ss);
                 el->addChildProcess(ss);
             }
         }
@@ -113,8 +111,7 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
 
 void ClientSocket::handleDestroy(EventLoop *el)
 {
-    el->deleteEvent(_socketfd, IO_READ, this);
-    el->deleteEvent(_socketfd, IO_WRITE, this);
+    el->deleteEvent(_socketfd, IO_READ | IO_WRITE, this);
     el->clientDisconnect(this);
 }
 
