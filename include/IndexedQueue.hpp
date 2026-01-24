@@ -110,7 +110,7 @@ public:
 	// Remove element by key from queue
 	// Does nothing if key not found
 	// O(1) average
-	void remove(K key);
+	int remove(K key);
 };
 
 #include "IndexedQueue.tpp"

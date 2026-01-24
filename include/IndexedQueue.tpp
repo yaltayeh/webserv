@@ -200,16 +200,17 @@ inline const T IndexedQueue<K, T>::front() const
 // Remove element by key from queue
 // O(1) average - uses hash table lookup + list erase
 template <typename K, typename T>
-inline void IndexedQueue<K, T>::remove(K key)
+inline int IndexedQueue<K, T>::remove(K key)
 {
 	// Find element in O(1) average using hash table
 	typename std::list<QueueElement>::iterator it = findInHash(key);
 	if (it == const_cast<std::list<QueueElement>&>(queue).end())
-		return;  // Key not found, nothing to do
+		return 0;  // Key not found, nothing to do
 	
 	// Remove from queue (O(1) for std::list with iterator)
 	queue.erase(it);
 	
 	// Remove from hash table index
 	removeFromHash(key);
+	return 1;
 }
