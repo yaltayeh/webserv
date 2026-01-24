@@ -21,6 +21,7 @@ private:
 	libhttp::Parser 	*_parser;
 	
 	libhttp::Response	*_response;
+	bool				_isHeadRequest;
 
 	// // Timeout tracking: when this connection should be closed if inactive
 	time_t _expiryDate;

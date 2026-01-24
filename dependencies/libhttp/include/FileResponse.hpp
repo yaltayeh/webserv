@@ -9,7 +9,7 @@ namespace libhttp {
 
     class FileResponse: public Response {
     public:
-        FileResponse(std::string filePath, const std::string &contentType);
+        FileResponse(std::string filePath, const std::string &contentType, int statusCode = 200);
         ~FileResponse();
 
         // Override virtual methods from Response

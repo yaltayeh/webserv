@@ -9,7 +9,7 @@
 
 namespace libhttp {
 
-	FileResponse::FileResponse(std::string filePath, const std::string &contentType)
+	FileResponse::FileResponse(std::string filePath, const std::string &contentType, int statusCode)
 	{
 		// Serve regular file using FileResponse for efficiency
 		struct stat buf;
@@ -24,7 +24,7 @@ namespace libhttp {
 		off_t file_size = buf.st_size;
 
 		std::ostringstream ss;
-		ss << HTTP_1_0 << " 200 " << getStatusMessage(200) << "\r\n" // Status line
+		ss << HTTP_1_0 << " " << statusCode << " " << getStatusMessage(statusCode) << "\r\n" // Status line
 		   << "Content-Type: " << contentType << "\r\n" /// Content-Type header
 		   << "Content-Length: " << file_size << "\r\n" // Content-Length header
 		   << "\r\n"; // End of headers

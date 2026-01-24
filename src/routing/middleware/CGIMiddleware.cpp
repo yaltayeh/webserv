@@ -28,15 +28,23 @@ static bool isCGIRequest(const std::string &uri, const LocationConfig &location)
 	if (location.cgi_pass.empty())
 		return false;
 
+	// Strip query string from URI for extension checking
+	std::string uri_path = uri;
+	size_t query_pos = uri_path.find('?');
+	if (query_pos != std::string::npos)
+	{
+		uri_path = uri_path.substr(0, query_pos);
+	}
+
 	// Check if URI has CGI extension
 	for (size_t i = 0; i < location.cgi_extensions.size(); ++i)
 	{
 		const std::string &ext = location.cgi_extensions[i];
 
 		// Check if URI ends with this extension
-		if (uri.length() >= ext.length())
+		if (uri_path.length() >= ext.length())
 		{
-			if (uri.compare(uri.length() - ext.length(), ext.length(), ext) == 0)
+			if (uri_path.compare(uri_path.length() - ext.length(), ext.length(), ext) == 0)
 			{
 				return true;
 			}
@@ -64,6 +72,14 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 	if (!isCGIRequest(uri, location))
 		return NULL;
 
+	// Strip query string from URI for path resolution
+	std::string uri_path = uri;
+	size_t query_pos = uri_path.find('?');
+	if (query_pos != std::string::npos)
+	{
+		uri_path = uri_path.substr(0, query_pos);
+	}
+
 	// Get location path
 	std::string location_path = location.path;
 
@@ -77,13 +93,13 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 		// Strip location path from URI and append to cgi_pass
 		
 		// Safety check: ensure uri is long enough
-		if (uri.length() < location_path.length())
+		if (uri_path.length() < location_path.length())
 		{
 			std::cerr << "CGI ERROR: URI shorter than location path" << std::endl;
 			return utils::generateErrorResponse(500, location);
 		}
 		
-		std::string remaining = uri.substr(location_path.length());
+		std::string remaining = uri_path.substr(location_path.length());
 		
 		// Add separator if remaining doesn't start with /
 		if (!remaining.empty() && remaining[0] != '/')
@@ -97,7 +113,7 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 	}
 	else
 	{
-		script_path = utils::resolvePath(uri, location_path, location);
+		script_path = utils::resolvePath(uri_path, location_path, location);
 	}
 
 	std::cout << "CGI: Executing script at " << script_path << std::endl;

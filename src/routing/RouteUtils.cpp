@@ -32,7 +32,7 @@ libhttp::Response *generateErrorResponse(int status_code,
 		{
 			const std::string &content_type = getMimeType(error_file_path, location);
 			libhttp::FileResponse *fileResponse =
-				new libhttp::FileResponse(error_file_path, content_type); // TODO: add status code support
+				new libhttp::FileResponse(error_file_path, content_type, response_status);
 			return fileResponse;
 		}
 		else 

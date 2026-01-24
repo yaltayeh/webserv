@@ -16,7 +16,8 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
       _listenSocket(listen),
       _write_buffer(""),
       _parser(NULL),
-      _response(NULL)
+      _response(NULL),
+      _isHeadRequest(false)
 {
     _write_buffer.reserve(4096);
     // Initialize parser with config from the first virtual server
@@ -77,6 +78,10 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
             el->deleteEvent(_socketfd, IO_READ, this);
 
             const libhttp::Request request = _parser->getRequest();
+            
+            // Track if this is a HEAD request (need to suppress body)
+            _isHeadRequest = (request.getMethod() == libhttp::HEAD);
+            
             const VirtualServer *owner_server = VirtualServer::findMatchServer(
                 _listenSocket->getVirtualServers(),
                 request);
@@ -151,6 +156,23 @@ bool ClientSocket::handleWrite()
         char chunk_buffer[READ_BUFFER_SIZE];
         size_t chunk_size = _response->genChunk(chunk_buffer, sizeof(chunk_buffer));
         WriteToBuffer(chunk_buffer, chunk_size);
+        
+        // For HEAD requests, only send up to end of headers (including \r\n\r\n)
+        if (_isHeadRequest)
+        {
+            // Find the end of headers marker
+            size_t header_end = _write_buffer.find("\r\n\r\n");
+            if (header_end != std::string::npos)
+            {
+                // Keep headers + the \r\n\r\n, discard body
+                _write_buffer.erase(header_end + 4);
+                // Consume all remaining chunks from response
+                while (_response->hasChunk())
+                {
+                    _response->genChunk(chunk_buffer, sizeof(chunk_buffer));
+                }
+            }
+        }
     }
 
     if (_write_buffer.empty())
