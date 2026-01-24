@@ -538,7 +538,6 @@ void EventLoop::run()
 			 it != _deleteClients.end(); ++it)
 		{
 			ClientSocket *client = *it;
-			std::cout << "Deleting client (fd: " << client->getSocketfd() << ")" << std::endl;
 			delete client;
 		}
 		_deleteClients.clear();

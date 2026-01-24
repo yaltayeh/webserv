@@ -57,7 +57,6 @@ void StreamSocket::handleDestroy(EventLoop *el)
 void StreamSocket::handleChildExit(int status)
 {
 	(void)status;
-	std::cout << "_response: " << _response << std::endl;
 	if (_response)
 		_response->_eof = 1;
 	_pid = -1;

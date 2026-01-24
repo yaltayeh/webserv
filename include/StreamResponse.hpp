@@ -12,6 +12,7 @@ private:
 	std::string _buffer;
 	bool _eof;
 	StreamSocket *_streamSocket;
+	bool _findStatusLine;
 
 public:
 	StreamResponse(int fd, int pid);

@@ -8,7 +8,7 @@
 #include "StreamSocket.hpp"
 #include <unistd.h>
 
-#define READ_BUFFER_SIZE 128
+#define READ_BUFFER_SIZE (4096 * 2)
 
 ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen)
     : Socket(client_fd),
@@ -19,7 +19,7 @@ ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen
       _response(NULL),
       _isHeadRequest(false)
 {
-    _write_buffer.reserve(4096);
+    _write_buffer.reserve(READ_BUFFER_SIZE);
     // Initialize parser with config from the first virtual server
     const std::vector<VirtualServer *> &servers = _listenSocket->getVirtualServers();
     const ServerConfig &config = servers[0]->getConfig();
@@ -37,7 +37,7 @@ ClientSocket::~ClientSocket()
 void ClientSocket::WriteToBuffer(char *buf, size_t len)
 {
     if (_write_buffer.capacity() <= _write_buffer.size() + len)
-        _write_buffer.reserve(4096);
+        _write_buffer.reserve(READ_BUFFER_SIZE);
     _write_buffer.append(buf, len);
 }
 

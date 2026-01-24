@@ -126,5 +126,5 @@ ssize_t Socket::recv(void *buf, size_t size)
 
 ssize_t Socket::send(const void *buf, size_t size)
 {
-	return ::send(_socketfd, buf, size, 0);
+	return ::send(_socketfd, buf, size, MSG_NOSIGNAL);
 }
