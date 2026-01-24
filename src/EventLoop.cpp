@@ -274,7 +274,7 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 				  << strerror(errno) << std::endl;
 		return -1;
 	}
-	std::cout << "Added event for fd:" << fd << " filter:" << filter << " udata:" << udata << std::endl;
+	// std::cout << "Added event for fd:" << fd << " filter:" << filter << " udata:" << udata << std::endl;
 #endif
 
 	if (event == IO_READ)
@@ -328,7 +328,7 @@ int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
 		perror("kevent DEL");
 #endif
 
-	std::cout << "Delete event for fd:" << fd << " filter:" << filter << " udata:" << udata << std::endl;
+	// std::cout << "Delete event for fd:" << fd << " filter:" << filter << " udata:" << udata << std::endl;
 
 	if (event == IO_READ)
 		udata->monitoringRead = false;
@@ -457,7 +457,7 @@ void EventLoop::run()
 				continue;
 			else if (state == IO_EVENT_CLOSE)
 			{
-				std::cout << "EventLoop: Closing handler " << handler << std::endl;
+				// std::cout << "EventLoop: Closing handler " << handler << std::endl;
 				handler->handleDestroy(this);
 				// delete handler;
 			}

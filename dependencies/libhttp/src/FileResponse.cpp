@@ -55,8 +55,9 @@ namespace libhttp {
 				return to_copy; // Only header data sent
 		}
 		// Once headers are fully sent, start sending body from file
-		ssize_t bytes_read = read(_fd, buffer + to_copy, max_size - to_copy);
+		ssize_t bytes_read = read(_fd, buffer + to_copy, max_size);
 		if (bytes_read < 0) {
+			perror("Error reading file");
 			return 0; // Error reading file
 		}
 		_readBytes += bytes_read;
