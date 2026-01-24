@@ -63,12 +63,21 @@ def send_http10_request(method, url, data=None, headers=None):
         # Receive response
         response_data = b""
         while True:
-            chunk = sock.recv(4096)
-            if not chunk:
+            try:
+                chunk = sock.recv(4096)
+                if not chunk:
+                    break
+                response_data += chunk
+            except ConnectionResetError:
+                # Server closed connection - this can be normal for HTTP/1.0
+                # Continue with whatever data we have
                 break
-            response_data += chunk
 
         sock.close()
+
+        # Check if we got any response
+        if not response_data:
+            raise Exception("Server closed connection without sending any data")
 
         # Parse response
         try:
