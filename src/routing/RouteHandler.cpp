@@ -1,5 +1,6 @@
 #include "routing/RouteHandler.hpp"
 #include "libhttp/include/DefaultResponse.hpp"
+#include "libhttp/include/ResponseBlender.hpp"
 #include "libhttp/include/Utils.hpp"
 #include <algorithm>
 #include <iostream>
@@ -51,9 +52,9 @@ libhttp::Response *RouteHandler::process(const libhttp::Request &request,
 	// No middleware handled the request - return 500 Internal Server Error
 	std::cerr << "No middleware handled request for URI: " << request.getUri() << std::endl;
 
-	libhttp::DefaultResponse *errorResponse = new libhttp::DefaultResponse();
-	errorResponse->setStatus(500);
-	errorResponse->setHeader("Content-Type", "text/html");
+	libhttp::ResponseBlender *blender = new libhttp::ResponseBlender();
+	blender->setStatus(500);
+	blender->setHeader("Content-Type", "text/html");
 
 	std::string body = "<!DOCTYPE html>\n"
 	                   "<html>\n"
@@ -66,8 +67,9 @@ libhttp::Response *RouteHandler::process(const libhttp::Request &request,
 	                   "</body>\n"
 	                   "</html>\n";
 
-	errorResponse->setBody(body);
+	blender->setBody(body);
 
+	libhttp::DefaultResponse *errorResponse = new libhttp::DefaultResponse(blender->toString());
 	return errorResponse;
 }
 

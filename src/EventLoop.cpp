@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include "EventLoop.hpp"
 #include "IOEventHandler.hpp"
+#include <sys/wait.h>
 // #include <chrono>
 
 /**
@@ -146,6 +147,20 @@ void EventLoop::clientDisconnect(ClientSocket *client)
 	delete client;
 }
 
+void EventLoop::addChildProcess(ChildProcessHandler *handler)
+{
+	if (!handler)
+		return;
+	_childProcesses[handler->getPid()] = handler;
+}
+
+void EventLoop::removeChildProcess(ChildProcessHandler *handler)
+{
+	if (!handler)
+		return;
+	_childProcesses.erase(handler->getPid());
+}
+
 /**
  * Check for timed-out clients and close them
  * Front of queue = oldest (least recently active) connection
@@ -170,6 +185,33 @@ void EventLoop::checkClientTimeouts()
 
 		// Request closure
 		clientDisconnect(oldest);
+	}
+}
+
+void EventLoop::CheckChildProcesses()
+{
+	pid_t pid;
+	int status;
+
+	// Check for any exited child processes
+	while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+	{
+		if (WIFEXITED(status))
+			std::cout << "Child process " << pid << " exited with status " << WEXITSTATUS(status) << std::endl;
+		else if (WIFSIGNALED(status))
+			std::cout << "Child process " << pid << " terminated by signal " << WTERMSIG(status) << std::endl;
+		std::map<pid_t, ChildProcessHandler *>::iterator it = _childProcesses.find(pid);
+		if (it != _childProcesses.end())
+		{
+			ChildProcessHandler *handler = (*it).second;
+			// Remove from map first to prevent double-handling
+			_childProcesses.erase(it);
+			handler->handleChildExit(status);
+			handler->handleDestroy(this);
+			delete handler;
+			// Note: handler might have already been destroyed by event loop,
+			// so we don't call handleDestroy here
+		}
 	}
 }
 
@@ -232,6 +274,7 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 				  << strerror(errno) << std::endl;
 		return -1;
 	}
+	std::cout << "Added event for fd:" << fd << " filter:" << filter << " udata:" << udata << std::endl;
 #endif
 
 	if (event == IO_READ)
@@ -279,11 +322,13 @@ int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
 		filter = EVFILT_WRITE;
 
 	struct kevent kev;
-	EV_SET(&kev, fd, filter, EV_DELETE, 0, 0, NULL);
+	EV_SET(&kev, fd, filter, EV_DELETE | EV_DISABLE, 0, 0, NULL);
 
 	if (kevent(_eventFd, &kev, 1, NULL, 0, NULL) == -1)
 		perror("kevent DEL");
 #endif
+
+	std::cout << "Delete event for fd:" << fd << " filter:" << filter << " udata:" << udata << std::endl;
 
 	if (event == IO_READ)
 		udata->monitoringRead = false;
@@ -358,6 +403,7 @@ void EventLoop::run()
 	{
 		// Check for timed-out clients before waiting for new events
 		checkClientTimeouts();
+		CheckChildProcesses();
 
 #if defined(__linux__)
 		// Linux: Wait for events with timeout for periodic cleanup
@@ -388,10 +434,6 @@ void EventLoop::run()
 			throw std::runtime_error("kevent failed: " + std::string(strerror(errno)));
 		}
 #endif
-
-		// while (waitpid(-1, NULL, WNOHANG) != -1)
-		// 	;
-
 		// Process each triggered event
 		for (int i = 0; i < n; i++)
 		{
@@ -407,13 +449,18 @@ void EventLoop::run()
 			IOEventHandler *handler = (IOEventHandler *)events[i].udata;
 			if (!handler)
 				continue;
+			// std::cout << "EventLoop: Processing event for handler " << handler << std::endl;
 			handler->events = mapKqueueToIOFlags(events[i]);
 #endif
 			IOEventState state = handler->handleEvent(this);
 			if (state == IO_EVENT_CONTINUE)
 				continue;
 			else if (state == IO_EVENT_CLOSE)
+			{
+				std::cout << "EventLoop: Closing handler " << handler << std::endl;
 				handler->handleDestroy(this);
+				// delete handler;
+			}
 		} // End of event processing loop
 	} // End of infinite while loop
 }

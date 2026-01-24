@@ -2,20 +2,32 @@
 #include "EventLoop.hpp"
 #include <iostream>
 
-StreamSocket::StreamSocket(int fd, ClientSocket *clientSocket)
-	: Socket(fd), _clientSocket(clientSocket) {}
+StreamSocket::StreamSocket(int fd, pid_t pid, StreamResponse *response)
+	: Socket(fd), ChildProcessHandler(pid), _response(response)
+{
+}
 
-StreamSocket::~StreamSocket() {}
+StreamSocket::~StreamSocket()
+{
+	if (_response)
+	{
+		_response->_eof = 1;
+		_response->_streamSocket = NULL;
+		_response = NULL;
+	}
+}
 
 IOEventState StreamSocket::handleEvent(EventLoop *el)
 {
 	(void)el;
-	
+
+	// std::cout << "Event: " << events << std::endl;
 	// --- Sub-case A: StreamSocket Disconnected ---
 	if (events & (IO_ERROR | IO_HUP))
-	{
-		std::cout << "StreamSocket for client " << *_clientSocket << " disconnected" << std::endl;
 		return IO_EVENT_CLOSE;
+	if (events & IO_WRITE)
+	{
+		(void)0; // TODO: Writing not implemented yet
 	}
 	if (events & IO_READ)
 	{
@@ -24,13 +36,30 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 		ssize_t nbytes = recv(buf, sizeof(buf));
 		if (nbytes <= 0)
 			return IO_EVENT_CLOSE;
-		_clientSocket->WriteToBuffer(buf, nbytes);
+		if (_response)
+			_response->appendToBuffer(buf, nbytes);
 	}
 	return IO_EVENT_CONTINUE;
 }
 
 void StreamSocket::handleDestroy(EventLoop *el)
 {
+	std::cout << "StreamSocket::handleDestroy called for fd " << _socketfd << std::endl;
 	el->deleteEvent(_socketfd, IO_READ, this);
 	el->deleteEvent(_socketfd, IO_WRITE, this);
+	if (_response)
+	{
+		_response->_eof = 1;
+		_response->_streamSocket = NULL;
+		_response = NULL;
+	}
+}
+
+void StreamSocket::handleChildExit(int status)
+{
+	(void)status;
+	std::cout << "_response: " << _response << std::endl;
+	if (_response)
+		_response->_eof = 1;
+	_pid = -1;
 }

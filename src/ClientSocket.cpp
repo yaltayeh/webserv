@@ -61,13 +61,16 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
         if (state == libhttp::BODY_EXCEEDED_MAX_SIZE)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            _response = new libhttp::DefaultResponse(413);
+
+            // _response = new libhttp::DefaultResponse(413);
+            return IO_EVENT_CLOSE; // TODO: fix error handling later
         }
 
         if (state == libhttp::ERROR)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            _response = new libhttp::DefaultResponse(400);
+            // _response = new libhttp::DefaultResponse(400);
+            return IO_EVENT_CLOSE; // TODO: fix error handling later
         }
 
         if (state == libhttp::COMPLETE)
@@ -81,40 +84,25 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
 
             _response = owner_server->handleRequest(request);
 
-            // const libhttp::Response *raw_response = owner_server->handleRequest(request);
-
-            // if (dynamic_cast<const libhttp::DefaultResponse *>(raw_response))
-            // {
-            //     const libhttp::DefaultResponse *response = dynamic_cast<const libhttp::DefaultResponse *>(raw_response);
-            //     _write_buffer = response->toString();
-            // }
-
-            // else if (dynamic_cast<const libhttp::StreamResponse *>(raw_response))
-            // {
-            //     const libhttp::StreamResponse *response = dynamic_cast<const libhttp::StreamResponse *>(raw_response);
-            //     _write_buffer = "";
-            //     StreamSocket *ss = new StreamSocket(response->getFd(), this);
-            //     el->addEvent(ss->getSocketfd(), IO_READ, ss);
-            // }
-
-            // else if (dynamic_cast<const libhttp::FileResponse *>(raw_response))
-            // {
-            //     const libhttp::FileResponse *response = dynamic_cast<const libhttp::FileResponse *>(raw_response);
-            //     _write_buffer = response->toString();
-            //     _file_fd = response->getFd();
-            // }
-
-            // delete raw_response;
+            if (dynamic_cast<StreamResponse *>(_response))
+            {
+                StreamResponse *response = dynamic_cast<StreamResponse *>(_response);
+                StreamSocket *ss = response->getStreamSocket();
+                _write_buffer = "";
+                el->addEvent(ss->getSocketfd(), IO_READ, ss);
+                el->addEvent(ss->getSocketfd(), IO_WRITE, ss);
+                el->addChildProcess(ss);
+            }
         }
     }
 
     // --- Sub-case C: Socket Ready to Write (HTTP Response) ---
     if (events & IO_WRITE)
     {
-        std::cout << "WE ARE READY TO WRITE BOSS " << *this << std::endl;
-
         // Send HTTP response data
         handleWrite();
+
+        // std::cout << "WE ARE READY TO WRITE BOSS " << *this << std::endl;
 
         // If entire response has been sent
         if (_write_buffer.empty() && _response && _response->isComplete())
@@ -144,7 +132,6 @@ void ClientSocket::handleDestroy(EventLoop *el)
  * - true if connection should remain open
  * - false if connection should be closed
  */
-
 libhttp::State ClientSocket::handleRead()
 {
     char buffer[READ_BUFFER_SIZE];
@@ -162,7 +149,7 @@ libhttp::State ClientSocket::handleRead()
 
 bool ClientSocket::handleWrite()
 {
-    if (_response && _response->isHasChunk())
+    if (_response && _response->hasChunk())
     {
         char chunk_buffer[READ_BUFFER_SIZE];
         size_t chunk_size = _response->genChunk(chunk_buffer, sizeof(chunk_buffer));

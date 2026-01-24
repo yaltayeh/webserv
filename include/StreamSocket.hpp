@@ -2,24 +2,26 @@
 
 #include "Socket.hpp"
 #include <netinet/in.h>
-#include "ListenSocket.hpp"
-#include "libhttp/include/Parser.hpp"
 #include "IOEventHandler.hpp"
-#include "ClientSocket.hpp"
+#include "StreamResponse.hpp"
+#include "StreamSocket.hpp"
+#include "ChildProcessHandler.hpp"
 
-class StreamSocket : public Socket, public IOEventHandler
+class StreamResponse;
+
+class StreamSocket : public Socket, public IOEventHandler, public ChildProcessHandler
 {
 private:
-
-	// Non-owning pointer back to ClientSocket (ClientSocket owns this StreamSocket)
-	ClientSocket*	_clientSocket;
+	StreamResponse *_response;
 
 public:
-
-	// Constructor takes raw pointer - does NOT take ownership of ClientSocket
-	StreamSocket(int fd, ClientSocket* clientSocket);
+	StreamSocket(int fd, pid_t pid, StreamResponse *response);
 	~StreamSocket();
 
 	IOEventState	handleEvent(EventLoop *el);
-	void 		  	handleDestroy(EventLoop *el);
+	void 			handleDestroy(EventLoop *el);
+
+	void handleChildExit(int status);
+
+	friend class StreamResponse;
 };

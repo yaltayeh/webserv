@@ -8,6 +8,7 @@ class EventLoop;
 #include "Config/GlobalConfig.hpp"
 #include "IndexedQueue.hpp"
 #include <ctime>
+#include "ChildProcessHandler.hpp"
 
 // Platform-specific includes
 #if defined(__linux__)
@@ -36,9 +37,13 @@ private:
     // Key: socket fd, Value: ClientSocket*
     // Front = oldest (least recently active), Back = newest (most recently active)
     IndexedQueue<int, ClientSocket *>   _clientQueue;
+    std::map<pid_t, ChildProcessHandler *>     _childProcesses;
 
     // Check for timed-out clients and close them
     void checkClientTimeouts();
+
+    // Check for exited child processes
+    void CheckChildProcesses();
 
 public:
 
@@ -53,6 +58,10 @@ public:
     
     // Request to close and delete a client socket (EventLoop owns cleanup)
     void    clientDisconnect(ClientSocket *client);
+
+    void    addChildProcess(ChildProcessHandler *handler);
+    void    removeChildProcess(ChildProcessHandler *handler);
+    void    unregisterChildProcess(ChildProcessHandler *handler);
 
     int     addEvent(int fd, int event, IOEventHandler *udata);
     int     deleteEvent(int fd, int event, IOEventHandler *udata);

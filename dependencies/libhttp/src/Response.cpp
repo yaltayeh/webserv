@@ -11,8 +11,10 @@ libhttp::Response::Response()
 {
 }
 
+#include <iostream>
 libhttp::Response::~Response()
 {
+	std::cout << "Response destructor called" << std::endl;
 }
 
 size_t libhttp::Response::genChunk(char *buffer, size_t max_size)
@@ -30,7 +32,7 @@ size_t libhttp::Response::genChunk(char *buffer, size_t max_size)
 	return chunk_size;
 }
 
-bool libhttp::Response::isHasChunk() const
+bool libhttp::Response::hasChunk() const
 {
 	return sent_bytes < data.size();
 }

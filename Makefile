@@ -34,6 +34,8 @@ SRCS		    		=   src/main.cpp 										\
 							src/VirtualServer.cpp 								\
 							src/EventLoop.cpp									\
 							src/RegEx.cpp										\
+							src/ChildProcessHandler.cpp							\
+							src/StreamResponse.cpp								\
 							\
 							src/routing/RouteHandler.cpp						\
 							src/routing/RouteUtils.cpp							\
@@ -95,12 +97,12 @@ $(BUILD_PATH)/obj/%.o: src/%.cpp
 
 clean:
 	@rm -rf $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a)
-	@rm -rf $(BUILD_PATH)/obj
-	@rm -rf $(BUILD_PATH)/lib*/obj
+# 	@rm -rf $(BUILD_PATH)/obj
+# 	@rm -rf $(BUILD_PATH)/lib*/obj
 
 fclean: clean
 	@rm -rf $(NAME)
-	@rm -rf $(BUILD_PATH)
+# 	@rm -rf $(BUILD_PATH)
 
 re: fclean all
 

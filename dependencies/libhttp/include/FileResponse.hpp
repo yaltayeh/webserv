@@ -9,24 +9,22 @@ namespace libhttp {
 
     class FileResponse: public Response {
     public:
-        FileResponse();
+        FileResponse(std::string filePath, const std::string &contentType);
         ~FileResponse();
 
-		// Setters
-        void setStatus(int statusCode);
-        void setHeader(const std::string& key, const std::string& value);
-        void setFd(int fd);
+        // Override virtual methods from Response
+        size_t genChunk(char *buffer, size_t max_size);
+        bool hasChunk() const;
+        bool isComplete() const;
 
-		// Getters
-		int getStatus() const;
-		std::multimap<std::string, std::string> getHeaders() const;
-		int getFd() const;
-
-		std::string toString() const;
+        std::string toString() const;
     private:
-        int _statusCode;
-        std::multimap<std::string, std::string> _headers;
         int         _fd;
+        std::string _headerData;
+        size_t      _offset;
+        size_t      _readBytes;
+        size_t      _fileSize;
+        std::string _filePath;
     };
 
 }

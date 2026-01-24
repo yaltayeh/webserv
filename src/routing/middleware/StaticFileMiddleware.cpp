@@ -10,6 +10,7 @@
 #include "routing/RouteUtils.hpp"
 #include "libhttp/include/Request.hpp"
 #include "libhttp/include/DefaultResponse.hpp"
+#include "libhttp/include/ResponseBlender.hpp"
 #include "libhttp/include/FileResponse.hpp"
 #include <iostream>
 #include <sstream>
@@ -28,8 +29,10 @@ static libhttp::Response *generateAutoindex(const std::string &directory_path,
                                              const std::string &uri)
 {
 	// Use libhttp's built-in autoindex generator
-	libhttp::DefaultResponse *response = new libhttp::DefaultResponse();
-	response->setAutoindexPage(directory_path, uri);
+	libhttp::ResponseBlender blender = libhttp::ResponseBlender();
+	blender.setAutoindexPage(directory_path, uri);
+	
+	libhttp::DefaultResponse *response = new libhttp::DefaultResponse(blender.toString());
 	return response;
 }
 
@@ -89,8 +92,11 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 		}
 		
 		// Success - return 204 No Content
-		libhttp::DefaultResponse *response = new libhttp::DefaultResponse();
-		response->setStatus(204);
+		libhttp::ResponseBlender blender = libhttp::ResponseBlender();
+		blender.setStatus(204);
+		blender.setHeader("Content-Length", "0");
+		
+		libhttp::DefaultResponse *response = new libhttp::DefaultResponse(blender.toString());
 		return response;
 	}
 
@@ -134,30 +140,17 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 		}
 	}
 
-	// Serve regular file using FileResponse for efficiency
-	int fd = open(file_path.c_str(), O_RDONLY);
-	if (fd < 0)
-	{
+	// Build FileResponse
+	try {
+		const std::string &content_type = utils::getMimeType(file_path, location);
+		libhttp::FileResponse *response = new libhttp::FileResponse(file_path, content_type);
+		return response;
+	}
+	catch (const std::exception &e) {
+		std::cerr << "Error FileResponse: " << e.what() << std::endl;
 		return utils::generateErrorResponse(404, location);
 	}
-
-	// Get file size for Content-Length
-	// TODO: use stat here please
-	off_t file_size = lseek(fd, 0, SEEK_END);
-	lseek(fd, 0, SEEK_SET);
-
-	// Build FileResponse
-	libhttp::FileResponse *response = new libhttp::FileResponse();
-	response->setStatus(200);
-	response->setHeader("Content-Type", utils::getMimeType(file_path, location));
-
-	std::ostringstream ss;
-	ss << file_size;
-	response->setHeader("Content-Length", ss.str());
-
-	response->setFd(fd);
-
-	return response;
+	
 }
 
 } // namespace middleware

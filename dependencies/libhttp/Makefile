@@ -9,12 +9,13 @@ OBJ_DIR = $(BUILD_PATH)/obj
 
 SRCS = $(SRC_DIR)/Request.cpp \
 		$(SRC_DIR)/Response.cpp \
-		$(SRC_DIR)/StreamResponse.cpp \
 		$(SRC_DIR)/FileResponse.cpp \
 		$(SRC_DIR)/DefaultResponse.cpp \
+		$(SRC_DIR)/ResponseBlender.cpp \
 		$(SRC_DIR)/Utils.cpp \
 		$(SRC_DIR)/Parser.cpp \
 		$(SRC_DIR)/CGI.cpp
+
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 all: $(LIB_NAME)

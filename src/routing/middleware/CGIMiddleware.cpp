@@ -8,7 +8,7 @@
 #include "routing/RouteContext.hpp"
 #include "routing/RouteUtils.hpp"
 #include "libhttp/include/Request.hpp"
-#include "libhttp/include/StreamResponse.hpp"
+#include "StreamResponse.hpp"
 #include "libhttp/include/CGI.hpp"
 #include <iostream>
 #include <unistd.h>
@@ -159,7 +159,7 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 	}
 
 	// Return StreamResponse (non-blocking)
-	return new libhttp::StreamResponse(socketFd, pid);
+	return new StreamResponse(socketFd, pid);
 }
 
 } // namespace middleware

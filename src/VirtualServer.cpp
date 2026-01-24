@@ -1,7 +1,6 @@
 #include <iostream>
 #include "VirtualServer.hpp"
 #include "RegEx.hpp"
-#include "DefaultResponse.hpp"
 #include "routing/RouteHandler.hpp"
 
 VirtualServer::VirtualServer() { }
@@ -28,9 +27,11 @@ int VirtualServer::checkRequest(const libhttp::Request &r)
 		 it != _config.server_names.end();
 		 it++)
 	{
-		std::cout << *it << " = " <<  host << std::endl;
 		if (RegEx::matchPattern(*it, host))
+		{
+			// std::cout << *it << " = " <<  host << std::endl;
 			return (1);
+		}
 	}
 	return 0;
 }

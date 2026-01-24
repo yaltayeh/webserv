@@ -8,6 +8,6 @@ print("Content-Length: ", len(content), end='\r\n')
 
 print(end='\r\n')
 
+sleep(1) # sleep 10 seconds to simulate long processing 
 
 print(content)
-sleep(10) # sleep 10 seconds to simulate long processing 

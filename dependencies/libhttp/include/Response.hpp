@@ -16,10 +16,8 @@ namespace libhttp
 		Response();
 		virtual ~Response() = 0;
 
-
-		virtual size_t genChunk(char *buffer, size_t max_size);
-		virtual bool isHasChunk() const;
-		virtual bool isComplete() const;
-
+		virtual size_t genChunk(char *buffer, size_t max_size) = 0;
+		virtual bool hasChunk() const = 0;
+		virtual bool isComplete() const = 0;
 	};
 }

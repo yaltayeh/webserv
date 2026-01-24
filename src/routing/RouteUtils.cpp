@@ -1,5 +1,7 @@
 #include "routing/RouteUtils.hpp"
 #include "libhttp/include/DefaultResponse.hpp"
+#include "libhttp/include/ResponseBlender.hpp"
+#include "libhttp/include/FileResponse.hpp"
 #include "libhttp/include/Utils.hpp"
 #include <sstream>
 #include <fstream>
@@ -21,32 +23,40 @@ libhttp::Response *generateErrorResponse(int status_code,
 	{
 		const CommonConfig::ErrorPage &error_page = it->second;
 		std::string error_file_path = location.root + error_page.uri;
+		int response_status = status_code;
+		if (error_page.customRes)
+			response_status = error_page.response;
 
 		// Try to serve custom error page
 		if (fileExists(error_file_path))
 		{
-			std::string content = readFile(error_file_path);
+			const std::string &content_type = getMimeType(error_file_path, location);
+			libhttp::FileResponse *fileResponse =
+				new libhttp::FileResponse(error_file_path, content_type); // TODO: add status code support
+			return fileResponse;
+		}
+		else 
+		{
+			std::string content = error_page.uri;
 
-			libhttp::DefaultResponse *response = new libhttp::DefaultResponse();
+			libhttp::ResponseBlender blender;
+			
+			blender.setStatus(response_status);
 
-			if (error_page.customRes)
-				response->setStatus(error_page.response);
-			else
-				response->setStatus(status_code);
-
-			response->setHeader("Content-Type", "text/html");
+			blender.setHeader("Content-Type", "text/html");
 
 			std::ostringstream ss;
 			ss << content.size();
-			response->setHeader("Content-Length", ss.str());
-
-			response->setBody(content);
+			blender.setHeader("Content-Length", ss.str());
+			blender.setBody(content);
+			libhttp::DefaultResponse *response = new libhttp::DefaultResponse(blender.toString());
 			return response;
 		}
 	}
 
 	// Fall back to default error page
-	libhttp::DefaultResponse *response = new libhttp::DefaultResponse(status_code);
+	libhttp::ResponseBlender blender(status_code);
+	libhttp::DefaultResponse *response = new libhttp::DefaultResponse(blender.toString());
 	return response;
 }
 

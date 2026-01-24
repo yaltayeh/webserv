@@ -8,6 +8,7 @@
 #include "routing/RouteContext.hpp"
 #include "libhttp/include/Request.hpp"
 #include "libhttp/include/DefaultResponse.hpp"
+#include "libhttp/include/ResponseBlender.hpp"
 
 namespace routing
 {
@@ -33,12 +34,12 @@ libhttp::Response *redirectHandler(const libhttp::Request &request,
 		return NULL;
 
 	// Generate redirect response
-	libhttp::DefaultResponse *response = new libhttp::DefaultResponse();
-
-	response->setStatus(location.return_code);
-	response->setHeader("Location", location.return_url);
-	response->setHeader("Content-Length", "0");
-
+	libhttp::ResponseBlender blender = libhttp::ResponseBlender();
+	blender.setStatus(location.return_code);
+	blender.setHeader("Location", location.return_url);
+	blender.setHeader("Content-Length", "0");
+	
+	libhttp::DefaultResponse *response = new libhttp::DefaultResponse(blender.toString());
 	return response;
 }
 
