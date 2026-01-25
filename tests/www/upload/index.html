@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .upload-form {
+            background: #f5f5f5;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e8f4f8;
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <h1>📤 File Upload Test</h1>
+    
+    <div class="upload-form">
+        <h2>Upload File</h2>
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+    
+    <div class="instructions">
+        <h3>Command Line Upload:</h3>
+        <pre>curl -X POST -F "file=@yourfile.txt" http://localhost:8080/upload</pre>
+        
+        <h3>View Uploaded Files:</h3>
+        <p><a href="/files">Browse Files</a></p>
+        
+        <h3>Delete File:</h3>
+        <pre>curl -X DELETE http://localhost:8080/upload/filename.txt</pre>
+    </div>
+</body>
+</html>

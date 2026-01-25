@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>webserv - Test Server</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #e8f4f8;
+            border-left: 4px solid #2196F3;
+        }
+        .test-links {
+            margin-top: 30px;
+        }
+        .test-links a {
+            display: block;
+            padding: 10px;
+            margin: 5px 0;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .test-links a:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 webserv Test Server</h1>
+        <p>Welcome to the webserv test page! This server demonstrates all required features.</p>
+        
+        <h2>Features Implemented:</h2>
+        <ul class="feature-list">
+            <li>✅ Static file serving (GET)</li>
+            <li>✅ Multiple servers and ports</li>
+            <li>✅ Virtual hosting (server_name)</li>
+            <li>✅ File upload (POST)</li>
+            <li>✅ File deletion (DELETE)</li>
+            <li>✅ CGI execution (.py scripts)</li>
+            <li>✅ Directory listing (autoindex)</li>
+            <li>✅ Custom error pages</li>
+            <li>✅ HTTP redirects (301, 302)</li>
+            <li>✅ Worker connections limit</li>
+            <li>✅ Idle timeout handling</li>
+            <li>✅ Advanced logging system</li>
+            <li>✅ Non-blocking I/O (kqueue/epoll)</li>
+        </ul>
+        
+        <div class="test-links">
+            <h2>Test Links:</h2>
+            <a href="/files">📁 Directory Listing</a>
+            <a href="/cgi-bin/test.py">🐍 CGI Test Script</a>
+            <a href="/upload">📤 File Upload</a>
+            <a href="/redirect">🔄 Redirect Test</a>
+            <a href="/images">🖼️ Images (alias test)</a>
+            <a href="/nonexistent">❌ 404 Error Page</a>
+        </div>
+        
+        <h2>Manual Tests:</h2>
+        <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
+# Upload file
+curl -X POST -F "file=@test.txt" http://localhost:8080/upload
+
+# Delete file
+curl -X DELETE http://localhost:8080/upload/test.txt
+
+# CGI with parameters
+curl "http://localhost:8080/cgi-bin/test.py?name=John&age=25"
+
+# Virtual hosting
+curl -H "Host: api.example.com" http://localhost:8080/
+        </pre>
+    </div>
+</body>
+</html>
