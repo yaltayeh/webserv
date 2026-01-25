@@ -44,24 +44,18 @@ int main(int argc, const char *argv[], const char *envp[])
 // 	F_SETFL, O_NONBLOCK and, FD_CLOEXEC.
 // 	Any other flag is forbidden.
 
-// TODO: You must provide configuration files and default files to test and demonstrate that
-// 	every feature works during the evaluation.
-
-
-
-
 /*
 	yacob
-	- worker_connections
-	- idle_timeout
-	- the queue system.
-	- the level trigger/trigger mode.
-	- the handleDistroy for IOEventHandler.
+	[x] worker_connections
+	[x] idle_timeout
+	[x] the queue system.
+	[x] the level trigger/trigger mode.
+	[x] the handleDistroy for IOEventHandler.
 
 	ahmed
-	- getChunk implementation
-	- checkChunk implementation
-	- HEAD method implementation
-	- fix luka extract test case
-	- signale to stop the server gracefully
+	[x] getChunk implementation
+	[x] checkChunk implementation
+	[x] HEAD method implementation
+	[x] fix luka extract test case
+	[ ] signal to stop the server gracefully 
 */
