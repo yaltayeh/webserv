@@ -8,7 +8,6 @@ SRC_DIR = src
 OBJ_DIR = $(BUILD_PATH)/obj
 
 SRCS = $(SRC_DIR)/Request.cpp \
-		$(SRC_DIR)/Response.cpp \
 		$(SRC_DIR)/FileResponse.cpp \
 		$(SRC_DIR)/DefaultResponse.cpp \
 		$(SRC_DIR)/ResponseBlender.cpp \
