@@ -20,6 +20,18 @@ namespace libhttp {
 		if (fd < 0)
 			throw std::runtime_error("Failed to open file: " + filePath);
 
+		int flags = fcntl(fd, F_GETFL, 0);
+		if (flags < 0)
+		{
+			close(fd);
+			throw std::runtime_error("Failed to get file flags: " + std::string(strerror(errno)));
+		}
+		if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+		{
+			close(fd);
+			throw std::runtime_error("Failed to set non-blocking mode on file fd: " + std::string(strerror(errno)));
+		}
+
 		off_t file_size = buf.st_size;
 
 		std::ostringstream ss;
