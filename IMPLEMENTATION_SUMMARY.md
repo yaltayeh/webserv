@@ -189,7 +189,7 @@ make re
 ```
 [2026-01-25 04:13:12] [INFO] [ListenSocket.cpp:171] ListenSocket(fd=3, addr=0.0.0.0:8080) is now listening
 [2026-01-25 04:13:12] [TRACE] [EventLoop.cpp:318] Added 1 event(s) for fd:3 udata:0x6070000031a0
-[2026-01-25 04:13:15] [INFO] [ListenSocket.cpp:213] ListenSocket(fd=3, addr=0.0.0.0:8080) accepted connection from ClientSocket(fd=5, addr=127.0.0.1:54321)
+[2026-01-25 04:13:15] [INFO] [ListenSocket.cpp:213] ListenSocket(fd=3, addr=0.0.0.0:8080) accepted ClientSocket(fd=5, addr=127.0.0.1:54321)
 [2026-01-25 04:13:15] [DEBUG] [ClientSocket.cpp:148] Client ClientSocket(fd=5, addr=127.0.0.1:54321) closed connection
 ```
 

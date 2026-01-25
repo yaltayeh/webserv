@@ -17,7 +17,8 @@
  * Initializes IndexedQueue with estimated capacity for 1024 concurrent connections
  */
 EventLoop::EventLoop(const GlobalConfig &config)
-	: _config(config), _eventFd(-1), _clientQueue(1024)
+	: _config(config), _eventFd(-1), 
+	_clientQueue(config.http.worker_connections + 1) // +1 to avoid edge case of 0 capacity
 {
 	ListenSocket *socket = NULL;
 	VirtualServer *virtualServer = NULL;
@@ -92,6 +93,16 @@ EventLoop::~EventLoop()
 
 	_virtualServers.clear();
 	_listeningSockets.clear();
+}
+
+const GlobalConfig &EventLoop::getConfig() const
+{
+	return _config;
+}
+
+const IndexedQueue<int, ClientSocket *> &EventLoop::getClientQueue() const
+{
+	return _clientQueue;
 }
 
 /**

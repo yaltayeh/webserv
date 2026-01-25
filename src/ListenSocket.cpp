@@ -46,22 +46,32 @@ ListenSocket::~ListenSocket() { }
 
 IOEventState ListenSocket::handleEvent(EventLoop *el)
 {
-	// Try to accept a new client connection
-	ClientSocket *clientSocket = _accept();
-
-	if (!clientSocket)
+	while (1)
 	{
-		// EAGAIN/EWOULDBLOCK means no more connections (normal)
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
+		if (el->getConfig().http.worker_connections > 0 &&
+			el->getClientQueue().size() >= (size_t)el->getConfig().http.worker_connections)
+		{
+			// Reached max connections, stop accepting new clients
+			LOG_WARNING("Max worker_connections reached (" << el->getConfig().http.worker_connections << "), not accepting new clients");
 			return IO_EVENT_CONTINUE;
+		}
+		// Try to accept a new client connection
+		ClientSocket *clientSocket = _accept();
 
-		LOG_ERROR_ERRNO("accept() failed on listening socket");
-		return IO_EVENT_CLOSE;
+		if (!clientSocket)
+		{
+			// EAGAIN/EWOULDBLOCK means no more connections (normal)
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				return IO_EVENT_CONTINUE;
+
+			LOG_ERROR_ERRNO("accept() failed on listening socket");
+			return IO_EVENT_CLOSE;
+		}
+		el->markClientActive(clientSocket);
+		// Add new client to event loop (start monitoring for HTTP request)
+		el->addEvent(clientSocket->getSocketfd(), IO_READ | IO_WRITE, clientSocket);
+		LOG_DEBUG("Added client to event loop: " << *clientSocket);
 	}
-	el->markClientActive(clientSocket);
-	// Add new client to event loop (start monitoring for HTTP request)
-	el->addEvent(clientSocket->getSocketfd(), IO_READ | IO_WRITE, clientSocket);
-	LOG_DEBUG("Added client to event loop: " << *clientSocket);
 	return IO_EVENT_CONTINUE;
 }
 
@@ -147,9 +157,9 @@ int ListenSocket::_listen()
 	 * Marks the socket as passive (ready to accept connections). Creates
 	 * a queue for pending connections with specified backlog size.
 	 *
-	 * BACKLOG PARAMETER (128):
+	 * BACKLOG PARAMETER (512):
 	 * Maximum number of pending connections in the queue. If queue is
-	 * full, new connection attempts are rejected. 128 is a standard value
+	 * full, new connection attempts are rejected. 512 is a standard value
 	 * that works well for most servers.
 	 *
 	 * AFTER listen():
@@ -157,7 +167,7 @@ int ListenSocket::_listen()
 	 * - Kernel starts accepting SYN packets (TCP handshake)
 	 * - Completed connections wait in queue until accept() is called
 	 */
-	int err = ::listen(_socketfd, 128);
+	int err = ::listen(_socketfd, 512);
 	if (err < 0)
 	{
 		LOG_CRITICAL_ERRNO(*this << " Failed to listen");
@@ -210,7 +220,7 @@ ClientSocket *ListenSocket::_accept()
 	/**
 	 * Log successful connection (useful for debugging)
 	 */
-	LOG_INFO(*this << " accepted connection from " << *clientSocket);
+	LOG_INFO(*this << " accepted " << *clientSocket);
 
 	return clientSocket;
 }

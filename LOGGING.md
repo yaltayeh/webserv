@@ -121,7 +121,7 @@ http {
 **Output:**
 ```
 [2026-01-25 10:30:45] INFO Server listening on 0.0.0.0:8080
-[2026-01-25 10:30:46] INFO Accepted connection from 127.0.0.1:54321
+[2026-01-25 10:30:46] INFO accepted 127.0.0.1:54321
 [2026-01-25 10:30:47] WARNING Client body size exceeds limit
 ```
 
@@ -139,7 +139,7 @@ http {
 **Output in /var/log/webserv.log:**
 ```
 [INFO] Server listening on 0.0.0.0:8080
-[INFO] Accepted connection from 127.0.0.1:54321
+[INFO] Accepted 127.0.0.1:54321
 [WARNING] Client body size exceeds limit
 ```
 

@@ -51,6 +51,9 @@ public:
     EventLoop(const GlobalConfig &config);
     ~EventLoop();
 
+    const GlobalConfig &getConfig() const;
+    const IndexedQueue<int, ClientSocket *> &getClientQueue() const;
+
     // Add or update client activity (moves to back if exists)
     void    markClientActive(ClientSocket *client);
     

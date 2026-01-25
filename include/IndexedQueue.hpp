@@ -111,6 +111,10 @@ public:
 	// Does nothing if key not found
 	// O(1) average
 	int remove(K key);
+
+	// Get current size of queue
+	// O(1)
+	size_t size() const;
 };
 
 #include "IndexedQueue.tpp"

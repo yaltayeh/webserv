@@ -214,3 +214,9 @@ inline int IndexedQueue<K, T>::remove(K key)
 	removeFromHash(key);
 	return 1;
 }
+
+template <typename K, typename T>
+inline size_t IndexedQueue<K, T>::size() const
+{
+	return queue.size();
+}

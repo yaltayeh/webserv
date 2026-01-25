@@ -82,6 +82,7 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/LogColoredDirective.cpp				\
 							src/directives/LogShowTimestampDirective.cpp		\
 							src/directives/LogFileDirective.cpp					\
+							src/directives/WorkerConnectionsDirective.cpp		\
 
 
 OBJS		   			 = $(SRCS:src/%.cpp=$(BUILD_PATH)/obj/%.o)
