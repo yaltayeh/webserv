@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <cstring>
+#include "libutils/include/Logger.hpp"
 
 Socket::Socket(int socketfd)
 	: _socketfd(socketfd)
@@ -23,8 +24,7 @@ Socket::Socket(int socketfd)
 		_socketfd = socket(AF_INET, SOCK_STREAM, 0);
 		if (_socketfd < 0)
 		{
-			std::cerr << "Error: Failed to create socket: "
-					  << strerror(errno) << std::endl;
+			LOG_CRITICAL_ERRNO("Failed to create socket");
 			Socket::close();
 		}
 	}
@@ -34,8 +34,7 @@ Socket::Socket(int socketfd)
 	if (flags == -1 || fcntl(_socketfd, F_SETFD, flags | FD_CLOEXEC) == -1)
 	{
 		Socket::close();
-		std::cerr << "Error: Failed to set FD_CLOEXEC mode on "
-				  << _socketfd << strerror(errno) << std::endl;
+		LOG_CRITICAL_ERRNO("Failed to set FD_CLOEXEC mode on fd " << _socketfd);
 		throw std::runtime_error("Failed to set FD_CLOEXEC on kqueue fd: " + std::string(strerror(errno)));
 	}
 
@@ -54,8 +53,7 @@ Socket::Socket(int socketfd)
 	 */
 	if (setNonBlocking() < 0)
 	{
-		std::cerr << "Error: Failed to set non-blocking mode on "
-				  << strerror(errno) << std::endl;
+		LOG_CRITICAL_ERRNO("Failed to set non-blocking mode on fd " << _socketfd);
 		Socket::close();
 	}
 }

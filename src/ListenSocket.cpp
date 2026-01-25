@@ -11,6 +11,7 @@
 #include "ClientSocket.hpp"
 #include "ListenSocket.hpp"
 #include "EventLoop.hpp"
+#include "libutils/include/Logger.hpp"
 
 ListenSocket::ListenSocket(uint32_t ip, uint16_t port)
 	: Socket(-1)
@@ -45,9 +46,6 @@ ListenSocket::~ListenSocket() { }
 
 IOEventState ListenSocket::handleEvent(EventLoop *el)
 {
-	// Accept ALL pending connections (important for edge-triggered mode)
-	// We must accept until EAGAIN, otherwise we might miss connections
-	
 	// Try to accept a new client connection
 	ClientSocket *clientSocket = _accept();
 
@@ -57,14 +55,13 @@ IOEventState ListenSocket::handleEvent(EventLoop *el)
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			return IO_EVENT_CONTINUE;
 
-		std::cerr << "Error: accept() failed: "
-					<< strerror(errno) << std::endl;
+		LOG_ERROR_ERRNO("accept() failed on listening socket");
 		return IO_EVENT_CLOSE;
 	}
 	el->markClientActive(clientSocket);
 	// Add new client to event loop (start monitoring for HTTP request)
 	el->addEvent(clientSocket->getSocketfd(), IO_READ | IO_WRITE, clientSocket);
-	std::cout << *clientSocket << " add client " << std::endl;
+	LOG_DEBUG("Added client to event loop: " << *clientSocket);
 	return IO_EVENT_CONTINUE;
 }
 
@@ -96,8 +93,7 @@ int ListenSocket::_setOptions()
 	int opt = 1;
 	if (setsockopt(_socketfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
 	{
-		std::cerr << *this << "Error: Failed to set SO_REUSEADDR on "
-				  << strerror(errno) << std::endl;
+		LOG_ERROR_ERRNO(*this << " Failed to set SO_REUSEADDR");
 		Socket::close();
 		return (-1);
 	}
@@ -133,7 +129,7 @@ int ListenSocket::_bind()
 	int err = ::bind(_socketfd, (sockaddr *)&_addr, sizeof(_addr));
 	if (err < 0)
 	{
-		std::cerr << *this << "Error: Failed to bind socket to port " << " (errno: " << strerror(errno) << ")" << std::endl;
+		LOG_CRITICAL_ERRNO(*this << " Failed to bind socket");
 		Socket::close();
 	}
 
@@ -164,7 +160,7 @@ int ListenSocket::_listen()
 	int err = ::listen(_socketfd, 128);
 	if (err < 0)
 	{
-		std::cerr << *this << "Error: Failed to listen on " << std::endl;
+		LOG_CRITICAL_ERRNO(*this << " Failed to listen");
 		Socket::close();
 	}
 	/**
@@ -172,7 +168,7 @@ int ListenSocket::_listen()
 	 * SUCCESS: Listening socket is ready
 	 * ========================================================================
 	 */
-	std::cout << *this << " is now listening" << std::endl;
+	LOG_INFO(*this << " is now listening");
 	return err;
 }
 
@@ -214,7 +210,7 @@ ClientSocket *ListenSocket::_accept()
 	/**
 	 * Log successful connection (useful for debugging)
 	 */
-	std::cout << *this << " accepted connection " << *clientSocket << std::endl;
+	LOG_INFO(*this << " accepted connection from " << *clientSocket);
 
 	return clientSocket;
 }

@@ -337,7 +337,6 @@ namespace Directive
 		std::string block = _configString.substr(start - _configString.c_str(), end - start);
 
 		Directive::Parser parser(block, _environ);
-		// std::cout << block << std::endl;
 		parser.setHandler(_handler);
 		parser._filePath = _filePath;
 		parser._dirPath = _dirPath;
@@ -455,7 +454,6 @@ namespace Directive
 				throw SyntaxException("Unexpected end directive 2");
 			if (*p != '}')
 			{
-				std::cout << "Unexpected char: " << *p << std::endl;
 				throw SyntaxException("Unexpected char ");
 			}
 		}
@@ -492,9 +490,7 @@ namespace Directive
 		if (i >= start)
 			throw SyntaxException("getVarVame: Unxpected char 3");
 		std::string name = str.substr(start, i);
-		std::cout << "VarName: " << name << "      ";
 		const std::string &value = _environ.getEnv(name);
-		std::cout << "VarValue: " << value << std::endl;
 		return (value);
 	}
 

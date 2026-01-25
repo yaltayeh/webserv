@@ -4,12 +4,13 @@
 #include "EventLoop.hpp"
 #include "Parser.hpp"
 #include "routing/RoutingInit.hpp"
+#include "libutils/include/Logger.hpp"
 
 int main(int argc, const char *argv[], const char *envp[])
 {
 	if (argc != 2)
 	{
-		std::cout << "Usage: " << argv[0] << " <config-file>" << std::endl;
+		LOG_INFO("Usage: " << argv[0] << " <config-file>");
 		return 1;
 	}
 	// TODO: You need at least the GET, POST, and DELETE methods.
@@ -31,7 +32,7 @@ int main(int argc, const char *argv[], const char *envp[])
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "Error: " << e.what() << std::endl;
+		LOG_ERROR("Fatal error: " << e.what());
 		routing::cleanupRouting(); // Cleanup even on error
 		return 2;
 	}

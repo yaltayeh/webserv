@@ -1,4 +1,5 @@
 #include "routing/RouteHandler.hpp"
+#include "libutils/include/Logger.hpp"
 #include "libhttp/include/DefaultResponse.hpp"
 #include "libhttp/include/ResponseBlender.hpp"
 #include "libhttp/include/Utils.hpp"
@@ -44,13 +45,13 @@ libhttp::Response *RouteHandler::process(const libhttp::Request &request,
 		// If context says stop, but no response returned, that's an error
 		if (!context.shouldContinue)
 		{
-			std::cerr << "Middleware stopped chain but returned NULL response" << std::endl;
+			LOG_ERROR("Middleware stopped chain but returned NULL response");
 			break;
 		}
 	}
 
 	// No middleware handled the request - return 500 Internal Server Error
-	std::cerr << "No middleware handled request for URI: " << request.getUri() << std::endl;
+	LOG_ERROR("No middleware handled request for URI: " << request.getUri());
 
 	libhttp::ResponseBlender *blender = new libhttp::ResponseBlender();
 	blender->setStatus(500);
@@ -88,7 +89,7 @@ RouteHandler &RouteHandler::getInstance()
 {
 	if (_instance == NULL)
 	{
-		std::cerr << "FATAL: RouteHandler::getInstance() called before setInstance()" << std::endl;
+		LOG_CRITICAL("RouteHandler::getInstance() called before setInstance()");
 		// Return a default instance to avoid crash, but this is a programming error
 		static RouteHandler defaultInstance;
 		return defaultInstance;

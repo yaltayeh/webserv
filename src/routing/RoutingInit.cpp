@@ -13,7 +13,7 @@ namespace routing
 
 void initializeRouting()
 {
-	std::cout << "Initializing routing system..." << std::endl;
+	// std::cout << "Initializing routing system..." << std::endl;
 
 	// Build the RouteHandler with all middleware registered
 	RouteHandler *handler = RouteHandler::builder()
@@ -36,14 +36,14 @@ void initializeRouting()
 	// Set as singleton instance
 	RouteHandler::setInstance(handler);
 
-	std::cout << "Routing system initialized successfully." << std::endl;
+	// std::cout << "Routing system initialized successfully." << std::endl;
 }
 
 void cleanupRouting()
 {
 	// The RouteHandler singleton manages its own cleanup via setInstance(NULL)
 	// or destructor, but we can explicitly clean it up here if needed
-	std::cout << "Cleaning up routing system..." << std::endl;
+	// std::cout << "Cleaning up routing system..." << std::endl;
 	RouteHandler::setInstance(NULL);
 }
 

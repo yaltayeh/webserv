@@ -116,7 +116,7 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 		script_path = utils::resolvePath(uri_path, location_path, location);
 	}
 
-	std::cout << "CGI: Executing script at " << script_path << std::endl;
+	// std::cout << "CGI: Executing script at " << script_path << std::endl;
 
 	// Check script exists
 	if (!utils::fileExists(script_path))
@@ -131,7 +131,7 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 	// If cgi_pass looks like a directory, use default Python interpreter
 	if (interpreter.find('/') != std::string::npos && utils::isDirectory(interpreter))
 	{
-		std::cout << "CGI: cgi_pass is directory, using /usr/bin/python3" << std::endl;
+		// std::cout << "CGI: cgi_pass is directory, using /usr/bin/python3" << std::endl;
 		interpreter = "/usr/bin/python3";
 	}
 	

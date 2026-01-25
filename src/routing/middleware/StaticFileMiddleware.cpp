@@ -51,7 +51,7 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 	const std::string &uri = request.getUri();
 	libhttp::Method method = request.getMethod();
 
-	std::cout << "staticFileHandler: " << uri << std::endl;
+	// std::cout << "staticFileHandler: " << uri << std::endl;
 
 	// Get location path
 	std::string location_path = location.path;
@@ -67,7 +67,7 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 	// Resolve URI to filesystem path
 	std::string file_path = utils::resolvePath(uri_path, location_path, location);
 
-	std::cout << "Resolving URI '" << uri_path << "' to path: " << file_path << std::endl;
+	// std::cout << "Resolving URI '" << uri_path << "' to path: " << file_path << std::endl;
 
 	// Handle DELETE method
 	if (method == libhttp::DELETE)
@@ -120,7 +120,7 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 		// Look for index file
 		std::string index_file = utils::findIndexFile(file_path, location);
 
-		std::cout << "index_file: " << index_file << std::endl;
+		// std::cout << "index_file: " << index_file << std::endl;
 
 		if (!index_file.empty())
 		{
@@ -129,13 +129,13 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 		else if (location.autoindex)
 		{
 			// Generate directory listing
-			std::cout << "Autoindex enabled, generating directory listing" << std::endl;
+			// std::cout << "Autoindex enabled, generating directory listing" << std::endl;
 			return generateAutoindex(file_path, uri);
 		}
 		else
 		{
 			// No index file and autoindex disabled
-			std::cout << "Autoindex disabled (autoindex=" << location.autoindex << ")" << std::endl;
+			// std::cout << "Autoindex disabled (autoindex=" << location.autoindex << ")" << std::endl;
 			return utils::generateErrorResponse(403, location);
 		}
 	}

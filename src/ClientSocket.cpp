@@ -7,6 +7,7 @@
 #include "FileResponse.hpp"
 #include "StreamSocket.hpp"
 #include <unistd.h>
+#include "libutils/include/Logger.hpp"
 
 #define READ_BUFFER_SIZE (4096 * 2)
 
@@ -46,7 +47,7 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
     // --- Sub-case A: Client Disconnected ---
     if (events & (IO_ERROR | IO_HUP))
     {
-        std::cout << *this << " disconnected" << std::endl;
+        LOG_DEBUG("Client disconnected: " << *this);
         return IO_EVENT_CLOSE;
     }
 
@@ -54,7 +55,6 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
     if (events & IO_READ)
     {
         libhttp::State state = handleRead();
-        // std::cout << "Parser state after read: " << state << std::endl;
 
         if (state == libhttp::CLOSED)
             return IO_EVENT_CLOSE;
@@ -105,7 +105,6 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
         // Send HTTP response data
         handleWrite();
 
-        // std::cout << "WE ARE READY TO WRITE BOSS " << *this << std::endl;
 
         // If entire response has been sent
         if (_write_buffer.empty() && _response && _response->isComplete())
@@ -141,11 +140,10 @@ libhttp::State ClientSocket::handleRead()
 
     if (bytes_read <= 0)
     {
-        std::cout << "Client " << *this << " closed connection" << std::endl;
+        LOG_DEBUG("Client " << *this << " closed connection");
         return libhttp::CLOSED;
     }
 
-    std::cout << *this << "Read " << bytes_read << " bytes" << std::endl;
     return _parser->parse(buffer, bytes_read);
 }
 
@@ -182,21 +180,20 @@ bool ClientSocket::handleWrite()
 
     if (bytes_sent < 0)
     {
-        std::cerr << "Error writing to client " << *this << std::endl;
+        LOG_ERROR("Error writing to client " << *this);
         return 0;
     }
 
     if (bytes_sent == 0)
         return 1;
 
-    // std::cout << "Sent " << bytes_sent << " bytes to client " << *this << std::endl;
 
     _write_buffer.erase(0, bytes_sent);
 
     // Check if all data sent
     if (_write_buffer.empty() && _response->isComplete())
     {
-        std::cout << "All data sent to client " << *this << std::endl;
+        return 0;
     }
     return 1;
 }

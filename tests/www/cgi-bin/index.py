@@ -1,13 +1,15 @@
-import sys
-from time import sleep
+import platform
 
-print("HTTP/1.1 200 OK", end='\r\n')
+print("Status: 200", end='\r\n')
 print("Content-Type: text/html", end='\r\n')
-content = "Python CGI index"
-print("Content-Length: ", len(content), end='\r\n')
 
 print(end='\r\n')
 
-sleep(1) # sleep 10 seconds to simulate long processing 
+system = platform.uname()
 
-print(content)
+print(f"System: {system.system}")
+print(f"Node Name: {system.node}")
+print(f"Release: {system.release}")
+print(f"Version: {system.version}")
+print(f"Machine: {system.machine}")
+print(f"Processor: {system.processor}")

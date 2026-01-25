@@ -7,7 +7,7 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -Iinclude
 SRC_DIR = src
 OBJ_DIR = $(BUILD_PATH)/obj
 
-SRCS = $(SRC_DIR)/Utils.cpp
+SRCS = $(SRC_DIR)/Utils.cpp $(SRC_DIR)/Logger.cpp
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 all: $(LIB_NAME)

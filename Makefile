@@ -77,6 +77,11 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/CgiPassDirective.cpp					\
 							src/directives/CgiExtensionDirective.cpp			\
 							src/directives/DenyDirective.cpp					\
+							src/directives/LogLevelDirective.cpp				\
+							src/directives/LogShowLocationDirective.cpp			\
+							src/directives/LogColoredDirective.cpp				\
+							src/directives/LogShowTimestampDirective.cpp		\
+							src/directives/LogFileDirective.cpp					\
 
 
 OBJS		   			 = $(SRCS:src/%.cpp=$(BUILD_PATH)/obj/%.o)

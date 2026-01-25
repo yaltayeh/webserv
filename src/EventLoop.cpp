@@ -8,6 +8,7 @@
 #include "EventLoop.hpp"
 #include "IOEventHandler.hpp"
 #include <sys/wait.h>
+#include "libutils/include/Logger.hpp"
 // #include <chrono>
 
 /**
@@ -146,7 +147,7 @@ void EventLoop::clientDisconnect(ClientSocket *client)
 	if (!_clientQueue.remove(client->getSocketfd()))
 		return;
 
-	std::cout << *client << " Marking client for deletion" << std::endl;
+	// std::cout << *client << " Marking client for deletion" << std::endl;
 
 	// Remove from event monitoring
 	if (client->getSocketfd() >= 0)
@@ -155,6 +156,7 @@ void EventLoop::clientDisconnect(ClientSocket *client)
 	// Close the socket but don't delete yet
 	client->close();
 	
+	LOG_DEBUG("Marking client for deletion: " << *client);
 	// Add to deletion list - will be deleted at end of event loop iteration
 	_deleteClients.push_back(client);
 }
@@ -192,7 +194,7 @@ void EventLoop::checkClientTimeouts()
 			break;
 
 		// Timed out - pop from queue and close
-		std::cout << *oldest << " Timeout: closing idle connection " << std::endl;
+		LOG_DEBUG("Timeout: closing idle connection " << *oldest);
 		_clientQueue.pop(); // Remove from front
 
 		// Request closure
@@ -209,9 +211,9 @@ void EventLoop::CheckChildProcesses()
 	while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
 	{
 		if (WIFEXITED(status))
-			std::cout << "Child process " << pid << " exited with status " << WEXITSTATUS(status) << std::endl;
+			LOG_DEBUG("Child process " << pid << " exited with status " << WEXITSTATUS(status));
 		else if (WIFSIGNALED(status))
-			std::cout << "Child process " << pid << " terminated by signal " << WTERMSIG(status) << std::endl;
+			LOG_DEBUG("Child process " << pid << " terminated by signal " << WTERMSIG(status));
 		std::map<pid_t, ChildProcessHandler *>::iterator it = _childProcesses.find(pid);
 		if (it != _childProcesses.end())
 		{
@@ -310,11 +312,10 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 	
 	if (kev_count > 0 && kevent(_eventFd, kevs, kev_count, NULL, 0, NULL) == -1)
 	{
-		std::cerr << "Error adding event for fd " << fd << ": "
-				  << strerror(errno) << std::endl;
+		LOG_ERROR_ERRNO("kevent failed adding event for fd " << fd);
 		return -1;
 	}
-	// std::cout << "Added " << kev_count << " event(s) for fd:" << fd << " udata:" << udata << std::endl;
+	LOG_TRACE("Added " << kev_count << " event(s) for fd:" << fd << " udata:" << udata);
 #endif
 
 	if (needAddRead)

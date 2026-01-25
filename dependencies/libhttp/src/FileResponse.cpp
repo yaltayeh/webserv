@@ -20,7 +20,6 @@ namespace libhttp {
 		if (fd < 0)
 			throw std::runtime_error("Failed to open file: " + filePath);
 
-		std::cout << "Opened file: " << filePath << " (fd=" << fd << ")\n" << std::endl;
 		off_t file_size = buf.st_size;
 
 		std::ostringstream ss;
