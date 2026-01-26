@@ -74,7 +74,8 @@ class CGIConcurrentTest(BaseTest):
         all_urls = cgi_urls + [simple_url]
 
         # Make all requests concurrently (30 CGI + 1 simple)
-        results = self.concurrent_get(all_urls, max_workers=31)
+        # Use 15 second timeout since CGI scripts sleep for 10 seconds
+        results = self.concurrent_get(all_urls, max_workers=31, timeout=15)
 
         total_time = time.time() - start_time
 

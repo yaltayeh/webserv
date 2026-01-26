@@ -5,11 +5,23 @@ from urllib.parse import urlparse
 class HTTP10Response:
     """Simple HTTP/1.0 response object mimicking requests.Response interface."""
 
-    def __init__(self, status_code, headers, body):
+    def __init__(self, status_code, headers, body_bytes):
         self.status_code = status_code
         self.headers = headers
-        self.text = body
-        self.content = body.encode("utf-8") if isinstance(body, str) else body
+        self.content = (
+            body_bytes if isinstance(body_bytes, bytes) else body_bytes.encode("utf-8")
+        )
+        # Lazy decode text only when accessed
+        self._text = None
+
+    @property
+    def text(self):
+        if self._text is None:
+            try:
+                self._text = self.content.decode("utf-8")
+            except:
+                self._text = self.content.decode("latin-1", errors="replace")
+        return self._text
 
     def __bool__(self):
         return self.status_code < 400
@@ -62,13 +74,19 @@ def send_http10_request(method, url, data=None, headers=None, timeout=5):
 
         # Receive response
         response_data = b""
+        total_received = 0
         while True:
             try:
-                chunk = sock.recv(4096)
-                # print(chunk)
+                chunk = sock.recv(65536)  # Much larger buffer for big files
                 if not chunk:
                     break
                 response_data += chunk
+                total_received += len(chunk)
+            except socket.timeout:
+                # If we got some data, it might be incomplete but let's try to parse it
+                if response_data:
+                    break
+                raise
             except ConnectionResetError:
                 # Server closed connection - this can be normal for HTTP/1.0
                 # Continue with whatever data we have
@@ -80,22 +98,29 @@ def send_http10_request(method, url, data=None, headers=None, timeout=5):
         if not response_data:
             raise Exception("Server closed connection without sending any data")
 
-        # Parse response
+        # Split headers and body at the binary level (not after decoding)
+        # This prevents corruption of binary data
+        header_end = response_data.find(b"\r\n\r\n")
+        if header_end == -1:
+            header_end = response_data.find(b"\n\n")
+            if header_end == -1:
+                # Malformed response - try to decode and return what we have
+                try:
+                    response_text = response_data.decode("utf-8", errors="replace")
+                except:
+                    response_text = response_data.decode("latin-1", errors="replace")
+                return HTTP10Response(0, {}, response_text.encode("latin-1"))
+            header_bytes = response_data[:header_end]
+            body_bytes = response_data[header_end + 2 :]  # Skip \n\n
+        else:
+            header_bytes = response_data[:header_end]
+            body_bytes = response_data[header_end + 4 :]  # Skip \r\n\r\n
+
+        # Decode headers only (safe to decode as text)
         try:
-            response_text = response_data.decode("utf-8", errors="replace")
+            header_section = header_bytes.decode("utf-8", errors="replace")
         except:
-            response_text = response_data.decode("latin-1", errors="replace")
-
-        # Split headers and body
-        parts = response_text.split("\r\n\r\n", 1)
-        if len(parts) < 2:
-            parts = response_text.split("\n\n", 1)
-
-        if len(parts) < 2:
-            # Malformed response
-            return HTTP10Response(0, {}, response_text)
-
-        header_section, body_section = parts
+            header_section = header_bytes.decode("latin-1", errors="replace")
 
         # Parse status line
         lines = header_section.split("\n")
@@ -119,7 +144,8 @@ def send_http10_request(method, url, data=None, headers=None, timeout=5):
                 key, value = line.split(":", 1)
                 response_headers[key.strip()] = value.strip()
 
-        return HTTP10Response(status_code, response_headers, body_section)
+        # Return response with binary body
+        return HTTP10Response(status_code, response_headers, body_bytes)
 
     except socket.timeout:
         raise Exception(f"Connection to {host}:{port} timed out")
@@ -153,7 +179,9 @@ def create_http10_session():
                 data = json_module.dumps(json)
                 headers = headers or {}
                 headers["Content-Type"] = "application/json"
-            return send_http10_request("POST", url, data=data, headers=headers, timeout=timeout)
+            return send_http10_request(
+                "POST", url, data=data, headers=headers, timeout=timeout
+            )
 
         @staticmethod
         def delete(url, headers=None, timeout=5, **kwargs):
@@ -167,7 +195,9 @@ def create_http10_session():
                 data = json_module.dumps(json)
                 headers = headers or {}
                 headers["Content-Type"] = "application/json"
-            return send_http10_request("PUT", url, data=data, headers=headers, timeout=timeout)
+            return send_http10_request(
+                "PUT", url, data=data, headers=headers, timeout=timeout
+            )
 
         @staticmethod
         def head(url, headers=None, timeout=5, **kwargs):
