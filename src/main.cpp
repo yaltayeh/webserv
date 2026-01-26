@@ -1,10 +1,27 @@
 #include <iostream>
+#include <csignal>
 #include "Config/GlobalConfig.hpp"
 #include "libdir/include/Parser.hpp"
 #include "EventLoop.hpp"
 #include "Parser.hpp"
 #include "routing/RoutingInit.hpp"
 #include "libutils/include/Logger.hpp"
+
+// Global pointer to event loop for signal handler
+static EventLoop* g_eventLoop = NULL;
+
+// Signal handler for graceful shutdown
+void signalHandler(int signum)
+{
+	if (signum == SIGINT || signum == SIGTERM)
+	{
+		LOG_INFO("Shutdown signal received, stopping server...");
+		if (g_eventLoop)
+		{
+			g_eventLoop->stop();
+		}
+	}
+}
 
 int main(int argc, const char *argv[], const char *envp[])
 {
@@ -25,6 +42,13 @@ int main(int argc, const char *argv[], const char *envp[])
 		routing::initializeRouting();
 
 		EventLoop loop(config);
+		
+		// Set up signal handlers for graceful shutdown
+		g_eventLoop = &loop;
+		std::signal(SIGINT, signalHandler);
+		std::signal(SIGTERM, signalHandler);
+		
+		LOG_INFO("Server started. Press Ctrl+C to stop.");
 		loop.run();
 
 		// Cleanup routing when done

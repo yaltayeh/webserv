@@ -17,7 +17,7 @@
  * Initializes IndexedQueue with estimated capacity for 1024 concurrent connections
  */
 EventLoop::EventLoop(const GlobalConfig &config)
-	: _config(config), _eventFd(-1), 
+	: _config(config), _eventFd(-1), _running(false),
 	_clientQueue(config.http.worker_connections + 1) // +1 to avoid edge case of 0 capacity
 {
 	ListenSocket *socket = NULL;
@@ -479,8 +479,9 @@ void EventLoop::run()
 
 	int maxevents = sizeof(events) / sizeof(events[0]);
 
-	// Infinite event loop
-	while (1)
+	// Main event loop
+	_running = true;
+	while (_running)
 	{
 		// Check for timed-out clients before waiting for new events
 		checkClientTimeouts();
@@ -553,5 +554,11 @@ void EventLoop::run()
 			delete client;
 		}
 		_deleteClients.clear();
-	} // End of infinite while loop
+	} // End of main event loop
+	LOG_INFO("Event loop stopped gracefully");
+}
+
+void EventLoop::stop()
+{
+	_running = false;
 }

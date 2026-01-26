@@ -1,6 +1,6 @@
 NAME		    		= $(BUILD_PATH)/webserv
 CXX 					= c++
-CXXFLAGS 				= -Wall -Wextra -Werror -std=c++98 -Iinclude -MMD -fsanitize=address -g
+CXXFLAGS 				= -Wall -Wextra -Werror -std=c++98 -Iinclude -MMD -g
 BUILD_PATH	      		?= ./build
 
 # Dependencies (order matters for linking: libhttp depends on libutils and libdir)
@@ -92,7 +92,7 @@ DFILES = ${OBJS:.o=.d} # Dependency files
 all: $(NAME)
 
 $(NAME): $(OBJS) $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a)
-		$(CXX) -fsanitize=address -g $(OBJS) $(DEPENDENCIES_FLAGS) -o $(NAME)
+		$(CXX) -g $(OBJS) $(DEPENDENCIES_FLAGS) -o $(NAME)
 
 $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a):
 		$(MAKE) -C $(DEPENDENCIES_DIR)/$(basename $(@F)) BUILD_PATH=../../$(BUILD_PATH)/$(basename $(@F)) all
