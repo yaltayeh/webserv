@@ -1,5 +1,6 @@
 #include "../include/Logger.hpp"
 #include <fstream>
+#include <cstdlib>
 
 namespace Logger {
 
@@ -131,9 +132,9 @@ namespace Logger {
         
         // Support both hexadecimal (0x10) and decimal (16)
         if (value.find("0x") == 0 || value.find("0X") == 0) {
-            num = strtol(value.c_str(), &end, 16);
+            num = std::strtol(value.c_str(), &end, 16);
         } else {
-            num = strtol(value.c_str(), &end, 10);
+            num = std::strtol(value.c_str(), &end, 10);
         }
         
         // Validate conversion

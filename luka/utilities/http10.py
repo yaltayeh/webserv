@@ -64,8 +64,8 @@ def send_http10_request(method, url, data=None, headers=None, timeout=5):
         response_data = b""
         while True:
             try:
-                chunk 
-                # print(chunk)= sock.recv(4096)
+                chunk = sock.recv(4096)
+                # print(chunk)
                 if not chunk:
                     break
                 response_data += chunk

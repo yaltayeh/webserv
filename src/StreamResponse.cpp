@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 #include "libhttp/include/Utils.hpp"
+#include <signal.h>
 
 StreamResponse::StreamResponse(int fd, int pid)
 	: _eof(false), _streamSocket(NULL), _findStatusLine(false)
