@@ -143,7 +143,7 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 	// Build FileResponse
 	try {
 		const std::string &content_type = utils::getMimeType(file_path, location);
-		libhttp::FileResponse *response = new libhttp::FileResponse(file_path, content_type);
+		libhttp::FileResponse *response = new libhttp::FileResponse(file_path, content_type, 200, method);
 		return response;
 	}
 	catch (const std::exception &e) {

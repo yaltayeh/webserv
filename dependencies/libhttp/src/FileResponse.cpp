@@ -9,8 +9,10 @@
 
 namespace libhttp {
 
-	FileResponse::FileResponse(std::string filePath, const std::string &contentType, int statusCode)
+	FileResponse::FileResponse(std::string filePath, const std::string &contentType, int statusCode, Method method)
 	{
+		_method = method;
+		
 		// Serve regular file using FileResponse for efficiency
 		struct stat buf;
 		if (stat(filePath.c_str(), &buf) < 0)
@@ -65,6 +67,13 @@ namespace libhttp {
 			if (max_size == 0 || _offset < header_size)
 				return to_copy; // Only header data sent
 		}
+		
+		// For HEAD requests, don't send the body - just headers
+		if (_method == HEAD) {
+			_readBytes = _fileSize; // Mark as complete
+			return to_copy;
+		}
+		
 		// Once headers are fully sent, start sending body from file
 		ssize_t bytes_read = read(_fd, buffer + to_copy, max_size);
 		if (bytes_read < 0) {
