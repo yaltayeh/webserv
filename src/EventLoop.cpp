@@ -517,7 +517,7 @@ void EventLoop::run()
 		}
 #endif
 		// Process each triggered event
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < n && _running; i++)
 		{
 #if defined(__linux__)
 			// Linux: Extract socket and event type from epoll event

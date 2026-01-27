@@ -32,7 +32,7 @@ private:
     std::vector<VirtualServer *>        _virtualServers;
     std::map<uint64_t, ListenSocket *>  _listeningSockets;
     int                                 _eventFd; // epoll fd (Linux) or kqueue fd (macOS/BSD)
-    bool                                _running; // Flag to control the event loop
+    volatile bool                       _running; // Flag to control the event loop
 
     // O(1) queue for client activity tracking
     // Key: socket fd, Value: ClientSocket*
