@@ -56,7 +56,7 @@ int main(int argc, const char *argv[], const char *envp[])
 	}
 	catch (const std::exception &e)
 	{
-		LOG_ERROR("Fatal error: " << e.what());
+		LOG_ERROR(e.what());
 		routing::cleanupRouting(); // Cleanup even on error
 		return 2;
 	}

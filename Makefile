@@ -101,6 +101,12 @@ $(BUILD_PATH)/obj/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
+deps:
+	@for lib in $(DEPENDENCIES); do \
+		$(MAKE) -C $(DEPENDENCIES_DIR)/$$lib BUILD_PATH=../../$(BUILD_PATH)/$$lib all; \
+	done
+	@$(MAKE) all
+
 clean:
 	@rm -rf $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a)
 	@rm -rf $(BUILD_PATH)/obj
