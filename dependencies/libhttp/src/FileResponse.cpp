@@ -18,10 +18,29 @@ namespace libhttp {
 		if (stat(filePath.c_str(), &buf) < 0)
 			throw std::runtime_error("Failed to stat file: " + filePath);
 		
+		off_t file_size = buf.st_size;
+
+		std::ostringstream ss;
+		ss << HTTP_1_0 << " " << statusCode << " " << getStatusMessage(statusCode) << "\r\n" // Status line
+		   << "Content-Type: " << contentType << "\r\n" /// Content-Type header
+		   << "Content-Length: " << file_size << "\r\n" // Content-Length header
+		   << "\r\n"; // End of headers
+		_headerData = ss.str();
+		_offset = 0;
+		_readBytes = 0;
+		_filePath = filePath;
+		_fileSize = 0;
+	
+		if (_method == HEAD) {
+			// For HEAD requests, no need to open the file
+			_fd = -1;
+			return;
+		}
+		
 		int fd = open(filePath.c_str(), O_RDONLY);
 		if (fd < 0)
-			throw std::runtime_error("Failed to open file: " + filePath);
-
+		throw std::runtime_error("Failed to open file: " + filePath);
+		
 		int flags = fcntl(fd, F_GETFL, 0);
 		if (flags < 0)
 		{
@@ -33,25 +52,16 @@ namespace libhttp {
 			close(fd);
 			throw std::runtime_error("Failed to set non-blocking mode on file fd: " + std::string(strerror(errno)));
 		}
-
-		off_t file_size = buf.st_size;
-
-		std::ostringstream ss;
-		ss << HTTP_1_0 << " " << statusCode << " " << getStatusMessage(statusCode) << "\r\n" // Status line
-		   << "Content-Type: " << contentType << "\r\n" /// Content-Type header
-		   << "Content-Length: " << file_size << "\r\n" // Content-Length header
-		   << "\r\n"; // End of headers
-		_headerData = ss.str();
-		_offset = 0;
-		_readBytes = 0;
+		
 		_fileSize = file_size;
-		_filePath = filePath;
 		_fd = fd;
 	}
 
 	FileResponse::~FileResponse()
 	{
-		close(_fd);
+		if (_fd != -1) {
+			close(_fd);
+		}
 	}
 
 	size_t FileResponse::genChunk(char *buffer, size_t max_size)
@@ -69,9 +79,12 @@ namespace libhttp {
 		}
 		
 		// For HEAD requests, don't send the body - just headers
-		if (_method == HEAD) {
-			_readBytes = _fileSize; // Mark as complete
-			return to_copy;
+		// if (_method == HEAD) {
+		// 	_readBytes = _fileSize; // Mark as complete
+		// 	return to_copy;
+		// }
+		if (_fd == -1) {
+			return to_copy; // File not open
 		}
 		
 		// Once headers are fully sent, start sending body from file
