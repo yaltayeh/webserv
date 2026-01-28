@@ -34,7 +34,7 @@ namespace libhttp {
 	//// //// parsing functions
 	// int 0 -> success, 1 -> incomplete, -1 -> error
 	State Parser::parse(const char* partial_request, size_t size) {
-		if (_state == COMPLETE || _state == ERROR)
+		if (_state == COMPLETE || _state == ERROR || _state == BODY_EXCEEDED_MAX_SIZE)
 			return _state;
 
 		_buffer.append(partial_request, size);
@@ -145,22 +145,10 @@ namespace libhttp {
 			return 0;
 		}
 
-		if (_maxBodySize )
-		
-		// Determine if we need to use temp file for this body
-		// Use temp file if body will exceed max size OR if we already started using one
-		if (!_usesTempFile && _expectedBodyLength > _maxBodySize) {
-			_usesTempFile = true;
-			createTempFile();
-			if (_state == ERROR) {
-				return -1;
-			}
-			
-			// Write any body data we've already accumulated
-			if (!_request.getBody().empty()) {
-				writeTempFile(_request.getBody().c_str(), _request.getBody().size());
-				_request.setBody(""); // Clear in-memory body
-			}
+		// Check if body size exceeds the maximum allowed (if maxBodySize is not 0 = unlimited)
+		if (_maxBodySize > 0 && _expectedBodyLength > _maxBodySize) {
+			_state = BODY_EXCEEDED_MAX_SIZE;
+			return 0;
 		}
 		
 		// Accumulate body data

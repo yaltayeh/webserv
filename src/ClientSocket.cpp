@@ -5,6 +5,7 @@
 #include "StreamResponse.hpp"
 #include "DefaultResponse.hpp"
 #include "FileResponse.hpp"
+#include "ResponseBlender.hpp"
 #include "StreamSocket.hpp"
 #include <unistd.h>
 #include "libutils/include/Logger.hpp"
@@ -61,15 +62,17 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
         if (state == libhttp::BODY_EXCEEDED_MAX_SIZE)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            // _response = new libhttp::DefaultResponse(413);
-            return IO_EVENT_CLOSE; // TODO: fix error handling later
+            libhttp::ResponseBlender blender(413);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
         }
 
         if (state == libhttp::ERROR)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            // _response = new libhttp::DefaultResponse(400);
-            return IO_EVENT_CLOSE; // TODO: fix error handling later
+            libhttp::ResponseBlender blender(400);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
         }
 
         if (state == libhttp::COMPLETE)
