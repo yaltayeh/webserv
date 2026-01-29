@@ -3,6 +3,11 @@ CXX 					= c++
 CXXFLAGS 				= -Wall -Wextra -Werror -std=c++98 -Iinclude -MMD -g
 BUILD_PATH	      		?= ./build
 
+# Buffer size configuration (like get_next_line BUFFER_SIZE)
+# Default: 8192 bytes. Override with: make BUFFER_SIZE=16384
+BUFFER_SIZE				?= 8192
+CXXFLAGS				+= -DBUFFER_SIZE=$(BUFFER_SIZE)
+
 # Dependencies (order matters for linking: libhttp depends on libutils and libdir)
 DEPENDENCIES	    	= libhttp libutils libdir
 DEPENDENCIES_DIR		= ./dependencies
@@ -95,7 +100,7 @@ $(NAME): $(OBJS) $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a)
 		$(CXX) -g $(OBJS) $(DEPENDENCIES_FLAGS) -o $(NAME)
 
 $(foreach lib,$(DEPENDENCIES),$(BUILD_PATH)/$(lib)/$(lib).a):
-		$(MAKE) -C $(DEPENDENCIES_DIR)/$(basename $(@F)) BUILD_PATH=../../$(BUILD_PATH)/$(basename $(@F)) all
+		$(MAKE) -C $(DEPENDENCIES_DIR)/$(basename $(@F)) BUILD_PATH=../../$(BUILD_PATH)/$(basename $(@F)) BUFFER_SIZE=$(BUFFER_SIZE) all
 	
 $(BUILD_PATH)/obj/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
@@ -103,7 +108,7 @@ $(BUILD_PATH)/obj/%.o: src/%.cpp
 
 deps:
 	@for lib in $(DEPENDENCIES); do \
-		$(MAKE) -C $(DEPENDENCIES_DIR)/$$lib BUILD_PATH=../../$(BUILD_PATH)/$$lib all; \
+		$(MAKE) -C $(DEPENDENCIES_DIR)/$$lib BUILD_PATH=../../$(BUILD_PATH)/$$lib BUFFER_SIZE=$(BUFFER_SIZE) all; \
 	done
 	@$(MAKE) all
 

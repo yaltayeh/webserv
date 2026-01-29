@@ -9,8 +9,7 @@
 #include "StreamSocket.hpp"
 #include <unistd.h>
 #include "libutils/include/Logger.hpp"
-
-#define READ_BUFFER_SIZE (4096 * 2)
+#include "BufferConfig.hpp"
 
 ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen)
     : Socket(client_fd),

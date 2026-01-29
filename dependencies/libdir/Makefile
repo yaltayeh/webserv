@@ -10,6 +10,10 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -MMD -g -std=c++98
 CPPFLAGS = -I./include -I./directives/include
 
+# Buffer size configuration (propagated from main Makefile)
+BUFFER_SIZE ?= 8192
+CXXFLAGS += -DBUFFER_SIZE=$(BUFFER_SIZE)
+
 OFILES = $(patsubst src/%.cpp,$(BUILD_PATH)/%.o,$(filter src/%,$(FILES))) \
          $(patsubst directives/src/%.cpp,$(BUILD_PATH)/directives/%.o,$(filter directives/%,$(FILES)))
 DFILES = ${OFILES:.o=.d}
