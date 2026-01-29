@@ -40,10 +40,13 @@ class BadRequestsTest(BaseTest):
         self.create_conf(conf)
 
     def run(self):
+        print("\n[Test 1] Verify server is running with normal request")
         # Test 1: Verify server is running with normal request
         response = self.get("/")
         self.assert_status(response, 200, "Server should be running")
+        print("  ✓ Server responding normally")
 
+        print("\n[Test 2] Invalid HTTP method (GETT)")
         # Test 2: Invalid HTTP method (should return 400 or 405 or 501)
         try:
             response = self.send_raw_request(
@@ -55,9 +58,11 @@ class BadRequestsTest(BaseTest):
             assert any(code in status_line for code in ["400", "405", "501"]), (
                 f"Invalid method should return 400/405/501, got {status_line}"
             )
+            print(f"  ✓ Invalid method rejected: {status_line}")
         except Exception as e:
-            print(f"Warning: Invalid method test failed: {e}")
+            print(f"  ⚠ Warning: Invalid method test failed: {e}")
 
+        print("\n[Test 3] Missing HTTP version")
         # Test 3: Missing HTTP version
         try:
             response = self.send_raw_request("GET /\r\nHost: localhost\r\n\r\n")
@@ -65,9 +70,11 @@ class BadRequestsTest(BaseTest):
             assert response.startswith(b"HTTP/") or len(response) > 0, (
                 "Server should respond to request without version"
             )
+            print(f"  ✓ Missing version handled")
         except Exception as e:
-            print(f"Warning: Missing version test failed: {e}")
+            print(f"  ⚠ Warning: Missing version test failed: {e}")
 
+        print("\n[Test 4] Invalid HTTP version (HTTP/3.0)")
         # Test 4: Invalid HTTP version
         try:
             response = self.send_raw_request(
@@ -78,17 +85,21 @@ class BadRequestsTest(BaseTest):
             assert any(code in status_line for code in ["400", "505"]), (
                 f"Invalid HTTP version should return 400/505, got {status_line}"
             )
+            print(f"  ✓ Invalid version rejected: {status_line}")
         except Exception as e:
-            print(f"Warning: Invalid version test failed: {e}")
+            print(f"  ⚠ Warning: Invalid version test failed: {e}")
 
+        print("\n[Test 5] Request with no headers (minimal HTTP/1.0)")
         # Test 5: Request with no headers (minimal request)
         try:
             response = self.send_raw_request("GET / HTTP/1.0\r\n\r\n")
             # HTTP/1.0 doesn't require Host header, should work
             assert b"HTTP/" in response, "Minimal HTTP/1.0 request should work"
+            print(f"  ✓ Minimal HTTP/1.0 request accepted")
         except Exception as e:
-            print(f"Warning: Minimal request test failed: {e}")
+            print(f"  ⚠ Warning: Minimal request test failed: {e}")
 
+        print("\n[Test 6] Missing Host header (HTTP/1.1)")
         # Test 6: Request with missing Host header (HTTP/1.1)
         try:
             response = self.send_raw_request("GET / HTTP/1.1\r\n\r\n")
@@ -96,9 +107,11 @@ class BadRequestsTest(BaseTest):
             # HTTP/1.1 requires Host header, should return 400
             # But some servers are lenient
             assert "HTTP/" in status_line, "Should receive HTTP response"
+            print(f"  ✓ Missing Host header handled: {status_line}")
         except Exception as e:
-            print(f"Warning: Missing Host test failed: {e}")
+            print(f"  ⚠ Warning: Missing Host test failed: {e}")
 
+        print("\n[Test 7] Invalid header format (no colon)")
         # Test 7: Request with invalid header format (no colon)
         try:
             response = self.send_raw_request("GET / HTTP/1.1\r\nHost localhost\r\n\r\n")
@@ -107,9 +120,11 @@ class BadRequestsTest(BaseTest):
             assert "400" in status_line or "200" in status_line, (
                 "Invalid header format should return 400 or be ignored"
             )
+            print(f"  ✓ Invalid header format handled: {status_line}")
         except Exception as e:
-            print(f"Warning: Invalid header format test failed: {e}")
+            print(f"  ⚠ Warning: Invalid header format test failed: {e}")
 
+        print("\n[Test 8] Extremely long header value (16KB)")
         # Test 8: Request with extremely long header value
         try:
             long_value = "x" * 16384  # 16KB header value
@@ -120,9 +135,13 @@ class BadRequestsTest(BaseTest):
             # Should return 400 or 431 Request Header Fields Too Large
             # Or might accept it if server has high limits
             assert "HTTP/" in status_line, "Should receive HTTP response"
+            print(f"  ✓ Long header handled: {status_line}")
         except Exception as e:
-            print(f"Warning: Long header test failed (might have been rejected): {e}")
+            print(
+                f"  ⚠ Warning: Long header test failed (might have been rejected): {e}"
+            )
 
+        print("\n[Test 9] Extremely long URI (16KB)")
         # Test 9: Request with extremely long URI
         try:
             long_uri = "/" + "x" * 16384  # 16KB URI
@@ -134,9 +153,11 @@ class BadRequestsTest(BaseTest):
             assert any(code in status_line for code in ["414", "400"]), (
                 f"Long URI should return 414/400, got {status_line}"
             )
+            print(f"  ✓ Long URI rejected: {status_line}")
         except Exception as e:
-            print(f"Warning: Long URI test failed: {e}")
+            print(f"  ⚠ Warning: Long URI test failed: {e}")
 
+        print("\n[Test 10] POST with Content-Length but no body")
         # Test 10: POST with Content-Length but no body
         try:
             response = self.send_raw_request(
@@ -146,11 +167,13 @@ class BadRequestsTest(BaseTest):
             status_line = response.split(b"\r\n")[0].decode("utf-8", errors="ignore")
             # Server might timeout or return 400
             assert "HTTP/" in status_line, "Should receive HTTP response"
+            print(f"  ✓ Content-Length mismatch handled: {status_line}")
         except socket.timeout:
-            print("Note: Content-Length mismatch caused timeout (expected)")
+            print("  ✓ Content-Length mismatch caused timeout (expected)")
         except Exception as e:
-            print(f"Warning: Content-Length mismatch test issue: {e}")
+            print(f"  ⚠ Warning: Content-Length mismatch test issue: {e}")
 
+        print("\n[Test 11] POST with negative Content-Length")
         # Test 11: POST with negative Content-Length
         try:
             response = self.send_raw_request(
@@ -161,9 +184,11 @@ class BadRequestsTest(BaseTest):
             assert "400" in status_line, (
                 f"Negative Content-Length should return 400, got {status_line}"
             )
+            print(f"  ✓ Negative Content-Length rejected: {status_line}")
         except Exception as e:
-            print(f"Warning: Negative Content-Length test failed: {e}")
+            print(f"  ⚠ Warning: Negative Content-Length test failed: {e}")
 
+        print("\n[Test 12] Multiple Content-Length headers")
         # Test 12: POST with multiple Content-Length headers (different values)
         try:
             response = self.send_raw_request(
@@ -175,9 +200,11 @@ class BadRequestsTest(BaseTest):
             assert "400" in status_line or "HTTP/" in status_line, (
                 "Multiple Content-Length should return 400 or be handled"
             )
+            print(f"  ✓ Multiple Content-Length handled: {status_line}")
         except Exception as e:
-            print(f"Warning: Multiple Content-Length test failed: {e}")
+            print(f"  ⚠ Warning: Multiple Content-Length test failed: {e}")
 
+        print("\n[Test 13] Invalid characters in URI")
         # Test 13: Request with invalid characters in URI
         try:
             response = self.send_raw_request(
@@ -186,9 +213,11 @@ class BadRequestsTest(BaseTest):
             status_line = response.split(b"\r\n")[0].decode("utf-8", errors="ignore")
             # Should return 400 Bad Request or 404
             assert "HTTP/" in status_line, "Should receive HTTP response"
+            print(f"  ✓ Invalid URI characters handled: {status_line}")
         except Exception as e:
-            print(f"Warning: Invalid URI characters test failed: {e}")
+            print(f"  ⚠ Warning: Invalid URI characters test failed: {e}")
 
+        print("\n[Test 14] Spaces in URI (not URL encoded)")
         # Test 14: Request with spaces in URI (not URL encoded)
         try:
             response = self.send_raw_request(
@@ -199,9 +228,11 @@ class BadRequestsTest(BaseTest):
             assert "400" in status_line, (
                 f"Space in URI should return 400, got {status_line}"
             )
+            print(f"  ✓ Space in URI rejected: {status_line}")
         except Exception as e:
-            print(f"Warning: Space in URI test failed: {e}")
+            print(f"  ⚠ Warning: Space in URI test failed: {e}")
 
+        print("\n[Test 15] NULL bytes in URI")
         # Test 15: Request with NULL bytes in URI
         try:
             response = self.send_raw_request(
@@ -212,9 +243,11 @@ class BadRequestsTest(BaseTest):
             assert "400" in status_line or "404" in status_line, (
                 f"NULL byte in URI should return 400/404, got {status_line}"
             )
+            print(f"  ✓ NULL byte in URI handled: {status_line}")
         except Exception as e:
-            print(f"Warning: NULL byte test failed: {e}")
+            print(f"  ⚠ Warning: NULL byte test failed: {e}")
 
+        print("\n[Test 16] Empty request (only CRLF)")
         # Test 16: Request with only CRLF (empty request)
         try:
             response = self.send_raw_request("\r\n", wait_time=1)
@@ -222,9 +255,11 @@ class BadRequestsTest(BaseTest):
             assert len(response) == 0 or b"400" in response, (
                 "Empty request should close connection or return 400"
             )
+            print(f"  ✓ Empty request handled")
         except Exception as e:
-            print(f"Note: Empty request test: {e}")
+            print(f"  ⚠ Note: Empty request test: {e}")
 
+        print("\n[Test 17] Slow request (partial headers)")
         # Test 17: Extremely slow request (slowloris style - send headers byte by byte)
         # This is a gentle version - just test partial request handling
         try:
@@ -241,9 +276,11 @@ class BadRequestsTest(BaseTest):
             sock.close()
             # Should eventually respond
             assert b"HTTP/" in response, "Slow request should eventually complete"
+            print(f"  ✓ Slow request handled")
         except Exception as e:
-            print(f"Warning: Slow request test: {e}")
+            print(f"  ⚠ Warning: Slow request test: {e}")
 
+        print("\n[Test 18] POST with body exceeding Content-Length")
         # Test 18: POST with body exceeding Content-Length
         try:
             request = "POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\n\r\n"
@@ -251,9 +288,11 @@ class BadRequestsTest(BaseTest):
             response = self.send_raw_request(request)
             # Server should only read 5 bytes and respond
             assert b"HTTP/" in response, "Should handle Content-Length correctly"
+            print(f"  ✓ Excess body handled")
         except Exception as e:
-            print(f"Warning: Excess body test: {e}")
+            print(f"  ⚠ Warning: Excess body test: {e}")
 
+        print("\n[Test 19] Transfer-Encoding AND Content-Length")
         # Test 19: Request with Transfer-Encoding AND Content-Length (should prefer Transfer-Encoding)
         try:
             response = self.send_raw_request(
@@ -267,9 +306,11 @@ class BadRequestsTest(BaseTest):
             assert "HTTP/" in status_line, (
                 "Should handle Transfer-Encoding + Content-Length"
             )
+            print(f"  ✓ Transfer-Encoding + Content-Length handled: {status_line}")
         except Exception as e:
-            print(f"Warning: Transfer-Encoding + Content-Length test: {e}")
+            print(f"  ⚠ Warning: Transfer-Encoding + Content-Length test: {e}")
 
+        print("\n[Test 20] Chunked encoding with invalid chunk size")
         # Test 20: Chunked encoding with invalid chunk size
         try:
             response = self.send_raw_request(
@@ -282,10 +323,11 @@ class BadRequestsTest(BaseTest):
             assert "400" in status_line, (
                 f"Invalid chunk size should return 400, got {status_line}"
             )
+            print(f"  ✓ Invalid chunk size rejected: {status_line}")
         except Exception as e:
-            print(f"Warning: Invalid chunk size test: {e}")
+            print(f"  ⚠ Warning: Invalid chunk size test: {e}")
 
-        print("✓ All bad request tests completed!")
+        print("\n✓ All bad request tests completed!")
         print(
             "Note: Some tests may show warnings if server behavior differs from expectations."
         )

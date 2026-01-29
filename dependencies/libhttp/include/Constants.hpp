@@ -27,12 +27,17 @@ namespace libhttp {
         FORBIDDEN = 403,
         NOT_FOUND = 404,
 		NOT_ALLOWED = 405,
+		REQUEST_TIMEOUT = 408,
+		PAYLOAD_TOO_LARGE = 413,
+		URI_TOO_LONG = 414,
         INTERNAL_SERVER_ERROR = 500,
-        NOT_IMPLEMENTED = 501
+        NOT_IMPLEMENTED = 501,
+		HTTP_VERSION_NOT_SUPPORTED = 505
     };
 
 	// Other / Keys
     const std::string HTTP_1_0 = "HTTP/1.0";
+	const std::string HTTP_1_1 = "HTTP/1.1";
 	const std::string ContentType = "Content-Type";
 	const std::string ContentLength = "Content-Length";
 	const std::string Date = "Date";

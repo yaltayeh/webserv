@@ -62,7 +62,31 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
         if (state == libhttp::BODY_EXCEEDED_MAX_SIZE)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            libhttp::ResponseBlender blender(413);
+            libhttp::ResponseBlender blender(libhttp::PAYLOAD_TOO_LARGE);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
+        }
+
+        if (state == libhttp::ERROR_URI_TOO_LONG)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            libhttp::ResponseBlender blender(libhttp::URI_TOO_LONG);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
+        }
+
+        if (state == libhttp::ERROR_HTTP_VERSION_NOT_SUPPORTED)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            libhttp::ResponseBlender blender(libhttp::HTTP_VERSION_NOT_SUPPORTED);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
+        }
+
+        if (state == libhttp::ERROR_UNSUPPORTED_TRANSFER_ENCODING)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            libhttp::ResponseBlender blender(libhttp::NOT_IMPLEMENTED);
             _response = new libhttp::DefaultResponse(blender.toString());
             return IO_EVENT_CONTINUE;
         }
@@ -70,7 +94,7 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
         if (state == libhttp::ERROR)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            libhttp::ResponseBlender blender(400);
+            libhttp::ResponseBlender blender(libhttp::BAD_REQUEST);
             _response = new libhttp::DefaultResponse(blender.toString());
             return IO_EVENT_CONTINUE;
         }

@@ -16,6 +16,8 @@ namespace libhttp {
 						_buffer(""),
 						_expectedBodyLength(0),
 						_receivedBodyLength(0),
+						_hasContentLength(false),
+						_hasTransferEncoding(false),
 						_maxBodySize(maxBodySize),
 						_tempPath(tempPath),
 						_usesTempFile(false) {}
@@ -34,24 +36,26 @@ namespace libhttp {
 	//// //// parsing functions
 	// int 0 -> success, 1 -> incomplete, -1 -> error
 	State Parser::parse(const char* partial_request, size_t size) {
-		if (_state == COMPLETE || _state == ERROR || _state == BODY_EXCEEDED_MAX_SIZE)
+		if (_state == COMPLETE || _state == ERROR || _state == BODY_EXCEEDED_MAX_SIZE 
+			|| _state == ERROR_URI_TOO_LONG || _state == ERROR_HTTP_VERSION_NOT_SUPPORTED
+			|| _state == ERROR_UNSUPPORTED_TRANSFER_ENCODING)
 			return _state;
 
 		_buffer.append(partial_request, size);
 
 		if (_state == REQUEST_LINE) {
 			if (processRequestLine() != 0)
-				return ERROR;
+				return _state; // Return current state (might be specific error)
 		}
 
 		if (_state == HEADERS) {
 			if (processHeaders() != 0)
-				return ERROR;
+				return _state; // Return current state (might be specific error)
 		}
 
 		if (_state == BODY) {
 			if (processBody() != 0)
-				return ERROR;
+				return _state; // Return current state (might be specific error)
 		}
 
 		return _state;
@@ -67,14 +71,27 @@ namespace libhttp {
 			// parse method, uri, version with spilt
 			std::vector<std::string> request_line_parts = split(request_line, ' ');
 
-		if (request_line_parts.size() != 3 
-			// || request_line_parts[2] != HTTP_1_0
-			)
+		if (request_line_parts.size() != 3)
 			{ _state = ERROR; return -1; }
+		
+		// Validate URI length (before decoding) - RFC 2616 doesn't specify limit, 
+		// but most servers use 8KB as reasonable limit
+		std::string uri = request_line_parts[1];
+		if (uri.length() > 8192) {
+			_state = ERROR_URI_TOO_LONG;
+			return -1;
+		}
+		
+		// Validate HTTP version
+		std::string version = request_line_parts[2];
+		if (version != HTTP_1_0 && version != HTTP_1_1) {
+			_state = ERROR_HTTP_VERSION_NOT_SUPPORTED;
+			return -1;
+		}
+		
 		_request.setMethod(stringToMethod(request_line_parts[0]));
 		
 		// Decode URI - split path and query string first
-		std::string uri = request_line_parts[1];
 		std::string path, query;
 		size_t query_pos = uri.find('?');
 		if (query_pos != std::string::npos) {
@@ -103,6 +120,13 @@ namespace libhttp {
 			if (pos == 0) {
 				// End of headers
 				_buffer.erase(0, 2); // remove the "\r\n"
+				
+				// Check for Transfer-Encoding header - we don't support it
+				if (_hasTransferEncoding) {
+					_state = ERROR_UNSUPPORTED_TRANSFER_ENCODING;
+					return -1;
+				}
+				
 				_state = BODY;
 				return 0;
 			}
@@ -129,7 +153,42 @@ namespace libhttp {
 			
 			// Check for Content-Length header
 			if (key == "Content-Length") {
-				_expectedBodyLength = std::atol(value.c_str());
+				// RFC 7230: Multiple Content-Length headers with different values is an error
+				if (_hasContentLength) {
+					_state = ERROR;
+					return -1;
+				}
+				
+				// Validate Content-Length value
+				// Must be a non-negative integer
+				if (value.empty()) {
+					_state = ERROR;
+					return -1;
+				}
+				
+				// Check for negative sign
+				if (value[0] == '-') {
+					_state = ERROR;
+					return -1;
+				}
+				
+				// Parse the value
+				char* endptr;
+				long length = std::strtol(value.c_str(), &endptr, 10);
+				
+				// Check if parsing failed (endptr should point to end of string)
+				if (*endptr != '\0' || length < 0) {
+					_state = ERROR;
+					return -1;
+				}
+				
+				_expectedBodyLength = static_cast<size_t>(length);
+				_hasContentLength = true;
+			}
+			
+			// Check for Transfer-Encoding header
+			if (key == "Transfer-Encoding") {
+				_hasTransferEncoding = true;
 			}
 		}
 	
@@ -235,6 +294,9 @@ std::ostream& operator<<(std::ostream& os, libhttp::State s) {
         case libhttp::ERROR: return os << "ERROR";
         case libhttp::CLOSED: return os << "CLOSED";
         case libhttp::BODY_EXCEEDED_MAX_SIZE: return os << "BODY_EXCEEDED_MAX_SIZE";
+        case libhttp::ERROR_URI_TOO_LONG: return os << "ERROR_URI_TOO_LONG";
+        case libhttp::ERROR_HTTP_VERSION_NOT_SUPPORTED: return os << "ERROR_HTTP_VERSION_NOT_SUPPORTED";
+        case libhttp::ERROR_UNSUPPORTED_TRANSFER_ENCODING: return os << "ERROR_UNSUPPORTED_TRANSFER_ENCODING";
         default: return os << "UNKNOWN";
     }
 }
