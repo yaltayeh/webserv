@@ -186,15 +186,16 @@ class DeleteEdgeCasesTest(BaseTest):
             self.create_file(f"concurrent_{i}.txt", f"Concurrent file {i}")
 
         delete_requests = [
-            {"method": "DELETE", "path": f"/concurrent_{i}.txt"} for i in range(5)
+            {"method": "DELETE", "url": self.get_url(f"/concurrent_{i}.txt")}
+            for i in range(5)
         ]
 
         responses = self.concurrent_requests(delete_requests)
         # All should succeed
-        for i, response in enumerate(responses):
-            if response:
-                assert response.status_code in [200, 202, 204], (
-                    f"Concurrent DELETE {i} failed with {response.status_code}"
+        for i, result in enumerate(responses):
+            if result and result.response:
+                assert result.response.status_code in [200, 202, 204], (
+                    f"Concurrent DELETE {i} failed with {result.response.status_code}"
                 )
 
         # Verify all files are deleted
@@ -207,15 +208,20 @@ class DeleteEdgeCasesTest(BaseTest):
 
         # Try to delete the same file 3 times concurrently
         race_requests = [
-            {"method": "DELETE", "path": "/race_condition.txt"} for _ in range(3)
+            {"method": "DELETE", "url": self.get_url("/race_condition.txt")}
+            for _ in range(3)
         ]
 
         responses = self.concurrent_requests(race_requests)
         # One should succeed (200/202/204), others should return 404
         success_count = sum(
-            1 for r in responses if r and r.status_code in [200, 202, 204]
+            1
+            for r in responses
+            if r and r.response and r.response.status_code in [200, 202, 204]
         )
-        fail_count = sum(1 for r in responses if r and r.status_code == 404)
+        fail_count = sum(
+            1 for r in responses if r and r.response and r.response.status_code == 404
+        )
 
         # At least one should succeed, others should fail with 404
         assert success_count >= 1, "At least one concurrent DELETE should succeed"
