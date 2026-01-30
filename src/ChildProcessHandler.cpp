@@ -8,6 +8,10 @@ ChildProcessHandler::ChildProcessHandler(pid_t pid)
 
 ChildProcessHandler::~ChildProcessHandler()
 {
+	// Ensure child process is terminated
+	if (_pid != -1)
+		kill(_pid, SIGKILL);
+	_pid = -1;
 }
 
 pid_t ChildProcessHandler::getPid() const

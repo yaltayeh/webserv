@@ -91,6 +91,13 @@ EventLoop::~EventLoop()
 		delete (*it);
 	}
 
+	for (std::map<pid_t, ChildProcessHandler *>::iterator it = _childProcesses.begin();
+		 it != _childProcesses.end();
+		 ++it)
+	{
+		delete (*it).second;
+	}
+
 	_virtualServers.clear();
 	_listeningSockets.clear();
 }
