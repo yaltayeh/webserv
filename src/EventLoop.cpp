@@ -74,6 +74,17 @@ EventLoop::~EventLoop()
 		_eventFd = -1;
 	}
 
+	// Clean up all active client connections
+	while (!_clientQueue.isEmpty())
+	{
+		ClientSocket *client = _clientQueue.pop();
+		if (client)
+		{
+			client->close();
+			delete client;
+		}
+	}
+
 	// Clean up listening sockets
 	for (std::map<uint64_t, ListenSocket *>::iterator it = _listeningSockets.begin();
 		 it != _listeningSockets.end();
@@ -98,12 +109,6 @@ EventLoop::~EventLoop()
 		delete (*it).second;
 	}
 
-	for (std::list<ClientSocket *>::iterator it = _deleteClients.begin();
-		 it != _deleteClients.end();
-		 ++it)
-	{
-		delete (*it);
-	}
 
 	_virtualServers.clear();
 	_listeningSockets.clear();
