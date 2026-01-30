@@ -162,20 +162,20 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 		return utils::generateErrorResponse(500, location);
 	}
 
-	// Write request body to CGI script (for POST requests)
-	const std::string &request_body = request.getBody();
-	if (!request_body.empty())
+	// Create StreamResponse and set request body for async writing
+	StreamResponse *response = new StreamResponse(socketFd, pid);
+	
+	// Set request body (will be written asynchronously via StreamSocket)
+	if (request.hasBodyTempFile())
 	{
-		ssize_t written = write(socketFd, request_body.c_str(),
-		                        request_body.size());
-		if (written < 0)
-		{
-			std::cerr << "Failed to write to CGI script" << std::endl;
-		}
+		response->setRequestBody("", request.getBodyTempFile());
+	}
+	else if (!request.getBody().empty())
+	{
+		response->setRequestBody(request.getBody(), "");
 	}
 
-	// Return StreamResponse (non-blocking)
-	return new StreamResponse(socketFd, pid);
+	return response;
 }
 
 } // namespace middleware

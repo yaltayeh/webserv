@@ -13,12 +13,21 @@ private:
 	bool _eof;
 	StreamSocket *_streamSocket;
 	bool _findStatusLine;
+	
+	// Request body writing state
+	std::string _requestBody;
+	std::string _requestBodyFile;
+	size_t _bodyWriteOffset;
+	int _bodyFileFd;
 
-public:
+	public:
 	StreamResponse(int fd, int pid);
 	~StreamResponse();
 	
 	StreamSocket *getStreamSocket() const;
+
+	void setRequestBody(const std::string &body, const std::string &bodyFile);
+	bool hasRequestBodyToWrite() const;
 
 	void appendToBuffer(const std::string &data, size_t size);
 

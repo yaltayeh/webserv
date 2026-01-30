@@ -89,7 +89,15 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
                 StreamResponse *response = dynamic_cast<StreamResponse *>(_response);
                 StreamSocket *ss = response->getStreamSocket();
                 _write_buffer = "";
-                el->addEvent(ss->getSocketfd(), IO_READ | IO_WRITE, ss);
+                
+                // Monitor IO_WRITE only if there's a request body to send
+                int events = IO_READ;
+                if (response->hasRequestBodyToWrite())
+                {
+                    events |= IO_WRITE;
+                }
+                
+                el->addEvent(ss->getSocketfd(), events, ss);
                 el->addChildProcess(ss);
             }
         }

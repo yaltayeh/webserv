@@ -1,6 +1,7 @@
 #include "StreamSocket.hpp"
 #include "EventLoop.hpp"
 #include <iostream>
+#include <unistd.h>
 
 StreamSocket::StreamSocket(int fd, pid_t pid, StreamResponse *response)
 	: Socket(fd), ChildProcessHandler(pid), _response(response)
@@ -27,7 +28,75 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 		return IO_EVENT_CLOSE;
 	if (events & IO_WRITE)
 	{
-		(void)0; // TODO: Writing not implemented yet
+		// Write request body to CGI
+		if (!_response)
+			return IO_EVENT_CONTINUE;
+		
+		// Check if we have body data to write
+		if (_response->_bodyFileFd != -1)
+		{
+			// Read from temp file and write to socket
+			char buf[4096];
+			ssize_t nread = ::read(_response->_bodyFileFd, buf, sizeof(buf));
+			
+			if (nread < 0)
+			{
+				std::cerr << "Error reading from body temp file" << std::endl;
+				::close(_response->_bodyFileFd);
+				_response->_bodyFileFd = -1;
+				// Stop monitoring for writes
+				el->deleteEvent(_socketfd, IO_WRITE, this);
+			}
+			else if (nread == 0)
+			{
+				// EOF reached, close file
+				::close(_response->_bodyFileFd);
+				_response->_bodyFileFd = -1;
+				// Stop monitoring for writes
+				el->deleteEvent(_socketfd, IO_WRITE, this);
+			}
+			else
+			{
+				// Write to socket
+				ssize_t nwritten = send(buf, nread);
+				if (nwritten < 0)
+				{
+					return IO_EVENT_CLOSE;
+				}
+				else if (nwritten < nread)
+				{
+					// Partial write, seek back
+					::lseek(_response->_bodyFileFd, -(nread - nwritten), SEEK_CUR);
+				}
+			}
+		}
+		else if (_response->_bodyWriteOffset < _response->_requestBody.size())
+		{
+			// Write from in-memory body
+			const char *data = _response->_requestBody.c_str() + _response->_bodyWriteOffset;
+			size_t remaining = _response->_requestBody.size() - _response->_bodyWriteOffset;
+			
+			ssize_t nwritten = send(data, remaining);
+			if (nwritten < 0)
+			{
+				return IO_EVENT_CLOSE;
+			}
+			else
+			{
+				_response->_bodyWriteOffset += nwritten;
+				
+				// If all body written, stop monitoring for writes
+				if (_response->_bodyWriteOffset >= _response->_requestBody.size())
+				{
+					el->deleteEvent(_socketfd, IO_WRITE, this);
+				}
+			}
+		}
+		else
+		{
+			// No body to write, stop monitoring for writes
+			el->deleteEvent(_socketfd, IO_WRITE, this);
+		}
 	}
 	if (events & IO_READ)
 	{
