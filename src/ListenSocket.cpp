@@ -8,10 +8,19 @@
 #include <cstring>
 #include <unistd.h>
 #include <cerrno>
+#include <sstream>
 #include "ClientSocket.hpp"
 #include "ListenSocket.hpp"
 #include "EventLoop.hpp"
 #include "libutils/include/Logger.hpp"
+
+// Helper to convert IP address to string (replaces inet_ntoa which is not allowed)
+static std::string ipToString(uint32_t ip) {
+	std::ostringstream oss;
+	unsigned char *bytes = (unsigned char *)&ip;
+	oss << (int)bytes[0] << "." << (int)bytes[1] << "." << (int)bytes[2] << "." << (int)bytes[3];
+	return oss.str();
+}
 
 ListenSocket::ListenSocket(uint32_t ip, uint16_t port)
 	: Socket(-1)
@@ -242,7 +251,11 @@ sockaddr_in ListenSocket::getAddress() const
 
 const char *ListenSocket::getHost() const
 {
-	return inet_ntoa(_addr.sin_addr);
+	// Cannot use inet_ntoa (not in allowed functions list)
+	// Use helper function instead
+	static std::string addr_str;
+	addr_str = ipToString(_addr.sin_addr.s_addr);
+	return addr_str.c_str();
 }
 
 int ListenSocket::getPort() const

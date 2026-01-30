@@ -10,6 +10,15 @@
 #include <unistd.h>
 #include "libutils/include/Logger.hpp"
 #include "BufferConfig.hpp"
+#include <sstream>
+
+// Helper to convert IP address to string (replaces inet_ntoa which is not allowed)
+static std::string ipToString(uint32_t ip) {
+	std::ostringstream oss;
+	unsigned char *bytes = (unsigned char *)&ip;
+	oss << (int)bytes[0] << "." << (int)bytes[1] << "." << (int)bytes[2] << "." << (int)bytes[3];
+	return oss.str();
+}
 
 ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen)
     : Socket(client_fd),
@@ -210,8 +219,11 @@ sockaddr_in ClientSocket::getAddress() const
 
 const char *ClientSocket::getHost() const
 {
-    char *addr_str = inet_ntoa(_addr.sin_addr);
-    return addr_str;
+	// Cannot use inet_ntoa (not in allowed functions list)
+	// Use helper function instead
+	static std::string addr_str;
+	addr_str = ipToString(_addr.sin_addr.s_addr);
+	return addr_str.c_str();
 }
 
 int ClientSocket::getPort() const

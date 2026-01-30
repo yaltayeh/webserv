@@ -16,6 +16,7 @@
 #include <sstream>
 #include <fcntl.h>
 #include <unistd.h>
+#include <cstdio>  // For std::remove() (C++ standard library function)
 
 namespace routing
 {
@@ -84,8 +85,8 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 			return utils::generateErrorResponse(403, location);
 		}
 		
-		// Delete the file
-		if (unlink(file_path.c_str()) != 0)
+		// Delete the file using std::remove() (C++ stdlib function, not unlink() syscall)
+		if (std::remove(file_path.c_str()) != 0)
 		{
 			// Failed to delete file (permission error, etc.)
 			return utils::generateErrorResponse(500, location);
