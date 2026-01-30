@@ -21,7 +21,7 @@ private:
 	int _bodyFileFd;
 
 	public:
-	StreamResponse(int fd, int pid);
+	StreamResponse(int readFd, int writeFd, int pid);
 	~StreamResponse();
 	
 	StreamSocket *getStreamSocket() const;

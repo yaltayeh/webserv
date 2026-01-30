@@ -34,7 +34,6 @@ libhttp::Response *RouteHandler::process(const libhttp::Request &request,
 		const Middleware &middleware = _middlewares[i];
 
 		// Call middleware
-		LOG_DEBUG("Executing middleware with priority " << middleware.priority << " for URI: " << request.getUri() << " size:" << location.allowed_methods.size());
 		libhttp::Response *response = middleware.func(request, location, context);
 
 		// If middleware handled the request, return its response

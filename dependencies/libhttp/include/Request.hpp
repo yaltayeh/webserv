@@ -6,6 +6,14 @@
 
 namespace libhttp {
 
+	struct RequestBody
+	{
+		std::string inline_body;       // For small bodies
+		std::string temp_file_path;    // For large bodies stored in temp file
+		bool is_temp_file;
+		size_t content_length;
+	};
+
 	class Request {
 	public:
 		Request();

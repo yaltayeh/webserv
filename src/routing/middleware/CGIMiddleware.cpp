@@ -13,6 +13,8 @@
 #include <iostream>
 #include <unistd.h>
 #include <cstdlib>
+#include "libutils/include/Logger.hpp"
+#include "libhttp/include/Utils.hpp"
 
 namespace routing
 {
@@ -69,7 +71,12 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 
 	// Check if this is a CGI request
 	if (!isCGIRequest(uri, location))
+	{
 		return NULL;
+	}
+
+	LOG_DEBUG("[CGIMiddleware] Handling CGI request: " 
+	          << libhttp::methodToString(request.getMethod()) << " " << uri);
 
 	// Strip query string from URI for path resolution
 	std::string uri_path = uri;
@@ -128,23 +135,24 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 
 	if (setup_result != CGI::SETUP_OK)
 	{
-		std::cerr << "CGI setup failed: "
-		          << CGI::getSetupResultMessage(setup_result) << std::endl;
+		LOG_ERROR("CGI setup failed: "
+		          << CGI::getSetupResultMessage(setup_result));
 		return utils::generateErrorResponse(500, location);
 	}
 
 	// Execute CGI script
-	int socketFd = -1;
-	pid_t pid = cgi.execute(socketFd);
+	int readPipeFd = -1;
+	int writePipeFd = -1;
+	pid_t pid = cgi.execute(readPipeFd, writePipeFd);
 
-	if (pid == -1 || socketFd == -1)
+	if (pid == -1 || readPipeFd == -1 || writePipeFd == -1)
 	{
-		std::cerr << "CGI execution failed: " << cgi.getError() << std::endl;
+		LOG_ERROR("CGI execution failed for script: " << script_path);
 		return utils::generateErrorResponse(500, location);
 	}
 
 	// Create StreamResponse and set request body for async writing
-	StreamResponse *response = new StreamResponse(socketFd, pid);
+	StreamResponse *response = new StreamResponse(readPipeFd, writePipeFd, pid);
 	
 	// Set request body (will be written asynchronously via StreamSocket)
 	if (request.hasBodyTempFile())

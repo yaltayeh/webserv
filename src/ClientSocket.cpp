@@ -125,14 +125,15 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
                 StreamSocket *ss = response->getStreamSocket();
                 _write_buffer = "";
                 
-                // Monitor IO_WRITE only if there's a request body to send
-                int events = IO_READ;
-                if (response->hasRequestBodyToWrite())
-                {
-                    events |= IO_WRITE;
-                }
+                // Register read fd for reading CGI output
+                el->addEvent(ss->getSocketfd(), IO_READ, ss);
                 
-                el->addEvent(ss->getSocketfd(), events, ss);
+                // Register write fd for writing request body (if needed)
+                if (response->hasRequestBodyToWrite())
+                    el->addEvent(ss->getWriteFd(), IO_WRITE, ss);
+                else 
+                    ::close(ss->getWriteFd());
+                
                 el->addChildProcess(ss);
             }
         }

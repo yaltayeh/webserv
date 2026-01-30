@@ -7,11 +7,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-StreamResponse::StreamResponse(int fd, int pid)
+StreamResponse::StreamResponse(int readFd, int writeFd, int pid)
 	: _eof(false), _streamSocket(NULL), _findStatusLine(false),
 	  _bodyWriteOffset(0), _bodyFileFd(-1)
 {
-	_streamSocket = new StreamSocket(fd, pid, this);
+	_streamSocket = new StreamSocket(readFd, writeFd, pid, this);
 }
 StreamResponse::~StreamResponse()
 {
