@@ -19,19 +19,9 @@ namespace libhttp {
 						_hasContentLength(false),
 						_hasTransferEncoding(false),
 						_maxBodySize(maxBodySize),
-						_tempPath(tempPath),
-						_usesTempFile(false) {}
+						_body(maxBodySize, tempPath) {}
 
-	Parser::~Parser() {
-		if (_tempFile.is_open()) {
-			_tempFile.close();
-		}
-		// Clean up temp file if we created one but request didn't complete
-		// (If request completed, the Request object owns the file and will clean it up)
-		if (_usesTempFile && !_tempFilePath.empty() && _state != COMPLETE) {
-			unlink(_tempFilePath.c_str());
-		}
-	}
+	Parser::~Parser() {}
 	
 	//// //// parsing functions
 	// int 0 -> success, 1 -> incomplete, -1 -> error
@@ -198,7 +188,7 @@ namespace libhttp {
 	int Parser::processBody() {
 		// If no Content-Length header, treat all remaining data as body
 		if (_expectedBodyLength == 0) {
-			_request.setBody(_buffer);
+			_request.setBody(_body);
 			_buffer.clear();
 			_state = COMPLETE;
 			return 0;
@@ -215,25 +205,19 @@ namespace libhttp {
 		if (_receivedBodyLength + bytesToRead > _expectedBodyLength) {
 			bytesToRead = _expectedBodyLength - _receivedBodyLength;
 		}
-		
-		if (_usesTempFile) {
-			// Write to temp file
-			writeTempFile(_buffer.c_str(), bytesToRead);
-			_buffer.erase(0, bytesToRead);
-		} else {
-			// Store in memory
-			_request.setBody(_request.getBody() + _buffer.substr(0, bytesToRead));
-			_buffer.erase(0, bytesToRead);
+
+		ssize_t bytesStored = _body.storeData(_buffer.c_str(), bytesToRead);
+		if (bytesStored < 0) {
+			_state = ERROR;
+			return -1;
 		}
-		
-		_receivedBodyLength += bytesToRead;
+
+		_buffer.erase(0, bytesStored);
+		_receivedBodyLength += bytesStored;
 		
 		// Check if we've received all expected body data
 		if (_receivedBodyLength >= _expectedBodyLength) {
-			if (_usesTempFile) {
-				closeTempFile();
-				_request.setBodyTempFile(_tempFilePath);
-			}
+			_request.setBody(_body);
 			_state = COMPLETE;
 		}
 		
@@ -244,45 +228,7 @@ namespace libhttp {
 	bool Parser::isComplete() const { return _state == COMPLETE; }
 	bool Parser::isError() const { return _state == ERROR; }
 	const Request &Parser::getRequest() const { return _request; }
-
-	// Temp file helpers
-	void Parser::createTempFile() {
-		// Create temp directory if it doesn't exist
-		struct stat st;
-		if (stat(_tempPath.c_str(), &st) != 0) {
-			mkdir(_tempPath.c_str(), 0755);
-		}
-
-		// Generate unique temp file name using PID, timestamp, and address
-		// Using 'this' pointer address adds uniqueness for concurrent requests
-		std::ostringstream oss;
-		oss << _tempPath << "/body_" << getpid() << "_" << time(NULL) << "_" << this;
-		_tempFilePath = oss.str();
-
-		_tempFile.open(_tempFilePath.c_str(), std::ios::binary | std::ios::out);
-		if (!_tempFile.is_open()) {
-			std::cerr << "Failed to create temp file: " << _tempFilePath << std::endl;
-			_state = ERROR;
-		}
-	}
-
-	void Parser::writeTempFile(const char* data, size_t size) {
-		if (_tempFile.is_open()) {
-			_tempFile.write(data, size);
-			if (!_tempFile.good()) {
-				std::cerr << "Failed to write to temp file" << std::endl;
-				_state = ERROR;
-			}
-		}
-	}
-
-	void Parser::closeTempFile() {
-		if (_tempFile.is_open()) {
-			_tempFile.flush();
-			_tempFile.close();
-		}
-	}
-
+	const RequestBody &Parser::getBody() const { return _body; }
 }
 
 std::ostream& operator<<(std::ostream& os, libhttp::State s) {

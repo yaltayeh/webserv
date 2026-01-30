@@ -3,6 +3,7 @@
 #include "libhttp/include/Response.hpp"
 #include <sys/types.h>
 #include "StreamSocket.hpp"
+#include "libhttp/include/RequestBody.hpp"
 
 class StreamSocket;
 
@@ -13,21 +14,12 @@ private:
 	bool _eof;
 	StreamSocket *_streamSocket;
 	bool _findStatusLine;
-	
-	// Request body writing state
-	std::string _requestBody;
-	std::string _requestBodyFile;
-	size_t _bodyWriteOffset;
-	int _bodyFileFd;
 
-	public:
-	StreamResponse(int readFd, int writeFd, int pid);
+public:
+	StreamResponse(int readFd, int writeFd, int pid, const libhttp::RequestBody &requestBody);
 	~StreamResponse();
-	
-	StreamSocket *getStreamSocket() const;
 
-	void setRequestBody(const std::string &body, const std::string &bodyFile);
-	bool hasRequestBodyToWrite() const;
+	StreamSocket *getStreamSocket() const;
 
 	void appendToBuffer(const std::string &data, size_t size);
 

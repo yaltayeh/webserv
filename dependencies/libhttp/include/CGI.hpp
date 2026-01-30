@@ -57,19 +57,19 @@ public:
      * @brief Execute the CGI script (fork and exec)
      * 
      * Must be called after successful setup().
-     * Creates pipes for bidirectional communication with CGI script.
+     * Creates two socketpairs for bidirectional communication with CGI script.
      * 
-     * @param readPipeFd Output: pipe fd to read CGI output from
-     * @param writePipeFd Output: pipe fd to write request body to (if POST)
+     * @param readSocketFd Output: socket fd to read CGI output from
+     * @param writeSocketFd Output: socket fd to write request body to (if POST)
      * @return PID of child process, or -1 on error
      * 
-     * @note CRITICAL: The caller MUST close writePipeFd after writing the
+     * @note CRITICAL: The caller MUST close writeSocketFd after writing the
      *       request body to signal EOF to the CGI script. Failing to close
-     *       writePipeFd will cause the CGI script to hang waiting for more
+     *       writeSocketFd will cause the CGI script to hang waiting for more
      *       input. For POST requests, write the body then immediately close
-     *       writePipeFd. For GET requests, close writePipeFd immediately.
+     *       writeSocketFd. For GET requests, close writeSocketFd immediately.
      */
-    pid_t execute(int &readPipeFd, int &writePipeFd);
+    pid_t execute(int &readSocketFd, int &writeSocketFd);
 
     /**
      * @brief Get the error message if setup() or execute() failed
@@ -106,7 +106,6 @@ private:
     std::vector<char *> _envp;
     std::string _scriptPath;
     std::string _interpreterPath;
-    std::string _requestBody;
     std::string _error;
     bool _isSetup;
 
@@ -131,10 +130,10 @@ private:
     std::string extractQueryString(const std::string &uri) const;
     std::string extractPathInfo(const std::string &uri, const std::string &scriptName) const;
 
-    // Pipe management (SRP: separate pipe logic)
-    bool createPipes(int pipeToChild[2], int pipeFromChild[2]);
-    void closePipes(int pipeToChild[2], int pipeFromChild[2]);
-    void setupChildProcess(int pipeToChild[2], int pipeFromChild[2]);
+    // Socketpair management (SRP: separate socket logic)
+    bool createSocketpairs(int socketToChild[2], int socketFromChild[2]);
+    void closeSocketpairs(int socketToChild[2], int socketFromChild[2]);
+    void setupChildProcess(int socketToChild[2], int socketFromChild[2]);
 
     // Disabled copy operations
     CGI(const CGI &);

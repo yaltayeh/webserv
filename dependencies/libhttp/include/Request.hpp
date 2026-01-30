@@ -3,17 +3,10 @@
 #include <string>
 #include <map>
 #include "Constants.hpp"
+#include "RequestBody.hpp"
 
 namespace libhttp {
-
-	struct RequestBody
-	{
-		std::string inline_body;       // For small bodies
-		std::string temp_file_path;    // For large bodies stored in temp file
-		bool is_temp_file;
-		size_t content_length;
-	};
-
+	
 	class Request {
 	public:
 		Request();
@@ -25,17 +18,14 @@ namespace libhttp {
 		void setMethod(Method method);
 		void setUri(const std::string& uri);
 		void setHeader(const std::string& key, const std::string& value);
-		void setBody(const std::string& body);
-		void setBodyTempFile(const std::string& tempFilePath);
+		void setBody(const RequestBody& body);
 
 		// Getters
 		Method getMethod() const;
 		const std::string &getUri() const;
 		std::string getHeader(const std::string& key) const;
-		const std::string &getBody() const;
+		const RequestBody &getBody() const;
 		const std::multimap<std::string, std::string> &getHeaders() const;
-		const std::string &getBodyTempFile() const;
-		bool hasBodyTempFile() const;
 
 		// Helper to convert request to string
 		std::string toString() const;
@@ -44,9 +34,7 @@ namespace libhttp {
 		Method _method;
 		std::string _uri;
 		std::multimap<std::string, std::string> _headers;
-		std::string _body;
-		std::string _bodyTempFile; // Path to temp file for large bodies
-		bool _hasBodyTempFile;
+		RequestBody _body;
 	};
 
 }

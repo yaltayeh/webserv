@@ -127,13 +127,8 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
                 
                 // Register read fd for reading CGI output
                 el->addEvent(ss->getSocketfd(), IO_READ, ss);
-                
-                // Register write fd for writing request body (if needed)
-                if (response->hasRequestBodyToWrite())
-                    el->addEvent(ss->getWriteFd(), IO_WRITE, ss);
-                else 
-                    ::close(ss->getWriteFd());
-                
+                el->addEvent(ss->getWriteFd(), IO_WRITE, ss);
+                // Track child process
                 el->addChildProcess(ss);
             }
         }

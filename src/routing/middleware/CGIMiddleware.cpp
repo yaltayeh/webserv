@@ -92,7 +92,7 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 	// Resolve script path
 	std::string script_path = utils::resolvePath(uri_path, location_path, location);
 
-	// std::cout << "CGI: Executing script at " << script_path << std::endl;
+	LOG_DEBUG("CGI: Resolved script path: " << script_path);
 
 	// Check script exists
 	if (!utils::fileExists(script_path))
@@ -152,18 +152,8 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 	}
 
 	// Create StreamResponse and set request body for async writing
-	StreamResponse *response = new StreamResponse(readPipeFd, writePipeFd, pid);
+	StreamResponse *response = new StreamResponse(readPipeFd, writePipeFd, pid, request.getBody());
 	
-	// Set request body (will be written asynchronously via StreamSocket)
-	if (request.hasBodyTempFile())
-	{
-		response->setRequestBody("", request.getBodyTempFile());
-	}
-	else if (!request.getBody().empty())
-	{
-		response->setRequestBody(request.getBody(), "");
-	}
-
 	return response;
 }
 

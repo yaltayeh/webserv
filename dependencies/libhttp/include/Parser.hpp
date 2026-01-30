@@ -3,7 +3,7 @@
 #include <string>
 #include <fstream>
 #include "Request.hpp"
-
+#include "RequestBody.hpp"
 
 namespace libhttp {
 	
@@ -35,6 +35,7 @@ namespace libhttp {
 
 		// get the parsed request
 		const Request &getRequest() const;
+		const RequestBody &getBody() const;
 
 	private:
 		State _state;
@@ -52,16 +53,7 @@ namespace libhttp {
 
 		// Config for body size limit
 		size_t _maxBodySize;
-		std::string _tempPath;
-		
-		// Temp file handling
-		bool _usesTempFile;
-		std::string _tempFilePath;
-		std::ofstream _tempFile;
-		
-		void createTempFile();
-		void writeTempFile(const char* data, size_t size);
-		void closeTempFile();
+		RequestBody _body;
 	};
 
 }

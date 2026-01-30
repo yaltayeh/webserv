@@ -7,20 +7,15 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-StreamResponse::StreamResponse(int readFd, int writeFd, int pid)
-	: _eof(false), _streamSocket(NULL), _findStatusLine(false),
-	  _bodyWriteOffset(0), _bodyFileFd(-1)
+
+StreamResponse::StreamResponse(int readFd, int writeFd, int pid, const libhttp::RequestBody &requestBody)
+:	_eof(false), _streamSocket(NULL), _findStatusLine(false)
 {
-	_streamSocket = new StreamSocket(readFd, writeFd, pid, this);
+	_streamSocket = new StreamSocket(readFd, writeFd, pid, this, requestBody);
 }
+
 StreamResponse::~StreamResponse()
-{
-	if (_bodyFileFd != -1)
-	{
-		close(_bodyFileFd);
-		_bodyFileFd = -1;
-	}
-	
+{	
 	if (_streamSocket)
 	{
 		_streamSocket->_response = NULL;
@@ -35,28 +30,6 @@ StreamResponse::~StreamResponse()
 StreamSocket *StreamResponse::getStreamSocket() const
 {
 	return _streamSocket;
-}
-
-void StreamResponse::setRequestBody(const std::string &body, const std::string &bodyFile)
-{
-	_requestBody = body;
-	_requestBodyFile = bodyFile;
-	_bodyWriteOffset = 0;
-	
-	// If using temp file, open it for reading
-	if (!_requestBodyFile.empty())
-	{
-		_bodyFileFd = open(_requestBodyFile.c_str(), O_RDONLY);
-		if (_bodyFileFd == -1)
-		{
-			std::cerr << "Failed to open request body temp file: " << _requestBodyFile << std::endl;
-		}
-	}
-}
-
-bool StreamResponse::hasRequestBodyToWrite() const
-{
-	return !_requestBody.empty() || _bodyFileFd != -1;
 }
 
 void StreamResponse::appendToBuffer(const std::string &data, size_t size)

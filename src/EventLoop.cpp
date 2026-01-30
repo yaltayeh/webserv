@@ -18,7 +18,7 @@
  */
 EventLoop::EventLoop(const GlobalConfig &config)
 	: _config(config), _eventFd(-1), _running(false),
-	_clientQueue(config.http.worker_connections + 1) // +1 to avoid edge case of 0 capacity
+	  _clientQueue(config.http.worker_connections + 1) // +1 to avoid edge case of 0 capacity
 {
 	ListenSocket *socket = NULL;
 	VirtualServer *virtualServer = NULL;
@@ -109,7 +109,6 @@ EventLoop::~EventLoop()
 		delete (*it).second;
 	}
 
-
 	_virtualServers.clear();
 	_listeningSockets.clear();
 }
@@ -185,7 +184,7 @@ void EventLoop::clientDisconnect(ClientSocket *client)
 
 	// Close the socket but don't delete yet
 	client->close();
-	
+
 	LOG_DEBUG("Marking client for deletion: " << *client);
 	// Add to deletion list - will be deleted at end of event loop iteration
 	_deleteClients.push_back(client);
@@ -279,7 +278,7 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 	// Check which events need to be added
 	bool needAddRead = (event & IO_READ) && !udata->monitoringRead;
 	bool needAddWrite = (event & IO_WRITE) && !udata->monitoringWrite;
-	
+
 	if (!needAddRead && !needAddWrite)
 		return (0); // Nothing to add
 
@@ -288,18 +287,18 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 	struct epoll_event ev;
 	// Map portable IO flags to epoll flags
 	ev.events = 0; // level-triggered by default
-	
+
 	// Include all currently monitored events
 	if (udata->monitoringRead || needAddRead)
 		ev.events |= EPOLLIN;
 	if (udata->monitoringWrite || needAddWrite)
 		ev.events |= EPOLLOUT;
-	
+
 	ev.data.ptr = udata; // Store Socket* for later retrieval
 
 	// Try to add first, if it fails with EEXIST, modify instead
 	int op = (udata->monitoringRead || udata->monitoringWrite) ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
-	
+
 	if (epoll_ctl(_eventFd, op, fd, &ev) == -1)
 	{
 		// If ADD failed because fd exists, try MOD
@@ -323,7 +322,7 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 	// kqueue requires separate kevent calls for each filter (READ and WRITE)
 	struct kevent kevs[2];
 	int kev_count = 0;
-	
+
 	if (needAddRead)
 	{
 		EV_SET(&kevs[kev_count], fd, EVFILT_READ,
@@ -331,7 +330,7 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 			   0, 0, udata);	   // Store Socket* for later retrieval
 		kev_count++;
 	}
-	
+
 	if (needAddWrite)
 	{
 		EV_SET(&kevs[kev_count], fd, EVFILT_WRITE,
@@ -339,15 +338,14 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 			   0, 0, udata);	   // Store Socket* for later retrieval
 		kev_count++;
 	}
-	
+
 	if (kev_count > 0 && kevent(_eventFd, kevs, kev_count, NULL, 0, NULL) == -1)
 	{
 		LOG_ERROR_ERRNO("kevent failed adding event for fd " << fd);
 		return -1;
 	}
-	LOG_TRACE("Added " << kev_count << " event(s) for fd:" << fd << " udata:" << udata);
 #endif
-
+	LOG_TRACE("Added " << kev_count << " event(s) for fd:" << fd << " udata:" << udata);
 	if (needAddRead)
 		udata->monitoringRead = true;
 	if (needAddWrite)
@@ -374,36 +372,37 @@ int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
 	// Check which events need to be deleted
 	bool needDelRead = (event & IO_READ) && udata->monitoringRead;
 	bool needDelWrite = (event & IO_WRITE) && udata->monitoringWrite;
-	
+
 	if (!needDelRead && !needDelWrite)
 		return (0); // Nothing to delete
 
 #if defined(__linux__)
 	// Linux: Check if we're removing all events or just modifying
 	bool removeAll = needDelRead && needDelWrite;
-	
+
 	if (removeAll)
 	{
 		// Remove entire fd from epoll
 		if (epoll_ctl(_eventFd, EPOLL_CTL_DEL, fd, NULL) == -1)
-			perror("epoll_ctl DEL");
+			LOG_ERROR_ERRNO("epoll_ctl failed deleting event for fd(" << fd << "): " << strerror(errno));
 	}
 	else
 	{
 		// Modify to remove only specific event
 		struct epoll_event ev;
 		ev.events = 0;
-		
+
 		// Keep the events that are not being deleted
 		if (udata->monitoringRead && !needDelRead)
 			ev.events |= EPOLLIN;
 		if (udata->monitoringWrite && !needDelWrite)
 			ev.events |= EPOLLOUT;
-		
+
 		ev.data.ptr = udata;
-		
+
 		if (epoll_ctl(_eventFd, EPOLL_CTL_MOD, fd, &ev) == -1)
-			perror("epoll_ctl MOD");
+			LOG_ERROR_ERRNO("epoll_ctl failed modifying event for fd(" << fd << "):"
+																	   << strerror(errno));
 	}
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
@@ -411,24 +410,25 @@ int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
 	// Can delete multiple filters in one call
 	struct kevent kevs[2];
 	int kev_count = 0;
-	
+
 	if (needDelRead)
 	{
 		EV_SET(&kevs[kev_count], fd, EVFILT_READ, EV_DELETE | EV_DISABLE, 0, 0, NULL);
 		kev_count++;
 	}
-	
+
 	if (needDelWrite)
 	{
 		EV_SET(&kevs[kev_count], fd, EVFILT_WRITE, EV_DELETE | EV_DISABLE, 0, 0, NULL);
 		kev_count++;
 	}
-	
+
 	if (kev_count > 0 && kevent(_eventFd, kevs, kev_count, NULL, 0, NULL) == -1)
-		perror("kevent DEL");
+		LOG_ERROR_ERRNO("kevent failed deleting event for fd " << fd << strerror(errno));
 #endif
 
 	// std::cout << "Deleted event(s) for fd:" << fd << " udata:" << udata << std::endl;
+	LOG_TRACE("Deleted " << kev_count << " event(s) for fd:" << fd << " udata:" << udata);
 
 	if (needDelRead)
 		udata->monitoringRead = false;

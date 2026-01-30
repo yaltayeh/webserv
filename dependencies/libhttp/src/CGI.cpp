@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 #include <csignal>
 #include <cstring>
 #include <cstdlib>
@@ -51,7 +52,6 @@ CGI::SetupResult CGI::setup(const libhttp::Request &request,
     // Store validated inputs
     _scriptPath = scriptPath;
     _interpreterPath = interpreterPath;
-    _requestBody = request.getBody();
 
     // Build environment
     buildEnvironment(request, serverName, serverPort);
@@ -61,17 +61,17 @@ CGI::SetupResult CGI::setup(const libhttp::Request &request,
     return SETUP_OK;
 }
 
-pid_t CGI::execute(int &readPipeFd, int &writePipeFd) {
+pid_t CGI::execute(int &readSocketFd, int &writeSocketFd) {
     // Ensure setup was called successfully
     if (!_isSetup) {
         _error = "CGI::execute() called without successful setup()";
         return -1;
     }
 
-    int pipeToChild[2];
-    int pipeFromChild[2];
+    int socketToChild[2];
+    int socketFromChild[2];
 
-    if (!createPipes(pipeToChild, pipeFromChild)) {
+    if (!createSocketpairs(socketToChild, socketFromChild)) {
         return -1;
     }
 
@@ -79,38 +79,38 @@ pid_t CGI::execute(int &readPipeFd, int &writePipeFd) {
     if (pid == -1) {
         _error = "Failed to fork: ";
         _error += strerror(errno);
-        closePipes(pipeToChild, pipeFromChild);
+        closeSocketpairs(socketToChild, socketFromChild);
         return -1;
     }
 
     if (pid == 0) {
         // Child process - this function does not return
-        setupChildProcess(pipeToChild, pipeFromChild);
+        setupChildProcess(socketToChild, socketFromChild);
         _exit(1); // Only reached if setupChildProcess fails
     }
 
     // Parent process
-    close(pipeToChild[0]);   // Close read end of input pipe
-    close(pipeFromChild[1]); // Close write end of output pipe
+    close(socketToChild[1]);   // Close child end of write socketpair
+    close(socketFromChild[1]); // Close child end of read socketpair
 
-    // Set both pipes to non-blocking mode for non-blocking I/O
+    // Set both sockets to non-blocking mode for non-blocking I/O
     // Note: fcntl errors are not critical - CGI will still work in blocking mode
     // Warnings are stored for debugging purposes
-    if (fcntl(pipeFromChild[0], F_SETFL, O_NONBLOCK) == -1) {
+    if (fcntl(socketFromChild[0], F_SETFL, O_NONBLOCK) == -1) {
         if (!_error.empty()) {
             _error += " ; ";
         }
-        _error += "Warning: failed to set non-blocking mode on CGI read pipe";
+        _error += "Warning: failed to set non-blocking mode on CGI read socket";
     }
-    if (fcntl(pipeToChild[1], F_SETFL, O_NONBLOCK) == -1) {
+    if (fcntl(socketToChild[0], F_SETFL, O_NONBLOCK) == -1) {
         if (!_error.empty()) {
             _error += " ; ";
         }
-        _error += "Warning: failed to set non-blocking mode on CGI write pipe";
+        _error += "Warning: failed to set non-blocking mode on CGI write socket";
     }
 
-    writePipeFd = pipeToChild[1];
-    readPipeFd = pipeFromChild[0];
+    writeSocketFd = socketToChild[0];
+    readSocketFd = socketFromChild[0];
 
     return pid;
 }
@@ -325,8 +325,9 @@ void CGI::buildEnvironment(const libhttp::Request &request,
     std::string contentLength = request.getHeader("Content-Length");
     if (!contentLength.empty()) {
         addEnvironmentVariable("CONTENT_LENGTH", contentLength);
-    } else if (!_requestBody.empty()) {
-        addEnvironmentVariable("CONTENT_LENGTH", utils::sizeToString(_requestBody.length()));
+    } else {
+        size_t bodyLength = request.getBody().getContentLength();
+        addEnvironmentVariable("CONTENT_LENGTH", utils::sizeToString(bodyLength));
     }
 
     // PHP compatibility
@@ -453,50 +454,50 @@ std::string CGI::extractPathInfo(const std::string &uri, const std::string &scri
 }
 
 // ============================================================================
-// Pipe Management (SRP)
+// Socketpair Management (SRP)
 // ============================================================================
 
-bool CGI::createPipes(int pipeToChild[2], int pipeFromChild[2]) {
-    if (pipe(pipeToChild) == -1) {
-        _error = "Failed to create pipe to child: ";
+bool CGI::createSocketpairs(int socketToChild[2], int socketFromChild[2]) {
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, socketToChild) == -1) {
+        _error = "Failed to create socketpair to child: ";
         _error += strerror(errno);
         return false;
     }
 
-    if (pipe(pipeFromChild) == -1) {
-        _error = "Failed to create pipe from child: ";
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, socketFromChild) == -1) {
+        _error = "Failed to create socketpair from child: ";
         _error += strerror(errno);
-        close(pipeToChild[0]);
-        close(pipeToChild[1]);
+        close(socketToChild[0]);
+        close(socketToChild[1]);
         return false;
     }
 
     return true;
 }
 
-void CGI::closePipes(int pipeToChild[2], int pipeFromChild[2]) {
-    close(pipeToChild[0]);
-    close(pipeToChild[1]);
-    close(pipeFromChild[0]);
-    close(pipeFromChild[1]);
+void CGI::closeSocketpairs(int socketToChild[2], int socketFromChild[2]) {
+    close(socketToChild[0]);
+    close(socketToChild[1]);
+    close(socketFromChild[0]);
+    close(socketFromChild[1]);
 }
 
-void CGI::setupChildProcess(int pipeToChild[2], int pipeFromChild[2]) {
-    // Close unused pipe ends
-    close(pipeToChild[1]);
-    close(pipeFromChild[0]);
+void CGI::setupChildProcess(int socketToChild[2], int socketFromChild[2]) {
+    // Close parent ends of socketpairs
+    close(socketToChild[0]);
+    close(socketFromChild[0]);
 
     // Redirect stdin
-    if (dup2(pipeToChild[0], STDIN_FILENO) == -1) {
+    if (dup2(socketToChild[1], STDIN_FILENO) == -1) {
         _exit(1);
     }
-    close(pipeToChild[0]);
+    close(socketToChild[1]);
 
     // Redirect stdout
-    if (dup2(pipeFromChild[1], STDOUT_FILENO) == -1) {
+    if (dup2(socketFromChild[1], STDOUT_FILENO) == -1) {
         _exit(1);
     }
-    close(pipeFromChild[1]);
+    close(socketFromChild[1]);
     
     // NOTE: stderr is not redirected per RFC 3875 section 6.2
     // CGI script errors will go to the server's stderr

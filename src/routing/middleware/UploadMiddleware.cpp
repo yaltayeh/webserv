@@ -87,7 +87,7 @@ static bool ensureDirectoryExists(const std::string &path, bool create)
  * - false: Failed to write file
  */
 static bool writeUploadFile(const std::string &upload_dir, 
-                            const std::string &body,
+                            libhttp::RequestBody &body,
                             const std::string &filename)
 {
 	std::string final_filename = filename.empty() ? generateUniqueFilename() : filename;
@@ -102,15 +102,28 @@ static bool writeUploadFile(const std::string &upload_dir,
 	}
 	
 	// Write body content
-	file.write(body.c_str(), body.length());
-	
-	if (file.fail())
+	const size_t buffer_size = 8192;
+	char buffer[buffer_size];
+	while (true)
 	{
-		std::cerr << "Failed to write to file: " << file_path << std::endl;
-		file.close();
-		return false;
-	}
-	
+		ssize_t bytes_read = body.getChunk(buffer, buffer_size);
+		if (bytes_read < 0)
+		{
+			std::cerr << "Failed to read from request body" << std::endl;
+			file.close();
+			return false;
+		}
+		if (bytes_read == 0)
+			break; // EOF
+		
+		file.write(buffer, bytes_read);
+		if (file.fail())
+		{
+			std::cerr << "Failed to write to file: " << file_path << std::endl;
+			file.close();
+			return false;
+		}
+	}	
 	file.close();
 	return true;
 }
@@ -159,7 +172,7 @@ libhttp::Response *uploadHandler(const libhttp::Request &request,
 	}
 	
 	// Get request body
-	const std::string &body = request.getBody();
+	libhttp::RequestBody body = request.getBody();
 	
 	// Write file (empty body is allowed - some tests check this)
 	std::string empty_filename = "";
