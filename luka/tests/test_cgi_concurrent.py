@@ -46,8 +46,8 @@ class CGIConcurrentTest(BaseTest):
         
         location /cgi-bin/ {{
             allowed_methods GET POST;
-            cgi_extension .py;
-            cgi_pass {self.cgi_dir};
+            alias {self.cgi_dir}/;
+            cgi_pass .py /usr/bin/python3;
         }}
     }}
 }}"""
