@@ -25,7 +25,7 @@ namespace middleware
 static bool isCGIRequest(const std::string &uri, const LocationConfig &location)
 {
 	// Check if CGI is configured
-	if (location.cgi_pass.empty())
+	if (location.cgi_handlers.empty())
 		return false;
 
 	// Strip query string from URI for extension checking
@@ -36,18 +36,17 @@ static bool isCGIRequest(const std::string &uri, const LocationConfig &location)
 		uri_path = uri_path.substr(0, query_pos);
 	}
 
-	// Check if URI has CGI extension
-	for (size_t i = 0; i < location.cgi_extensions.size(); ++i)
+	// Check if URI ends with any registered CGI extension
+	for (std::map<std::string, std::string>::const_iterator it = location.cgi_handlers.begin();
+	     it != location.cgi_handlers.end(); ++it)
 	{
-		const std::string &ext = location.cgi_extensions[i];
-
+		const std::string &ext = it->first;
+		
 		// Check if URI ends with this extension
-		if (uri_path.length() >= ext.length())
+		if (uri_path.length() >= ext.length() &&
+		    uri_path.compare(uri_path.length() - ext.length(), ext.length(), ext) == 0)
 		{
-			if (uri_path.compare(uri_path.length() - ext.length(), ext.length(), ext) == 0)
-			{
-				return true;
-			}
+			return true;
 		}
 	}
 
@@ -84,37 +83,7 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 	std::string location_path = location.path;
 
 	// Resolve script path
-	// HACK: If cgi_pass is a directory, use it as the CGI root instead
-	std::string script_path;
-	
-	if (!location.cgi_pass.empty() && utils::isDirectory(location.cgi_pass))
-	{
-		// cgi_pass is being misused as a root directory
-		// Strip location path from URI and append to cgi_pass
-		
-		// Safety check: ensure uri is long enough
-		if (uri_path.length() < location_path.length())
-		{
-			std::cerr << "CGI ERROR: URI shorter than location path" << std::endl;
-			return utils::generateErrorResponse(500, location);
-		}
-		
-		std::string remaining = uri_path.substr(location_path.length());
-		
-		// Add separator if remaining doesn't start with /
-		if (!remaining.empty() && remaining[0] != '/')
-		{
-			script_path = location.cgi_pass + "/" + remaining;
-		}
-		else
-		{
-			script_path = location.cgi_pass + remaining;
-		}
-	}
-	else
-	{
-		script_path = utils::resolvePath(uri_path, location_path, location);
-	}
+	std::string script_path = utils::resolvePath(uri_path, location_path, location);
 
 	// std::cout << "CGI: Executing script at " << script_path << std::endl;
 
@@ -124,16 +93,28 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 		return utils::generateErrorResponse(404, location);
 	}
 
+	// Extract extension from URI
+	std::string extension;
+	size_t dot_pos = uri_path.rfind('.');
+	if (dot_pos != std::string::npos)
+		extension = uri_path.substr(dot_pos);  // Includes the '.'
+
+	// Find interpreter for this extension
+	std::map<std::string, std::string>::const_iterator handler_it = 
+		location.cgi_handlers.find(extension);
+
+	if (handler_it == location.cgi_handlers.end())
+	{
+		// Extension not registered (shouldn't happen if isCGIRequest passed)
+		std::cerr << "CGI ERROR: No handler configured for extension " 
+		          << extension << std::endl;
+		return utils::generateErrorResponse(500, location);
+	}
+
+	std::string interpreter = handler_it->second;  // May be empty for binaries
+
 	// Setup CGI execution
 	CGI cgi;
-	std::string interpreter = location.cgi_pass;
-	
-	// If cgi_pass looks like a directory, use default Python interpreter
-	if (interpreter.find('/') != std::string::npos && utils::isDirectory(interpreter))
-	{
-		// std::cout << "CGI: cgi_pass is directory, using /usr/bin/python3" << std::endl;
-		interpreter = "/usr/bin/python3";
-	}
 	
 	std::string server_name = context.get("server_name");
 	if (server_name.empty())

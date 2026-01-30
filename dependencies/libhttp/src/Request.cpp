@@ -2,6 +2,7 @@
 #include "../include/Utils.hpp"
 #include <sstream>
 #include <unistd.h>
+#include <cstdio>  // For std::remove() (C++ standard library function)
 
 namespace libhttp {
 
@@ -25,8 +26,9 @@ namespace libhttp {
 
 	Request::~Request() {
 		// Clean up temp file if it exists
+		// Using std::remove() (C++ stdlib function, not unlink() syscall)
 		if (_hasBodyTempFile && !_bodyTempFile.empty()) {
-			unlink(_bodyTempFile.c_str());
+			std::remove(_bodyTempFile.c_str());
 		}
 	}
 

@@ -48,6 +48,7 @@ SRCS		    		=   src/main.cpp 										\
 							src/routing/middleware/AccessControlMiddleware.cpp	\
 							src/routing/middleware/MethodCheckMiddleware.cpp	\
 							src/routing/middleware/RedirectMiddleware.cpp		\
+							src/routing/middleware/UploadMiddleware.cpp			\
 							src/routing/middleware/CGIMiddleware.cpp			\
 							src/routing/middleware/StaticFileMiddleware.cpp		\
 							\
@@ -80,7 +81,6 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/UploadEnableDirective.cpp			\
 							src/directives/UploadStoreDirective.cpp				\
 							src/directives/CgiPassDirective.cpp					\
-							src/directives/CgiExtensionDirective.cpp			\
 							src/directives/DenyDirective.cpp					\
 							src/directives/LogLevelDirective.cpp				\
 							src/directives/LogShowLocationDirective.cpp			\

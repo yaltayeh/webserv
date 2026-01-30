@@ -23,11 +23,11 @@ stat, open, opendir, readdir, closedir
 
 # VIOLATIONS FOUND
 
-### 1. File System Operations (4 violations) ✅
+### 1. File System Operations (4 violations)
 
-#### 1.1 unlink() - NOT in allowed list ✅
+#### 1.1 unlink() - NOT in allowed list
 
-**dependencies/libhttp/src/Parser.cpp:32** ✅
+**dependencies/libhttp/src/Parser.cpp:32**
 ```cpp
 unlink(_tempFilePath.c_str());
 ```
@@ -35,7 +35,7 @@ unlink(_tempFilePath.c_str());
 *Used for:* Deleting temporary files during request parsing.  
 *Fixed:* Removed unlink() call, added comment that temp files remain until cleanup
 
-**src/routing/middleware/StaticFileMiddleware.cpp:88** ✅
+**src/routing/middleware/StaticFileMiddleware.cpp:88**
 ```cpp
 unlink(file_path.c_str())
 ```
@@ -43,7 +43,7 @@ unlink(file_path.c_str())
 *Used for:* Deleting files via DELETE method.  
 *Fixed:* Changed DELETE method to return 501 Not Implemented
 
-**dependencies/libhttp/src/Request.cpp:29** ✅
+**dependencies/libhttp/src/Request.cpp:29**
 ```cpp
 unlink(_bodyTempFile.c_str());
 ```
@@ -51,9 +51,9 @@ unlink(_bodyTempFile.c_str());
 *Used for:* Cleaning up temporary request body files.  
 *Fixed:* Removed unlink() call, added comment about temp file cleanup
 
-#### 1.2 mkdir() - NOT in allowed list ✅
+#### 1.2 mkdir() - NOT in allowed list
 
-**dependencies/libhttp/src/Parser.cpp:253** ✅
+**dependencies/libhttp/src/Parser.cpp:253**
 ```cpp
 mkdir(_tempPath.c_str(), 0755);
 ```
@@ -63,11 +63,11 @@ mkdir(_tempPath.c_str(), 0755);
 
 ---
 
-### 2. Process Functions (1 violation) ✅
+### 2. Process Functions (1 violation)
 
-#### 2.1 getpid() - NOT in allowed list ✅
+#### 2.1 getpid() - NOT in allowed list
 
-**dependencies/libhttp/src/Parser.cpp:259** ✅
+**dependencies/libhttp/src/Parser.cpp:259**
 ```cpp
 getpid()
 ```
@@ -77,11 +77,11 @@ getpid()
 
 ---
 
-### 3. Network Functions (4 violations) ✅
+### 3. Network Functions (4 violations)
 
-#### 3.1 inet_ntoa() - NOT in allowed list ✅
+#### 3.1 inet_ntoa() - NOT in allowed list
 
-**src/ClientSocket.cpp:213** ✅
+**src/ClientSocket.cpp:213**
 ```cpp
 inet_ntoa(_addr.sin_addr);
 ```
@@ -89,7 +89,7 @@ inet_ntoa(_addr.sin_addr);
 *Used for:* Converting IP address to string for logging.  
 *Fixed:* Replaced with custom ipToString() helper function
 
-**src/ListenSocket.cpp:245** ✅
+**src/ListenSocket.cpp:245**
 ```cpp
 inet_ntoa(_addr.sin_addr);
 ```
@@ -97,9 +97,9 @@ inet_ntoa(_addr.sin_addr);
 *Used for:* Converting IP address to string for logging.  
 *Fixed:* Replaced with custom ipToString() helper function
 
-#### 3.2 inet_pton() - NOT in allowed list ✅
+#### 3.2 inet_pton() - NOT in allowed list
 
-**src/directives/ListenDirective.cpp:48** ✅
+**src/directives/ListenDirective.cpp:48**
 ```cpp
 inet_pton(AF_INET, host.c_str(), &out.ip)
 ```
@@ -107,9 +107,9 @@ inet_pton(AF_INET, host.c_str(), &out.ip)
 *Used for:* Converting IP address string to binary format.  
 *Fixed:* Replaced with getaddrinfo() which IS allowed
 
-#### 3.3 gethostbyname() - NOT in allowed list ✅
+#### 3.3 gethostbyname() - NOT in allowed list
 
-**src/directives/ListenDirective.cpp:52** ✅
+**src/directives/ListenDirective.cpp:52**
 ```cpp
 gethostbyname(host.c_str());
 ```
@@ -120,11 +120,11 @@ gethostbyname(host.c_str());
 
 ---
 
-### 4. Time Functions (6 violations) ✅
+### 4. Time Functions (6 violations)
 
-#### 4.1 time() - NOT in allowed list ✅
+#### 4.1 time() - NOT in allowed list
 
-**dependencies/libhttp/src/Parser.cpp:259** ✅
+**dependencies/libhttp/src/Parser.cpp:259**
 ```cpp
 time(NULL)
 ```
@@ -132,7 +132,7 @@ time(NULL)
 *Used for:* Generating unique temporary file names with timestamp.  
 *Fixed:* Replaced with static counter g_tempFileCounter
 
-**src/EventLoop.cpp:120** ✅
+**src/EventLoop.cpp:120**
 ```cpp
 time(NULL)
 ```
@@ -140,7 +140,7 @@ time(NULL)
 *Used for:* Tracking client idle timeout.  
 *Fixed:* Replaced with static tick counter g_eventLoopTicks
 
-**src/EventLoop.cpp:196** ✅
+**src/EventLoop.cpp:196**
 ```cpp
 time(NULL)
 ```
@@ -148,9 +148,9 @@ time(NULL)
 *Used for:* Checking for idle client connections.  
 *Fixed:* Replaced with static tick counter g_eventLoopTicks
 
-#### 4.2 gettimeofday() - NOT in allowed list ✅
+#### 4.2 gettimeofday() - NOT in allowed list
 
-**dependencies/libutils/src/Logger.cpp:39** ✅
+**dependencies/libutils/src/Logger.cpp:39**
 ```cpp
 gettimeofday(&tv, NULL);
 ```
@@ -158,9 +158,9 @@ gettimeofday(&tv, NULL);
 *Used for:* Getting current time for log timestamps.  
 *Fixed:* Replaced with static tick counter g_logTicks
 
-#### 4.3 localtime() - NOT in allowed list ✅
+#### 4.3 localtime() - NOT in allowed list
 
-**dependencies/libutils/src/Logger.cpp:41** ✅
+**dependencies/libutils/src/Logger.cpp:41**
 ```cpp
 localtime(&now);
 ```
@@ -168,9 +168,9 @@ localtime(&now);
 *Used for:* Converting timestamp to local time for logging.  
 *Fixed:* Replaced with static tick counter g_logTicks
 
-#### 4.4 strftime() - NOT in allowed list ✅
+#### 4.4 strftime() - NOT in allowed list
 
-**dependencies/libutils/src/Logger.cpp:44** ✅
+**dependencies/libutils/src/Logger.cpp:44**
 ```cpp
 strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", tm_info);
 ```
@@ -180,11 +180,11 @@ strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", tm_info);
 
 ---
 
-### 5. I/O Functions (5 violations) ✅
+### 5. I/O Functions (5 violations)
 
-#### 5.1 perror() - NOT in allowed list ✅
+#### 5.1 perror() - NOT in allowed list
 
-**src/EventLoop.cpp:291** ✅
+**src/EventLoop.cpp:291**
 ```cpp
 perror("epoll_ctl MOD");
 ```
@@ -192,28 +192,28 @@ perror("epoll_ctl MOD");
 *Note:* Should use `strerror(errno)` which IS in the allowed list.  
 *Fixed:* Replaced with strerror(errno) + LOG_ERROR
 
-**src/EventLoop.cpp:297** ✅
+**src/EventLoop.cpp:297**
 ```cpp
 perror("epoll_ctl");
 ```
 *Reason:* Same as above.  
 *Fixed:* Replaced with strerror(errno) + LOG_ERROR
 
-**src/EventLoop.cpp:370** ✅
+**src/EventLoop.cpp:370**
 ```cpp
 perror("kevent");
 ```
 *Reason:* Same as above.  
 *Fixed:* Replaced with strerror(errno) + LOG_ERROR
 
-**src/EventLoop.cpp:387** ✅
+**src/EventLoop.cpp:387**
 ```cpp
 perror("kevent");
 ```
 *Reason:* Same as above.  
 *Fixed:* Replaced with strerror(errno) + LOG_ERROR
 
-**src/EventLoop.cpp:409** ✅
+**src/EventLoop.cpp:409**
 ```cpp
 perror("kevent");
 ```
@@ -222,20 +222,20 @@ perror("kevent");
 
 ---
 
-## Summary ✅
+## Summary
 
 All 20 violations have been fixed!
 
 | File | Violations | Functions | Status |
 |------|-----------|-----------|--------|
-| dependencies/libhttp/src/Parser.cpp | 4 | unlink, mkdir, getpid, time | ✅ Fixed |
-| src/EventLoop.cpp | 7 | time (x2), perror (x5) | ✅ Fixed |
-| dependencies/libutils/src/Logger.cpp | 3 | gettimeofday, localtime, strftime | ✅ Fixed |
-| src/ClientSocket.cpp | 1 | inet_ntoa | ✅ Fixed |
-| src/ListenSocket.cpp | 1 | inet_ntoa | ✅ Fixed |
-| src/directives/ListenDirective.cpp | 2 | inet_pton, gethostbyname | ✅ Fixed |
-| src/routing/middleware/StaticFileMiddleware.cpp | 1 | unlink | ✅ Fixed |
-| dependencies/libhttp/src/Request.cpp | 1 | unlink | ✅ Fixed |
+| dependencies/libhttp/src/Parser.cpp | 4 | unlink, mkdir, getpid, time | Fixed |
+| src/EventLoop.cpp | 7 | time (x2), perror (x5) | Fixed |
+| dependencies/libutils/src/Logger.cpp | 3 | gettimeofday, localtime, strftime | Fixed |
+| src/ClientSocket.cpp | 1 | inet_ntoa | Fixed |
+| src/ListenSocket.cpp | 1 | inet_ntoa | Fixed |
+| src/directives/ListenDirective.cpp | 2 | inet_pton, gethostbyname | Fixed |
+| src/routing/middleware/StaticFileMiddleware.cpp | 1 | unlink | Fixed |
+| dependencies/libhttp/src/Request.cpp | 1 | unlink | Fixed |
 
 ### Fix Strategies:
 - **unlink()**: Replaced with `std::remove()` (C++ stdlib function)
