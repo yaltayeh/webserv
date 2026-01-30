@@ -11,11 +11,15 @@ namespace Directive
 
 	Config *config_handler(Parser *parser, const std::vector<std::string> &args, Config *parent)
 	{
-		if (args.size() == 0)
-			return NULL;
-		DirectiveFactory::ParserFunc parserFunc = DirectiveFactory::getParser(args[0]);
-		Config *config = parserFunc(parser, args, parent);
-		return config;
+		try {
+			if (args.size() == 0)
+				return NULL;
+			DirectiveFactory::ParserFunc parserFunc = DirectiveFactory::getParser(args[0]);
+			Config *config = parserFunc(parser, args, parent);
+			return config;
+		} catch (const std::out_of_range &e) {
+			throw DirectiveNotFound(args[0]);
+		}
 	}
 
 	/**

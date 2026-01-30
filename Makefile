@@ -81,7 +81,6 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/UploadEnableDirective.cpp			\
 							src/directives/UploadStoreDirective.cpp				\
 							src/directives/CgiPassDirective.cpp					\
-							src/directives/CgiExtensionDirective.cpp			\
 							src/directives/DenyDirective.cpp					\
 							src/directives/LogLevelDirective.cpp				\
 							src/directives/LogShowLocationDirective.cpp			\

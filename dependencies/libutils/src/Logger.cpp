@@ -18,7 +18,7 @@ namespace Logger {
     bool g_logColored = true;
     
     // Show timestamp by default
-    bool g_logShowTimestamp = true;
+    bool g_logShowTimestamp = false;
     
     // Log file path (empty = stdout/stderr only)
     std::string g_logFile = "";

@@ -52,8 +52,7 @@ struct CommonConfig : Config
 	std::string fastcgi_index;
 
 	// CGI configuration
-	std::string cgi_pass;
-	std::vector<std::string> cgi_extensions;
+	std::map<std::string, std::string> cgi_handlers;  // extension -> interpreter path
 
 	// Upload configuration
 	bool upload_enable;
@@ -82,8 +81,7 @@ struct CommonConfig : Config
 		  dav_methods(),
 		  dav_access("user:rw"),
 		  create_full_put_path(false),
-		  cgi_pass(""),
-		  cgi_extensions(),
+		  cgi_handlers(),
 		  upload_enable(false),
 		  upload_store(""),
 		  allowed_methods(),
@@ -105,8 +103,7 @@ struct CommonConfig : Config
 		this->autoindex_format = config.autoindex_format;
 		this->error_pages = config.error_pages;
 		this->root = config.root;
-		this->cgi_pass = config.cgi_pass;
-		this->cgi_extensions = config.cgi_extensions;
+		this->cgi_handlers = config.cgi_handlers;
 		this->upload_enable = config.upload_enable;
 		this->upload_store = config.upload_store;
 		this->allowed_methods = config.allowed_methods;
@@ -131,8 +128,7 @@ struct CommonConfig : Config
 			this->autoindex_format = config.autoindex_format;
 			this->error_pages = config.error_pages;
 			this->root = config.root;
-			this->cgi_pass = config.cgi_pass;
-			this->cgi_extensions = config.cgi_extensions;
+			this->cgi_handlers = config.cgi_handlers;
 			this->upload_enable = config.upload_enable;
 			this->upload_store = config.upload_store;
 			this->allowed_methods = config.allowed_methods;
