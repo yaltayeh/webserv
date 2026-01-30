@@ -5,11 +5,11 @@
 #include "StreamResponse.hpp"
 #include "DefaultResponse.hpp"
 #include "FileResponse.hpp"
+#include "ResponseBlender.hpp"
 #include "StreamSocket.hpp"
 #include <unistd.h>
 #include "libutils/include/Logger.hpp"
-
-#define READ_BUFFER_SIZE (4096 * 2)
+#include "BufferConfig.hpp"
 
 ClientSocket::ClientSocket(int client_fd, sockaddr_in addr, ListenSocket *listen)
     : Socket(client_fd),
@@ -61,15 +61,41 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
         if (state == libhttp::BODY_EXCEEDED_MAX_SIZE)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            // _response = new libhttp::DefaultResponse(413);
-            return IO_EVENT_CLOSE; // TODO: fix error handling later
+            libhttp::ResponseBlender blender(libhttp::PAYLOAD_TOO_LARGE);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
+        }
+
+        if (state == libhttp::ERROR_URI_TOO_LONG)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            libhttp::ResponseBlender blender(libhttp::URI_TOO_LONG);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
+        }
+
+        if (state == libhttp::ERROR_HTTP_VERSION_NOT_SUPPORTED)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            libhttp::ResponseBlender blender(libhttp::HTTP_VERSION_NOT_SUPPORTED);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
+        }
+
+        if (state == libhttp::ERROR_UNSUPPORTED_TRANSFER_ENCODING)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            libhttp::ResponseBlender blender(libhttp::NOT_IMPLEMENTED);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
         }
 
         if (state == libhttp::ERROR)
         {
             el->deleteEvent(_socketfd, IO_READ, this);
-            // _response = new libhttp::DefaultResponse(400);
-            return IO_EVENT_CLOSE; // TODO: fix error handling later
+            libhttp::ResponseBlender blender(libhttp::BAD_REQUEST);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
         }
 
         if (state == libhttp::COMPLETE)

@@ -1,6 +1,8 @@
 #include "DirectiveFactory.hpp"
 #include "Exceptions.hpp"
 #include "Config/CommonConfig.hpp"
+#include "Config/HttpConfig.hpp"
+#include "Config/ServerConfig.hpp"
 #include <cstdlib>
 #include <cctype>
 
@@ -14,10 +16,13 @@
 struct Config *parseClientMaxBodySizeDirective(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
 	(void)parser;
-	// Cast parent to config
-	CommonConfig *config = dynamic_cast<CommonConfig *>(parent);
+	// Cast parent to config - only allow in http or server context (not location)
+	CommonConfig *config = NULL;
+	if (dynamic_cast<HttpConfig *>(parent) || dynamic_cast<ServerConfig *>(parent))
+		config = dynamic_cast<CommonConfig *>(parent);
+	
 	if (!config)
-		throw Directive::InvalidNesting("client_max_body_size", "can only be used in http, server or location context");
+		throw Directive::InvalidNesting("client_max_body_size", "can only be used in http or server context");
 
 	// Parse value
 	if (args.size() != 2)

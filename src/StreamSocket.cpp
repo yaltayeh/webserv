@@ -2,6 +2,7 @@
 #include "EventLoop.hpp"
 #include <iostream>
 #include <unistd.h>
+#include "BufferConfig.hpp"
 
 StreamSocket::StreamSocket(int fd, pid_t pid, StreamResponse *response)
 	: Socket(fd), ChildProcessHandler(pid), _response(response)
@@ -100,7 +101,7 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 	}
 	if (events & IO_READ)
 	{
-		char buf[4096]; // TODO: unify buffer size for read and write in all places
+		char buf[READ_BUFFER_SIZE];
 
 		ssize_t nbytes = recv(buf, sizeof(buf));
 		if (nbytes <= 0)

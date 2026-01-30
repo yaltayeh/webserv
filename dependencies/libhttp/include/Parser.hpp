@@ -15,7 +15,10 @@ namespace libhttp {
 
 		ERROR,
 		CLOSED,
-		BODY_EXCEEDED_MAX_SIZE
+		BODY_EXCEEDED_MAX_SIZE,
+		ERROR_URI_TOO_LONG,
+		ERROR_HTTP_VERSION_NOT_SUPPORTED,
+		ERROR_UNSUPPORTED_TRANSFER_ENCODING
 	};
 
 	class Parser {
@@ -38,6 +41,8 @@ namespace libhttp {
 		std::string _buffer;
 		size_t _expectedBodyLength; // from Content-Length header
         size_t _receivedBodyLength;
+		bool _hasContentLength; // track if Content-Length header was set
+		bool _hasTransferEncoding; // track if Transfer-Encoding header was set
 		
         Request _request;
         

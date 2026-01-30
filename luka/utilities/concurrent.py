@@ -216,8 +216,11 @@ def make_concurrent_requests_helper(http_module):
                 "url": req["url"],
                 "headers": req.get("headers"),
                 "http_version": req.get("http_version", "1.0"),
-                "timeout": req.get("timeout", 5),
             }
+
+            # Only add timeout for methods that support it (GET, HEAD)
+            if method in ["GET", "HEAD"]:
+                kwargs["timeout"] = req.get("timeout", 5)
 
             # Add data for POST/PUT
             if method in ["POST", "PUT"] and "data" in req:

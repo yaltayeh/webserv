@@ -4,6 +4,10 @@ LIB_NAME = $(BUILD_PATH)/libutils.a
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98 -Iinclude
 
+# Buffer size configuration (propagated from main Makefile)
+BUFFER_SIZE ?= 8192
+CXXFLAGS += -DBUFFER_SIZE=$(BUFFER_SIZE)
+
 SRC_DIR = src
 OBJ_DIR = $(BUILD_PATH)/obj
 

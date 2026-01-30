@@ -19,8 +19,12 @@ namespace libhttp {
 			case FORBIDDEN: return "Forbidden";
 			case NOT_FOUND: return "Not Found";
 			case NOT_ALLOWED: return "Method Not Allowed";
+			case REQUEST_TIMEOUT: return "Request Timeout";
+			case PAYLOAD_TOO_LARGE: return "Payload Too Large";
+			case URI_TOO_LONG: return "URI Too Long";
 			case INTERNAL_SERVER_ERROR: return "Internal Server Error";
 			case NOT_IMPLEMENTED: return "Not Implemented";
+			case HTTP_VERSION_NOT_SUPPORTED: return "HTTP Version Not Supported";
 			default: return "Unknown Status";
 		}
 	}
