@@ -12,6 +12,8 @@
 #include "libhttp/include/DefaultResponse.hpp"
 #include "libhttp/include/ResponseBlender.hpp"
 #include "libhttp/include/FileResponse.hpp"
+#include "libutils/include/Logger.hpp"
+#include "libhttp/include/Utils.hpp"
 #include <iostream>
 #include <sstream>
 #include <fcntl.h>
@@ -49,9 +51,10 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 	(void)context; // Not used in this middleware
 
 	const std::string &uri = request.getUri();
+	LOG_DEBUG("[StaticFileMiddleware] Handling request: " 
+	          << libhttp::methodToString(request.getMethod()) << " " << uri);
+	
 	libhttp::Method method = request.getMethod();
-
-	// std::cout << "staticFileHandler: " << uri << std::endl;
 
 	// Get location path
 	std::string location_path = location.path;
@@ -67,7 +70,7 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 	// Resolve URI to filesystem path
 	std::string file_path = utils::resolvePath(uri_path, location_path, location);
 
-	// std::cout << "Resolving URI '" << uri_path << "' to path: " << file_path << std::endl;
+	LOG_DEBUG("Resolving URI '" << uri_path << "' to path: " << file_path);
 
 	// Handle DELETE method
 	if (method == libhttp::DELETE)

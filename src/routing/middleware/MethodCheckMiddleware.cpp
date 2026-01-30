@@ -10,6 +10,7 @@
 #include "routing/RouteUtils.hpp"
 #include "libhttp/include/Request.hpp"
 #include "libhttp/include/Utils.hpp"
+#include "libutils/include/Logger.hpp"
 
 namespace routing
 {
@@ -29,6 +30,10 @@ libhttp::Response *methodCheck(const libhttp::Request &request,
 {
 	(void)context; // Not used in this middleware
 
+	LOG_DEBUG("[MethodCheckMiddleware] Handling request: " 
+	          << libhttp::methodToString(request.getMethod()) << " " 
+	          << request.getUri());
+
 	// If no restrictions configured, all methods are allowed
 	if (location.allowed_methods.empty())
 		return NULL;
@@ -45,6 +50,7 @@ libhttp::Response *methodCheck(const libhttp::Request &request,
 	}
 
 	// Check if method is in allowed set
+	LOG_DEBUG("[MethodCheckMiddleware] Allowed methods: " << location.allowed_methods.size());
 	if (location.allowed_methods.find(method_str) == location.allowed_methods.end())
 	{
 		// Method not allowed - return 405

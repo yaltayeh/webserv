@@ -2,6 +2,7 @@
 #include "VirtualServer.hpp"
 #include "RegEx.hpp"
 #include "routing/RouteHandler.hpp"
+#include "libutils/include/Logger.hpp"
 
 VirtualServer::VirtualServer() { }
 
@@ -42,6 +43,7 @@ libhttp::Response *VirtualServer::handleRequest(const libhttp::Request &request)
 	const LocationConfig &location = findMatchingLocation(uri);
 
 	// Use the new RouteHandler singleton to process the request
+	LOG_DEBUG("VirtualServer handling request method size:" << location.allowed_methods.size());
 	return routing::RouteHandler::getInstance().process(request, location);
 }
 
@@ -92,14 +94,21 @@ const VirtualServer *VirtualServer::findMatchServer(const std::vector<VirtualSer
  */
 const LocationConfig &VirtualServer::findMatchingLocation(const std::string &uri) const
 {
-	const LocationConfig *best_match;
+	const LocationConfig *best_match = NULL;
 	size_t longest_match = 0;
+
+	if (_config.locations.empty())
+	{
+		static LocationConfig default_location;
+		static_cast<CommonConfigServerLocation&>(default_location) = static_cast<CommonConfigServerLocation>(_config);
+		default_location.path = "/";
+		return default_location;
+	}
 
 	// Iterate through all location blocks
 	for (size_t i = 0; i < _config.locations.size(); ++i)
 	{
-		const LocationConfig *loc = &_config.locations[i];
-		const std::string &loc_path = loc->path;
+		const std::string &loc_path = _config.locations[i].path;
 
 		// Check if URI starts with location path
 		if (uri.compare(0, loc_path.length(), loc_path) == 0)
@@ -108,10 +117,18 @@ const LocationConfig &VirtualServer::findMatchingLocation(const std::string &uri
 			if (loc_path.length() > longest_match)
 			{
 				longest_match = loc_path.length();
-				best_match = loc;
+				best_match = &_config.locations[i];
 			}
 		}
 	}
-
+	if (best_match == NULL)
+	{
+		// No matching location found, return default location ("/")
+		for (size_t i = 0; i < _config.locations.size(); ++i)
+			if (_config.locations[i].path == "/")
+				return _config.locations[i];
+		// If no "/" location, return first location as fallback
+		return _config.locations[0];
+	}
 	return *best_match;
 }

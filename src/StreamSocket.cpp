@@ -46,6 +46,7 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 				::close(_response->_bodyFileFd);
 				_response->_bodyFileFd = -1;
 				// Stop monitoring for writes
+				shutdown(_socketfd, SHUT_WR);
 				el->deleteEvent(_socketfd, IO_WRITE, this);
 			}
 			else if (nread == 0)
@@ -54,6 +55,7 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 				::close(_response->_bodyFileFd);
 				_response->_bodyFileFd = -1;
 				// Stop monitoring for writes
+				shutdown(_socketfd, SHUT_WR);
 				el->deleteEvent(_socketfd, IO_WRITE, this);
 			}
 			else
@@ -89,6 +91,7 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 				// If all body written, stop monitoring for writes
 				if (_response->_bodyWriteOffset >= _response->_requestBody.size())
 				{
+					shutdown(_socketfd, SHUT_WR);
 					el->deleteEvent(_socketfd, IO_WRITE, this);
 				}
 			}
@@ -96,6 +99,7 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 		else
 		{
 			// No body to write, stop monitoring for writes
+			shutdown(_socketfd, SHUT_WR);
 			el->deleteEvent(_socketfd, IO_WRITE, this);
 		}
 	}

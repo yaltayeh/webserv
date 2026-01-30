@@ -8,6 +8,8 @@
 #include "routing/RouteContext.hpp"
 #include "routing/RouteUtils.hpp"
 #include "libhttp/include/Request.hpp"
+#include "libutils/include/Logger.hpp"
+#include "libhttp/include/Utils.hpp"
 
 namespace routing
 {
@@ -27,6 +29,10 @@ libhttp::Response *accessControlCheck(const libhttp::Request &request,
 {
 	(void)request; // Not used in this middleware
 	(void)context; // Not used in this middleware
+
+	LOG_DEBUG("[AccessControlMiddleware] Handling request: " 
+	          << libhttp::methodToString(request.getMethod()) << " " 
+	          << request.getUri() << " | deny_all=" << location.deny_all);
 
 	// Check if deny_all is enabled
 	if (location.deny_all)

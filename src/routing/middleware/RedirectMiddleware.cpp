@@ -9,6 +9,8 @@
 #include "libhttp/include/Request.hpp"
 #include "libhttp/include/DefaultResponse.hpp"
 #include "libhttp/include/ResponseBlender.hpp"
+#include "libutils/include/Logger.hpp"
+#include "libhttp/include/Utils.hpp"
 
 namespace routing
 {
@@ -28,6 +30,10 @@ libhttp::Response *redirectHandler(const libhttp::Request &request,
 {
 	(void)request; // Not used in this middleware
 	(void)context; // Not used in this middleware
+
+	LOG_DEBUG("[RedirectMiddleware] Handling request: " 
+	          << libhttp::methodToString(request.getMethod()) << " " 
+	          << request.getUri() << " | is_return=" << location.is_return);
 
 	// Check if return directive is configured
 	if (!location.is_return)
