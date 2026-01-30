@@ -42,7 +42,7 @@ private:
     std::list<ClientSocket *>              _deleteClients;
 
     // Check for timed-out clients and close them
-    void checkClientTimeouts();
+    void CheckClientTimeouts();
 
     // Check for exited child processes
     void CheckChildProcesses();
