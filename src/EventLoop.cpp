@@ -98,6 +98,13 @@ EventLoop::~EventLoop()
 		delete (*it).second;
 	}
 
+	for (std::list<ClientSocket *>::iterator it = _deleteClients.begin();
+		 it != _deleteClients.end();
+		 ++it)
+	{
+		delete (*it);
+	}
+
 	_virtualServers.clear();
 	_listeningSockets.clear();
 }
