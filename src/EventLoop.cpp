@@ -198,7 +198,7 @@ void EventLoop::removeChildProcess(ChildProcessHandler *handler)
  * Front of queue = oldest (least recently active) connection
  * O(1) per timeout check, stops when we hit a non-expired connection
  */
-void EventLoop::checkClientTimeouts()
+void EventLoop::CheckClientTimeouts()
 {
 	time_t now = time(NULL);
 
@@ -491,7 +491,7 @@ void EventLoop::run()
 	while (_running)
 	{
 		// Check for timed-out clients before waiting for new events
-		checkClientTimeouts();
+		CheckClientTimeouts();
 		CheckChildProcesses();
 
 #if defined(__linux__)
