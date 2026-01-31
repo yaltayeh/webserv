@@ -86,6 +86,16 @@ EventLoop::~EventLoop()
 		}
 	}
 
+	// Clean up clients marked for deletion
+	for (std::list<ClientSocket *>::iterator it = _deleteClients.begin();
+		 it != _deleteClients.end(); ++it)
+	{
+		ClientSocket *client = *it;
+		if (client)
+			delete client;
+	}
+	_deleteClients.clear();
+
 	// Clean up listening sockets
 	for (std::map<uint64_t, ListenSocket *>::iterator it = _listeningSockets.begin();
 		 it != _listeningSockets.end();
