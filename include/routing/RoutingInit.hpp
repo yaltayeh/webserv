@@ -33,11 +33,6 @@ namespace middleware
 	                                    const LocationConfig &location,
 	                                    RouteContext &context);
 
-	// Upload handler middleware (Priority: 30)
-	libhttp::Response *uploadHandler(const libhttp::Request &request,
-	                                  const LocationConfig &location,
-	                                  RouteContext &context);
-
 	// Dynamic content middlewares (Priority: 25)
 	libhttp::Response *cgiHandler(const libhttp::Request &request,
 	                               const LocationConfig &location,

@@ -316,6 +316,7 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 			return -1;
 		}
 	}
+	LOG_TRACE("Added event(s) for fd:" << fd << " udata:" << udata);
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 	// macOS/BSD: Use kqueue to add file descriptor
@@ -344,8 +345,8 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 		LOG_ERROR_ERRNO("kevent failed adding event for fd " << fd);
 		return -1;
 	}
-#endif
 	LOG_TRACE("Added " << kev_count << " event(s) for fd:" << fd << " udata:" << udata);
+#endif
 	if (needAddRead)
 		udata->monitoringRead = true;
 	if (needAddWrite)
@@ -404,6 +405,7 @@ int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
 			LOG_ERROR_ERRNO("epoll_ctl failed modifying event for fd(" << fd << "):"
 																	   << strerror(errno));
 	}
+	LOG_TRACE("Deleted event(s) for fd:" << fd << " udata:" << udata);
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 	// macOS/BSD: kqueue removes specific filter (READ or WRITE)
@@ -425,10 +427,9 @@ int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
 
 	if (kev_count > 0 && kevent(_eventFd, kevs, kev_count, NULL, 0, NULL) == -1)
 		LOG_ERROR_ERRNO("kevent failed deleting event for fd " << fd << strerror(errno));
-#endif
-
-	// std::cout << "Deleted event(s) for fd:" << fd << " udata:" << udata << std::endl;
+	
 	LOG_TRACE("Deleted " << kev_count << " event(s) for fd:" << fd << " udata:" << udata);
+#endif
 
 	if (needDelRead)
 		udata->monitoringRead = false;

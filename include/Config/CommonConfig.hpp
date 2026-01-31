@@ -45,18 +45,12 @@ struct CommonConfig : Config
 	std::set<std::string> dav_methods;
 	std::string dav_access;
 
-	bool create_full_put_path;
-
 	// CGI/FastCGI configuration
 	std::map<std::string, std::string> fastcgi_params;
 	std::string fastcgi_index;
 
 	// CGI configuration
 	std::map<std::string, std::string> cgi_handlers;  // extension -> interpreter path
-
-	// Upload configuration
-	bool upload_enable;
-	std::string upload_store;
 
 	// Allowed HTTP methods (empty = all allowed)
 	std::set<std::string> allowed_methods;
@@ -80,10 +74,7 @@ struct CommonConfig : Config
 		  client_body_temp_path("client_body_temp"),
 		  dav_methods(),
 		  dav_access("user:rw"),
-		  create_full_put_path(false),
 		  cgi_handlers(),
-		  upload_enable(false),
-		  upload_store(""),
 		  allowed_methods(),
 		  deny_all(false),
 		  mimeTypes(),
@@ -104,8 +95,6 @@ struct CommonConfig : Config
 		this->error_pages = config.error_pages;
 		this->root = config.root;
 		this->cgi_handlers = config.cgi_handlers;
-		this->upload_enable = config.upload_enable;
-		this->upload_store = config.upload_store;
 		this->allowed_methods = config.allowed_methods;
 		this->deny_all = config.deny_all;
 		this->index = config.index;
@@ -113,7 +102,6 @@ struct CommonConfig : Config
 		this->client_body_temp_path = config.client_body_temp_path;
 		this->dav_methods = config.dav_methods;
 		this->dav_access = config.dav_access;
-		this->create_full_put_path = config.create_full_put_path;
 		this->mimeTypes = config.mimeTypes;
 		this->default_type = config.default_type;
 	}
@@ -129,8 +117,6 @@ struct CommonConfig : Config
 			this->error_pages = config.error_pages;
 			this->root = config.root;
 			this->cgi_handlers = config.cgi_handlers;
-			this->upload_enable = config.upload_enable;
-			this->upload_store = config.upload_store;
 			this->allowed_methods = config.allowed_methods;
 			this->deny_all = config.deny_all;
 			this->index = config.index;
@@ -138,7 +124,6 @@ struct CommonConfig : Config
 			this->client_body_temp_path = config.client_body_temp_path;
 			this->dav_methods = config.dav_methods;
 			this->dav_access = config.dav_access;
-			this->create_full_put_path = config.create_full_put_path;
 			this->fastcgi_params = config.fastcgi_params;
 			this->fastcgi_index = config.fastcgi_index;
 			this->mimeTypes = config.mimeTypes;

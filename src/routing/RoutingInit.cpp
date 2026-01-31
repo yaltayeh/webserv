@@ -25,9 +25,6 @@ void initializeRouting()
 		// Content handlers (Priority: 50)
 		.use(middleware::redirectHandler, 50)
 		
-		// Upload handler (Priority: 30)
-		.use(middleware::uploadHandler, 30)
-		
 		// Dynamic content (Priority: 25)
 		.use(middleware::cgiHandler, 25)
 		

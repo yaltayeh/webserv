@@ -1,6 +1,8 @@
 #include "RequestBody.hpp"
 #include <unistd.h>
 #include <fcntl.h>
+#include <cstring>
+#include <stdlib.h>
 
 namespace libhttp
 {
