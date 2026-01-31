@@ -32,6 +32,22 @@ class ConcurrentResult:
         status = "SUCCESS" if self.success else "FAILED"
         return f"ConcurrentResult(id={self.request_id}, status={status}, duration={self.duration:.2f}s)"
 
+    # Proxy common response attributes for convenience
+    @property
+    def status_code(self):
+        """Proxy to response.status_code for convenience."""
+        return self.response.status_code if self.response else None
+
+    @property
+    def content(self):
+        """Proxy to response.content for convenience."""
+        return self.response.content if self.response else None
+
+    @property
+    def headers(self):
+        """Proxy to response.headers for convenience."""
+        return self.response.headers if self.response else None
+
 
 def run_concurrent_requests(
     request_specs: List[Dict[str, Any]], max_workers: Optional[int] = None

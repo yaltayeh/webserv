@@ -1,6 +1,16 @@
 import sys
 
 
+# Global flag to suppress output
+QUIET_MODE = False
+
+
+def set_quiet(enabled):
+    """Enable or disable quiet mode (suppresses all logging)."""
+    global QUIET_MODE
+    QUIET_MODE = enabled
+
+
 class Colors:
     RESET = "\033[0m"
     RED = "\033[31m"
@@ -14,6 +24,8 @@ class Colors:
 
 
 def log(level, message, end="\n"):
+    if QUIET_MODE:
+        return
     level_colors = {
         "INFO": Colors.BLUE,
         "PASS": Colors.GREEN,
@@ -46,4 +58,32 @@ def warn(message, end="\n"):
 
 
 def orange(message, end="\n"):
+    if QUIET_MODE:
+        return
     print(f"{Colors.ORANGE}{message}{Colors.RESET}", file=sys.stderr, end=end)
+
+
+# Compact mode functions
+def print_category(category_name, end=""):
+    """Print category name in compact mode format."""
+    print(
+        f"{Colors.CYAN}[{category_name}]{Colors.RESET} ",
+        file=sys.stderr,
+        end=end,
+        flush=True,
+    )
+
+
+def print_check(end=" "):
+    """Print green checkmark for passed test."""
+    print(f"{Colors.GREEN}✓{Colors.RESET}", file=sys.stderr, end=end, flush=True)
+
+
+def print_cross(end=" "):
+    """Print red cross for failed test."""
+    print(f"{Colors.RED}⨯{Colors.RESET}", file=sys.stderr, end=end, flush=True)
+
+
+def print_leak_cross(end=" "):
+    """Print orange cross for test with valgrind leaks."""
+    print(f"{Colors.ORANGE}⨯{Colors.RESET}", file=sys.stderr, end=end, flush=True)
