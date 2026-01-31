@@ -1,6 +1,7 @@
 #include "ClientSocket.hpp"
 #include <arpa/inet.h>
 #include <iostream>
+#include <cerrno>
 #include "EventLoop.hpp"
 #include "StreamResponse.hpp"
 #include "DefaultResponse.hpp"
@@ -66,6 +67,9 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
 
         if (state == libhttp::CLOSED)
             return IO_EVENT_CLOSE;
+
+        // Mark client as active after successful read (update idle timeout)
+        el->markClientActive(this);
 
         if (state == libhttp::BODY_EXCEEDED_MAX_SIZE)
         {
@@ -202,16 +206,24 @@ void ClientSocket::handleDestroy(EventLoop *el)
  */
 libhttp::State ClientSocket::handleRead()
 {
-    char buffer[READ_BUFFER_SIZE];
-    ssize_t bytes_read = recv(buffer, READ_BUFFER_SIZE);
+	char buffer[READ_BUFFER_SIZE];
+	ssize_t bytes_read = recv(buffer, READ_BUFFER_SIZE);
 
-    if (bytes_read <= 0)
-    {
-        LOG_DEBUG("Client " << *this << " closed connection");
-        return libhttp::CLOSED;
-    }
+	if (bytes_read < 0)
+	{
+		LOG_ERROR("recv() error on " << *this << ": " << strerror(errno));
+		return libhttp::CLOSED;
+	}
 
-    return _parser->parse(buffer, bytes_read);
+	if (bytes_read == 0)
+	{
+		// Client closed connection (FIN received)
+		LOG_DEBUG("Client " << *this << " closed connection");
+		return libhttp::CLOSED;
+	}
+
+	// Parse the received data
+	return _parser->parse(buffer, bytes_read);
 }
 
 bool ClientSocket::handleWrite()

@@ -1,6 +1,7 @@
 """Test POST with Content-Length but no body."""
 
 import socket
+import time
 from luka.base_raw_request_test import RawRequestTest
 from luka.utilities.test_helpers import HTMLBuilder
 
@@ -35,12 +36,19 @@ class ContentLengthMismatchTest(RawRequestTest):
         self.assert_status(response, 200, "Server should be running")
 
         # POST with Content-Length but no body
-        try:
-            response = self.send_raw_request(
-                "POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 10\r\n\r\n",
-                wait_time=2,
+        # Server should wait for the body that never arrives
+        # Test with short wait - server won't respond since body isn't complete
+        response = self.send_raw_request(
+            "POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 10\r\n\r\n",
+            wait_time=1,  # Wait only 1 second
+        )
+
+        # Server should not send a response yet (still waiting for 10 bytes of body)
+        # So we expect either empty response or connection timeout
+        if len(response) == 0:
+            print("✓ Server correctly waits for body (no premature response)")
+        else:
+            # If we got an unexpected response, that's an error
+            raise AssertionError(
+                f"Server sent response before receiving complete body: {response[:100]}"
             )
-            status_line = response.split(b"\r\n")[0].decode("utf-8", errors="ignore")
-            assert "HTTP/" in status_line, "Should receive HTTP response"
-        except socket.timeout:
-            pass  # Timeout is expected

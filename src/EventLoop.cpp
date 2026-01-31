@@ -5,6 +5,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <fcntl.h>
+#include <ctime>
 #include "EventLoop.hpp"
 #include "IOEventHandler.hpp"
 #include <sys/wait.h>
@@ -135,7 +136,7 @@ void EventLoop::markClientActive(ClientSocket *client)
 		return;
 
 	// Update expiry date: current time + timeout
-	client->setExpiryDate(time(NULL) + _config.http.idle_timeout);
+	client->setExpiryDate(std::time(NULL) + _config.http.idle_timeout);
 
 	// O(1): Push to back (or move to back if already exists)
 	// Parameters: (key, data) where key=fd, data=ClientSocket*
@@ -211,23 +212,30 @@ void EventLoop::removeChildProcess(ChildProcessHandler *handler)
  */
 void EventLoop::CheckClientTimeouts()
 {
-	time_t now = time(NULL);
+	time_t now = std::time(NULL);
 
 	// Check oldest connections first (front of queue)
 	while (!_clientQueue.isEmpty())
 	{
 		ClientSocket *oldest = _clientQueue.front();
+		time_t expiry = oldest->getExpiryDate();
 
 		// If oldest is not expired, none of the others are either
-		if (oldest->getExpiryDate() > now)
+		if (expiry > now)
 			break;
 
-		// Timed out - pop from queue and close
-		LOG_DEBUG("Timeout: closing idle connection " << *oldest);
-		_clientQueue.pop(); // Remove from front
-
-		// Request closure
-		clientDisconnect(oldest);
+		// Timed out - close connection
+		LOG_INFO("Timeout: closing idle connection " << *oldest << " (expired " << (now - expiry) << "s ago)");
+		
+		// Remove from queue and close socket
+		_clientQueue.pop();
+		
+		// Close socket and mark for deletion
+		if (oldest->getSocketfd() >= 0)
+			deleteEvent(oldest->getSocketfd(), IO_READ | IO_WRITE, oldest);
+		oldest->close();
+		LOG_DEBUG("Marking client for deletion (timeout): " << *oldest);
+		_deleteClients.push_back(oldest);
 	}
 }
 
