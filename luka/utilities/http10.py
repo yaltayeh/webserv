@@ -77,7 +77,7 @@ def send_http10_request(method, url, data=None, headers=None, timeout=5):
         total_received = 0
         while True:
             try:
-                chunk = sock.recv(65536)  # Much larger buffer for big files
+                chunk = sock.recv(262144)  # 256KB buffer for faster downloads
                 if not chunk:
                     break
                 response_data += chunk

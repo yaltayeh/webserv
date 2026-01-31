@@ -1,5 +1,6 @@
 import sys
 
+
 class Colors:
     RESET = "\033[0m"
     RED = "\033[31m"
@@ -9,8 +10,10 @@ class Colors:
     MAGENTA = "\033[35m"
     CYAN = "\033[36m"
     WHITE = "\033[37m"
+    ORANGE = "\033[38;5;208m"
 
-def log(level, message, end='\n'):
+
+def log(level, message, end="\n"):
     level_colors = {
         "INFO": Colors.BLUE,
         "PASS": Colors.GREEN,
@@ -21,17 +24,26 @@ def log(level, message, end='\n'):
     color = level_colors.get(level.upper(), Colors.WHITE)
     print(f"{color}[{level.upper()}] {message}{Colors.RESET}", file=sys.stderr, end=end)
 
-def info(message, end='\n'):
+
+def info(message, end="\n"):
     log("INFO", message, end)
 
-def passed(message, end='\n'):
+
+def passed(message, end="\n"):
     log("PASS", message, end)
 
-def failed(message, end='\n'):
+
+def failed(message, end="\n"):
     log("FAIL", message, end)
 
-def error(message, end='\n'):
+
+def error(message, end="\n"):
     log("ERROR", message, end)
 
-def warn(message, end='\n'):
+
+def warn(message, end="\n"):
     log("WARN", message, end)
+
+
+def orange(message, end="\n"):
+    print(f"{Colors.ORANGE}{message}{Colors.RESET}", file=sys.stderr, end=end)
