@@ -14,7 +14,6 @@
  */
 struct Config *initServerConfig(Directive::Parser *parser, const std::vector<std::string> &args, Config *parent)
 {
-	(void)parser;
 	// Validate parent context - must be http
 	HttpConfig *http = dynamic_cast<HttpConfig *>(parent);
 	if (!http)
@@ -23,6 +22,10 @@ struct Config *initServerConfig(Directive::Parser *parser, const std::vector<std
 	// Server directive takes no arguments
 	if (args.size() != 1)
 		throw Directive::ArgumentException("server", "takes no arguments");
+
+	// Server directive must have a block
+	if (!parser->hasBlock())
+		throw Directive::ArgumentException("server", "directive must have a block");
 
 	// Create new server config block
 	ServerConfig server = ServerConfig();

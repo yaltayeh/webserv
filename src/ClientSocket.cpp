@@ -99,6 +99,38 @@ IOEventState ClientSocket::handleEvent(EventLoop *el)
             return IO_EVENT_CONTINUE;
         }
 
+        if (state == libhttp::ERROR_HEADER_TOO_LARGE)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            libhttp::ResponseBlender blender(libhttp::REQUEST_HEADER_FIELDS_TOO_LARGE);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
+        }
+
+        if (state == libhttp::ERROR_EMPTY_URI)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            libhttp::ResponseBlender blender(libhttp::BAD_REQUEST);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
+        }
+
+        if (state == libhttp::ERROR_INVALID_HEADER)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            libhttp::ResponseBlender blender(libhttp::BAD_REQUEST);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
+        }
+
+        if (state == libhttp::ERROR_LENGTH_REQUIRED)
+        {
+            el->deleteEvent(_socketfd, IO_READ, this);
+            libhttp::ResponseBlender blender(libhttp::LENGTH_REQUIRED);
+            _response = new libhttp::DefaultResponse(blender.toString());
+            return IO_EVENT_CONTINUE;
+        }
+
         if (state == libhttp::ERROR)
         {
             el->deleteEvent(_socketfd, IO_READ, this);

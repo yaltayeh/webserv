@@ -204,6 +204,12 @@ namespace Directive
 		const Environ &getEnviron() const;
 
 		/**
+		 * @brief Check if current directive has a block
+		 * @return true if directive has { } block, false otherwise
+		 */
+		bool hasBlock() const;
+
+		/**
 		 * @brief Skips whitespace characters
 		 * @param p Current position
 		 * @param end End boundary

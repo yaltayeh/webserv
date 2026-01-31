@@ -255,6 +255,11 @@ namespace Directive
 		return _environ;
 	}
 
+	bool Parser::hasBlock() const
+	{
+		return _blockStart != NULL;
+	}
+
 	/**
 	 * @brief Extracts directive name and arguments from text
 	 * @return Vector with directive name as first element, followed by arguments
@@ -274,19 +279,36 @@ namespace Directive
 		while (p < end)
 		{
 			p = Directive::Parser::skipSpace(p, end);
-			slice = p;
-			while (p < end && !std::isspace(*p))
-				p++;
-			if (p > slice)
+			if (p >= end)
+				break;
+
+			// Handle quoted strings
+			if (*p == '\"' || *p == '\'')
 			{
+				char quote = *p;
+				slice = p + 1; // Start after opening quote
+				p = nextQout(p, end, quote);
+				// Extract string without quotes
 				std::string arg = _configString.substr(slice - _configString.c_str(), p - slice);
 				if (!args.empty())
 					arg = ExpantionEnviron(arg);
 				args.push_back(arg);
+				p++; // Skip closing quote
 			}
-			if (p >= end)
-				break;
-			p++;
+			else
+			{
+				// Handle unquoted strings
+				slice = p;
+				while (p < end && !std::isspace(*p))
+					p++;
+				if (p > slice)
+				{
+					std::string arg = _configString.substr(slice - _configString.c_str(), p - slice);
+					if (!args.empty())
+						arg = ExpantionEnviron(arg);
+					args.push_back(arg);
+				}
+			}
 		}
 		return (args);
 	}

@@ -28,7 +28,9 @@ namespace libhttp {
 	State Parser::parse(const char* partial_request, size_t size) {
 		if (_state == COMPLETE || _state == ERROR || _state == BODY_EXCEEDED_MAX_SIZE 
 			|| _state == ERROR_URI_TOO_LONG || _state == ERROR_HTTP_VERSION_NOT_SUPPORTED
-			|| _state == ERROR_UNSUPPORTED_TRANSFER_ENCODING)
+			|| _state == ERROR_UNSUPPORTED_TRANSFER_ENCODING || _state == ERROR_HEADER_TOO_LARGE
+			|| _state == ERROR_EMPTY_URI || _state == ERROR_INVALID_HEADER 
+			|| _state == ERROR_LENGTH_REQUIRED)
 			return _state;
 
 		_buffer.append(partial_request, size);
@@ -64,9 +66,15 @@ namespace libhttp {
 		if (request_line_parts.size() != 3)
 			{ _state = ERROR; return -1; }
 		
+		// Validate URI is not empty
+		std::string uri = request_line_parts[1];
+		if (uri.empty()) {
+			_state = ERROR_EMPTY_URI;
+			return -1;
+		}
+		
 		// Validate URI length (before decoding) - RFC 2616 doesn't specify limit, 
 		// but most servers use 8KB as reasonable limit
-		std::string uri = request_line_parts[1];
 		if (uri.length() > 8192) {
 			_state = ERROR_URI_TOO_LONG;
 			return -1;
@@ -124,22 +132,44 @@ namespace libhttp {
 			std::string header_line = _buffer.substr(0, pos);
 			_buffer.erase(0, pos + 2); // remove processed line
 
-			/**
-			 * Split header on FIRST colon only
-			 * 
-			 * Headers can contain colons in the value (e.g., "Host: localhost:8080")
-			 * So we must split manually on the first colon, not use split()
-			 */
-			size_t colon_pos = header_line.find(':');
-			if (colon_pos == std::string::npos) {
-				_state = ERROR;
-				return -1;
-			}
+		/**
+		 * Split header on FIRST colon only
+		 * 
+		 * Headers can contain colons in the value (e.g., "Host: localhost:8080")
+		 * So we must split manually on the first colon, not use split()
+		 */
+		size_t colon_pos = header_line.find(':');
+		if (colon_pos == std::string::npos) {
+			_state = ERROR_INVALID_HEADER;
+			return -1;
+		}
 
-			std::string key = trim(header_line.substr(0, colon_pos));
-			std::string value = trim(header_line.substr(colon_pos + 1));
+		std::string key_raw = header_line.substr(0, colon_pos);
+		
+		// RFC 7230: Header field names must not have whitespace before the colon
+		// Check if there's trailing whitespace in the key (before colon)
+		if (!key_raw.empty() && (key_raw[key_raw.length() - 1] == ' ' 
+			|| key_raw[key_raw.length() - 1] == '\t')) {
+			_state = ERROR_INVALID_HEADER;
+			return -1;
+		}
+		
+		std::string key = trim(key_raw);
+		std::string value = trim(header_line.substr(colon_pos + 1));
+		
+		// Header key cannot be empty
+		if (key.empty()) {
+			_state = ERROR_INVALID_HEADER;
+			return -1;
+		}
 
-			_request.setHeader(key, value);
+		// Validate header size (key + value should not exceed 8KB)
+		if (header_line.length() > 8192) {
+			_state = ERROR_HEADER_TOO_LARGE;
+			return -1;
+		}
+
+		_request.setHeader(key, value);
 			
 			// Check for Content-Length header
 			if (key == "Content-Length") {
@@ -186,10 +216,28 @@ namespace libhttp {
 	}
 
 	int Parser::processBody() {
-		// If no Content-Length header, treat all remaining data as body
-		if (_expectedBodyLength == 0) {
+		// Check for body without Content-Length
+		// For POST/PUT requests, Content-Length is required if there's a body
+		if (!_hasContentLength) {
+			// If there's data in the buffer after headers, it's an error
+			if (!_buffer.empty()) {
+				_state = ERROR_LENGTH_REQUIRED;
+				return -1;
+			}
+			// No body expected, request is complete
 			_request.setBody(_body);
-			_buffer.clear();
+			_state = COMPLETE;
+			return 0;
+		}
+		
+		// If Content-Length is 0, there should be no body data
+		if (_expectedBodyLength == 0) {
+			// If there's data after headers when Content-Length is 0, it's an error
+			if (!_buffer.empty()) {
+				_state = ERROR;
+				return -1;
+			}
+			_request.setBody(_body);
 			_state = COMPLETE;
 			return 0;
 		}
@@ -243,6 +291,10 @@ std::ostream& operator<<(std::ostream& os, libhttp::State s) {
         case libhttp::ERROR_URI_TOO_LONG: return os << "ERROR_URI_TOO_LONG";
         case libhttp::ERROR_HTTP_VERSION_NOT_SUPPORTED: return os << "ERROR_HTTP_VERSION_NOT_SUPPORTED";
         case libhttp::ERROR_UNSUPPORTED_TRANSFER_ENCODING: return os << "ERROR_UNSUPPORTED_TRANSFER_ENCODING";
+        case libhttp::ERROR_HEADER_TOO_LARGE: return os << "ERROR_HEADER_TOO_LARGE";
+        case libhttp::ERROR_EMPTY_URI: return os << "ERROR_EMPTY_URI";
+        case libhttp::ERROR_INVALID_HEADER: return os << "ERROR_INVALID_HEADER";
+        case libhttp::ERROR_LENGTH_REQUIRED: return os << "ERROR_LENGTH_REQUIRED";
         default: return os << "UNKNOWN";
     }
 }
