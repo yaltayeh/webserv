@@ -296,22 +296,36 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 
 	ev.data.ptr = udata; // Store Socket* for later retrieval
 
-	// Try to add first, if it fails with EEXIST, modify instead
-	int op = (udata->monitoringRead || udata->monitoringWrite) ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
+	// Check if we need to add/modify this specific FD
+	// Note: For handlers with multiple FDs (like StreamSocket), we need to track
+	// each FD independently. We can't rely on monitoringRead/Write alone.
+	// 
+	// Strategy: Try ADD first. If it fails with EEXIST, the FD is already registered,
+	// so use MOD instead.
+	int op = EPOLL_CTL_ADD;
+
+	LOG_DEBUG("epoll_ctl: fd=" << fd << " initial_op=ADD"
+	          << " monitoringRead=" << udata->monitoringRead 
+	          << " monitoringWrite=" << udata->monitoringWrite
+	          << " needAddRead=" << needAddRead
+	          << " needAddWrite=" << needAddWrite);
 
 	if (epoll_ctl(_eventFd, op, fd, &ev) == -1)
 	{
-		// If ADD failed because fd exists, try MOD
-		if (op == EPOLL_CTL_ADD && errno == EEXIST)
+		if (errno == EEXIST)
 		{
+			// FD already in epoll, use MOD instead
+			LOG_DEBUG("FD " << fd << " already in epoll, using MOD");
 			if (epoll_ctl(_eventFd, EPOLL_CTL_MOD, fd, &ev) == -1)
 			{
+				LOG_ERROR("epoll_ctl MOD failed: fd=" << fd << " errno=" << errno << " (" << strerror(errno) << ")");
 				perror("epoll_ctl MOD");
 				return -1;
 			}
 		}
 		else
 		{
+			LOG_ERROR("epoll_ctl ADD failed: fd=" << fd << " errno=" << errno << " (" << strerror(errno) << ")");
 			perror("epoll_ctl ADD");
 			return -1;
 		}

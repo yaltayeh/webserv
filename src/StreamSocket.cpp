@@ -49,13 +49,6 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 			if (!_writeBuffer.empty())
 				return IO_EVENT_CONTINUE;
 		}
-		if (_requestBody.isCompleted())
-		{
-			el->deleteEvent(_writeFd, IO_WRITE, this);
-			::close(_writeFd);
-			_writeFd = -1;
-			return IO_EVENT_CONTINUE;
-		}
 
 		char buf[WRITE_BUFFER_SIZE];
 		ssize_t chunkSize = _requestBody.getChunk(buf, sizeof(buf));
@@ -63,6 +56,8 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 			return IO_EVENT_CLOSE;
 		if (chunkSize == 0)
 		{
+			// No more data to read from body
+			// Close write FD to signal EOF to CGI script
 			el->deleteEvent(_writeFd, IO_WRITE, this);
 			::close(_writeFd);
 			_writeFd = -1;
@@ -72,12 +67,7 @@ IOEventState StreamSocket::handleEvent(EventLoop *el)
 		if (nbytes < 0)
 			return IO_EVENT_CLOSE;
 		if (nbytes == 0)
-		{
-			el->deleteEvent(_writeFd, IO_WRITE, this);
-			::close(_writeFd);
-			_writeFd = -1;
 			return IO_EVENT_CONTINUE;
-		}
 		if (nbytes != chunkSize)
 			_writeBuffer.append(buf + nbytes, chunkSize - nbytes);
 	}
@@ -99,8 +89,7 @@ void StreamSocket::handleDestroy(EventLoop *el)
 {
 	if (_socketfd != -1)
 		el->deleteEvent(_socketfd, IO_READ, this);
-		
-
+	
 	if (_response)
 	{
 		_response->_eof = 1;

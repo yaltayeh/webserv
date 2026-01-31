@@ -136,8 +136,9 @@ class BadConfigTest(BaseTest):
     }}
 }}"""
         result = self.test_config(bad_conf, webserv_binary)
-        # Port 0 might be valid (means OS assigns port) or invalid
-        print(f"  Port 0: {'accepted' if result['success'] else 'rejected'}\n")
+        # Port 0 should be rejected (invalid port for binding)
+        assert not result["success"], "Config with port 0 should be rejected"
+        print("✓ Port 0 rejected\n")
 
         # Test 7: Invalid error code (out of range)
         print("Test 7: Invalid error code (1000)")
@@ -184,13 +185,11 @@ class BadConfigTest(BaseTest):
     }}
 }}"""
         result = self.test_config(bad_conf, webserv_binary)
-        # Note: Some servers might accept invalid size formats and default to 0 or ignore them
-        if result["success"]:
-            print(
-                "  Invalid size format was accepted (server might have default behavior)\n"
-            )
-        else:
-            print("✓ Invalid size format rejected\n")
+        # Invalid size format should be rejected
+        assert not result["success"], (
+            "Config with invalid size format should be rejected"
+        )
+        print("✓ Invalid size format rejected\n")
 
         # Test 10: Unknown directive
         print("Test 10: Unknown directive")
@@ -241,13 +240,9 @@ class BadConfigTest(BaseTest):
         print("Test 13: Empty configuration file")
         bad_conf = ""
         result = self.test_config(bad_conf, webserv_binary)
-        # Empty configs might be accepted by some servers with default settings
-        if result["success"]:
-            print(
-                "  Empty config was accepted (server might have default configuration)\n"
-            )
-        else:
-            print("✓ Empty config rejected\n")
+        # Empty configs should be rejected (no valid configuration)
+        assert not result["success"], "Empty config should be rejected"
+        print("✓ Empty config rejected\n")
 
         # Test 14: No server block
         print("Test 14: No server block in http")
@@ -255,8 +250,9 @@ class BadConfigTest(BaseTest):
     worker_connections 1024;
 }"""
         result = self.test_config(bad_conf, webserv_binary)
-        # Might be valid or invalid depending on implementation
-        print(f"  No server block: {'accepted' if result['success'] else 'rejected'}\n")
+        # HTTP block without server should be rejected
+        assert not result["success"], "Config without server block should be rejected"
+        print("✓ No server block rejected\n")
 
         # Test 15: Duplicate conflicting directives
         print("Test 15: Multiple conflicting values")
@@ -270,7 +266,7 @@ class BadConfigTest(BaseTest):
     }}
 }}"""
         result = self.test_config(bad_conf, webserv_binary)
-        # Might override or reject depending on implementation
+        # Duplicate directives may override (nginx-like) - accept either behavior
         print(
             f"  Duplicate directive: {'accepted (override)' if result['success'] else 'rejected'}\n"
         )
@@ -325,9 +321,11 @@ http {{
     }}
 }}"""
         result = self.test_config(bad_conf, webserv_binary)
-        print(
-            f"  Multiple http blocks: {'accepted' if result['success'] else 'rejected'}\n"
+        # Multiple http blocks should be rejected (nginx-like behavior)
+        assert not result["success"], (
+            "Config with multiple http blocks should be rejected"
         )
+        print("✓ Multiple http blocks rejected\n")
 
         print("✓ All bad config tests completed!")
 

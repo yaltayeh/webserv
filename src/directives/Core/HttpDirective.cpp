@@ -25,6 +25,10 @@ struct Config *parserHttpDirective(Directive::Parser *parser, const std::vector<
 
 	if (global->init_http)
 		throw Directive::ConfigException("you can only have one http directive");
+	
+	// Mark that http has been initialized
+	global->init_http = true;
+	
 	// Create new HTTP config block
 	global->http = HttpConfig();
 	

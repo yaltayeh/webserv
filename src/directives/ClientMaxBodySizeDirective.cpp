@@ -31,6 +31,7 @@ struct Config *parseClientMaxBodySizeDirective(Directive::Parser *parser, const 
 	std::string size_str = args[1];
 	size_t size = 0;
 	size_t multiplier = 1;
+	std::string numeric_part = size_str;
 
 	// Check for size suffix (k, m, g)
 	if (!size_str.empty())
@@ -40,19 +41,33 @@ struct Config *parseClientMaxBodySizeDirective(Directive::Parser *parser, const 
 		{
 		case 'g':
 			multiplier = 1024 * 1024 * 1024;
+			numeric_part = size_str.substr(0, size_str.length() - 1);
 			break;
 		case 'm':
 			multiplier = 1024 * 1024;
+			numeric_part = size_str.substr(0, size_str.length() - 1);
 			break;
 		case 'k':
 			multiplier = 1024;
+			numeric_part = size_str.substr(0, size_str.length() - 1);
 			break;
 		default:
+			// No suffix, all characters should be digits
 			break;
 		}
 	}
 
-	size = std::atoll(size_str.c_str()) * multiplier;
+	// Validate that numeric_part contains only digits
+	if (numeric_part.empty())
+		throw Directive::ArgumentException("client_max_body_size", "invalid size format: empty value");
+	
+	for (size_t i = 0; i < numeric_part.length(); i++)
+	{
+		if (!std::isdigit(numeric_part[i]))
+			throw Directive::ArgumentException("client_max_body_size", "invalid size format: '" + size_str + "' (must be a number optionally followed by k, m, or g)");
+	}
+
+	size = std::atoll(numeric_part.c_str()) * multiplier;
 
 	// Set value to config
 	config->client_max_body_size = size;

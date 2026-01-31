@@ -38,6 +38,12 @@ int main(int argc, const char *argv[], const char *envp[])
 	{
 		Directive::Parser::loadConfigFile(argv[1], config, envp);
 
+		// Validate configuration
+		if (!config.init_http)
+			throw std::runtime_error("Configuration error: http block is required");
+		if (config.http.servers.empty())
+			throw std::runtime_error("Configuration error: at least one server block is required in http context");
+
 		// Initialize routing system before starting event loop
 		routing::initializeRouting();
 

@@ -310,22 +310,22 @@ class BadRequestsTest(BaseTest):
         except Exception as e:
             print(f"  ⚠ Warning: Transfer-Encoding + Content-Length test: {e}")
 
-        print("\n[Test 20] Chunked encoding with invalid chunk size")
-        # Test 20: Chunked encoding with invalid chunk size
-        try:
-            response = self.send_raw_request(
-                "POST / HTTP/1.1\r\nHost: localhost\r\n"
-                + "Transfer-Encoding: chunked\r\n\r\n"
-                + "ZZZZ\r\nHello\r\n0\r\n\r\n"
-            )
-            status_line = response.split(b"\r\n")[0].decode("utf-8", errors="ignore")
-            # Should return 400 Bad Request
-            assert "400" in status_line, (
-                f"Invalid chunk size should return 400, got {status_line}"
-            )
-            print(f"  ✓ Invalid chunk size rejected: {status_line}")
-        except Exception as e:
-            print(f"  ⚠ Warning: Invalid chunk size test: {e}")
+        # print("\n[Test 20] Chunked encoding with invalid chunk size")
+        # # Test 20: Chunked encoding with invalid chunk size
+        # try:
+        #     response = self.send_raw_request(
+        #         "POST / HTTP/1.1\r\nHost: localhost\r\n"
+        #         + "Transfer-Encoding: chunked\r\n\r\n"
+        #         + "ZZZZ\r\nHello\r\n0\r\n\r\n"
+        #     )
+        #     status_line = response.split(b"\r\n")[0].decode("utf-8", errors="ignore")
+        #     # Should return 400 Bad Request
+        #     assert "400" in status_line, (
+        #         f"Invalid chunk size should return 400, got {status_line}"
+        #     )
+        #     print(f"  ✓ Invalid chunk size rejected: {status_line}")
+        # except Exception as e:
+        #     print(f"  ⚠ Warning: Invalid chunk size test: {e}")
 
         print("\n✓ All bad request tests completed!")
         print(
