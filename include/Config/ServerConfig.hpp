@@ -32,8 +32,6 @@ struct ServerConfig : public CommonConfigServerLocation
 		  server_names()
 	{
 		uint32_t ip = htonl(INADDR_ANY);
-		struct ListenAddr addr80 = {ip, 80};
-		listenAddresses.push_back(addr80);
 		struct ListenAddr addr8080 = {ip, 8080};
 		listenAddresses.push_back(addr8080);
 	};

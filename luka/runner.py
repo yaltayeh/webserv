@@ -13,6 +13,7 @@ sys.path.insert(0, WEBSERV_PATH)
 from luka import logger, assertions
 from luka.utilities import process, network, http, concurrent
 from luka.base_test import BaseTest
+from luka.base_config_test import ConfigTestBase
 
 TESTS_DIR = os.path.join(WEBSERV_PATH, "luka", "tests")
 TEST_RUNS_DIR = os.path.join(WEBSERV_PATH, "luka", "test_runs")
@@ -230,71 +231,79 @@ def run_test(test_class):
         # Run test setup
         test_instance.setup()
 
-        if not test_instance.conf_path or not os.path.exists(test_instance.conf_path):
-            logger.error("Test setup did not create a configuration file.")
-            return False
+        # Check if this is a ConfigTestBase test (handles its own server startup)
+        is_config_test = isinstance(test_instance, ConfigTestBase)
 
-        # Extract port from config
-        with open(test_instance.conf_path, "r") as f:
-            conf_content = f.read()
-
-        port_match = re.search(r"listen\s+(\d+);", conf_content)
-        if not port_match:
-            logger.error("Could not find port in test config.")
-            return False
-        port = int(port_match.group(1))
-
-        # Start webserv
-        if USE_VALGRIND:
-            command = [
-                "valgrind",
-                "--leak-check=full",
-                "--show-leak-kinds=all",
-                "--track-origins=yes",
-                "--log-file=" + os.path.join(test_instance.logs_dir, "valgrind.log"),
-                WEBSERV_BIN,
-                test_instance.conf_path,
-            ]
-            logger.info(f"Starting webserv with valgrind")
-        else:
-            command = [WEBSERV_BIN, test_instance.conf_path]
-        # logger.info(f"Starting webserv: {' '.join(command)}")
-
-        webserv_process = process.run_command(command, wait=False)
-
-        # Wait for server to be ready
-        start_time = time.time()
-        while not network.is_port_open("localhost", port):
-            if webserv_process.poll() is not None:
-                logger.error(
-                    f"Server process terminated unexpectedly with code {webserv_process.returncode}."
-                )
-                try:
-                    stdout, stderr = webserv_process.communicate(timeout=0.1)
-                    if stdout:
-                        logger.error(f"Server stdout:\n{stdout}")
-                    if stderr:
-                        logger.error(f"Server stderr:\n{stderr}")
-                except:
-                    pass
+        if not is_config_test:
+            # For regular tests, start the server with the test config
+            if not test_instance.conf_path or not os.path.exists(
+                test_instance.conf_path
+            ):
+                logger.error("Test setup did not create a configuration file.")
                 return False
-            if time.time() - start_time > SERVER_START_TIMEOUT:
-                logger.error(
-                    f"Server did not start on port {port} within {SERVER_START_TIMEOUT} seconds."
-                )
-                webserv_process.kill()
-                try:
-                    stdout, stderr = webserv_process.communicate(timeout=1)
-                    if stdout:
-                        logger.error(f"Server stdout:\n{stdout}")
-                    if stderr:
-                        logger.error(f"Server stderr:\n{stderr}")
-                except:
-                    pass
-                return False
-            time.sleep(0.1)
 
-        # logger.info(f"Server started on port {port}.")
+            # Extract port from config
+            with open(test_instance.conf_path, "r") as f:
+                conf_content = f.read()
+
+            port_match = re.search(r"listen\s+(\d+);", conf_content)
+            if not port_match:
+                logger.error("Could not find port in test config.")
+                return False
+            port = int(port_match.group(1))
+
+            # Start webserv
+            if USE_VALGRIND:
+                command = [
+                    "valgrind",
+                    "--leak-check=full",
+                    # "--show-leak-kinds=all",
+                    # "--track-origins=yes",
+                    "--log-file="
+                    + os.path.join(test_instance.logs_dir, "valgrind.log"),
+                    WEBSERV_BIN,
+                    test_instance.conf_path,
+                ]
+                logger.info(f"Starting webserv with valgrind")
+            else:
+                command = [WEBSERV_BIN, test_instance.conf_path]
+            # logger.info(f"Starting webserv: {' '.join(command)}")
+
+            webserv_process = process.run_command(command, wait=False)
+
+            # Wait for server to be ready
+            start_time = time.time()
+            while not network.is_port_open("localhost", port):
+                if webserv_process.poll() is not None:
+                    logger.error(
+                        f"Server process terminated unexpectedly with code {webserv_process.returncode}."
+                    )
+                    try:
+                        stdout, stderr = webserv_process.communicate(timeout=0.1)
+                        if stdout:
+                            logger.error(f"Server stdout:\n{stdout}")
+                        if stderr:
+                            logger.error(f"Server stderr:\n{stderr}")
+                    except:
+                        pass
+                    return False
+                if time.time() - start_time > SERVER_START_TIMEOUT:
+                    logger.error(
+                        f"Server did not start on port {port} within {SERVER_START_TIMEOUT} seconds."
+                    )
+                    webserv_process.kill()
+                    try:
+                        stdout, stderr = webserv_process.communicate(timeout=1)
+                        if stdout:
+                            logger.error(f"Server stdout:\n{stdout}")
+                        if stderr:
+                            logger.error(f"Server stderr:\n{stderr}")
+                    except:
+                        pass
+                    return False
+                time.sleep(0.1)
+
+            # logger.info(f"Server started on port {port}.")
 
         # Run test
         test_instance.run()
