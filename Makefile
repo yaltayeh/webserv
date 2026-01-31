@@ -54,17 +54,14 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/ClientBodyTempPathDirective.cpp		\
 							src/directives/RewriteDirective.cpp					\
 							src/directives/AutoindexFormatDirective.cpp			\
-							src/directives/FastcgiPassDirective.cpp				\
 							src/directives/RootDirective.cpp					\
+							src/directives/AddHeaderDirective.cpp				\
 							src/directives/ServerNameDirective.cpp				\
 							src/directives/IncludeDirective.cpp					\
-							src/directives/FastcgiParamDirective.cpp			\
 							src/directives/IndexDirective.cpp					\
 							src/directives/ClientMaxBodySizeDirective.cpp		\
 							src/directives/ListenDirective.cpp					\
-							src/directives/FastcgiSplitPathInfoDirective.cpp	\
 							src/directives/AutoindexDirective.cpp				\
-							src/directives/FastcgiIndexDirective.cpp			\
 							src/directives/ReturnDirective.cpp					\
 							src/directives/AliasDirective.cpp					\
 							src/directives/AllowedMethodsDirective.cpp			\

@@ -41,14 +41,6 @@ struct CommonConfig : Config
 	// Temporary path for client body
 	std::string client_body_temp_path;
 
-	// WebDAV methods for uploads
-	std::set<std::string> dav_methods;
-	std::string dav_access;
-
-	// CGI/FastCGI configuration
-	std::map<std::string, std::string> fastcgi_params;
-	std::string fastcgi_index;
-
 	// CGI configuration
 	std::map<std::string, std::string> cgi_handlers;  // extension -> interpreter path
 
@@ -62,6 +54,20 @@ struct CommonConfig : Config
 
 	std::string default_type;
 
+	// Custom headers to add to responses
+	struct AddHeader
+	{
+		std::string name;
+		std::string value;
+		bool always;  // Add to error responses too
+
+		AddHeader()
+			: name(),
+			  value(),
+			  always(false) {}
+	};
+	std::vector<AddHeader> add_headers;
+
 	CommonConfig()
 		: Config(),
 		  autoindex(false),
@@ -72,13 +78,12 @@ struct CommonConfig : Config
 		  index(),
 		  client_max_body_size(1024 * 1024),
 		  client_body_temp_path("client_body_temp"),
-		  dav_methods(),
-		  dav_access("user:rw"),
 		  cgi_handlers(),
 		  allowed_methods(),
 		  deny_all(false),
 		  mimeTypes(),
-		  default_type("text/plain")
+		  default_type("text/plain"),
+		  add_headers()
 	{
 		index.push_back("index.html");
 		mimeTypes["html"] = "text/html";
@@ -100,10 +105,9 @@ struct CommonConfig : Config
 		this->index = config.index;
 		this->client_max_body_size = config.client_max_body_size;
 		this->client_body_temp_path = config.client_body_temp_path;
-		this->dav_methods = config.dav_methods;
-		this->dav_access = config.dav_access;
 		this->mimeTypes = config.mimeTypes;
 		this->default_type = config.default_type;
+		this->add_headers = config.add_headers;
 	}
 
 	CommonConfig &operator=(const CommonConfig &config)
@@ -122,12 +126,9 @@ struct CommonConfig : Config
 			this->index = config.index;
 			this->client_max_body_size = config.client_max_body_size;
 			this->client_body_temp_path = config.client_body_temp_path;
-			this->dav_methods = config.dav_methods;
-			this->dav_access = config.dav_access;
-			this->fastcgi_params = config.fastcgi_params;
-			this->fastcgi_index = config.fastcgi_index;
 			this->mimeTypes = config.mimeTypes;
 			this->default_type = config.default_type;
+			this->add_headers = config.add_headers;
 		}
 		return *this;
 	}

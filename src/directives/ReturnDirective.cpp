@@ -49,7 +49,7 @@ struct Config *parseReturnDirective(Directive::Parser *parser, const std::vector
 			config->return_url += " " + args[i];
 		}
 	}
-
+	config->is_return = true;
 	// Return no new config
 	return NULL;
 }
