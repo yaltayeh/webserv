@@ -23,14 +23,6 @@ endif
 
 INCLUDE_FLAGS	   		= -Iinclude -Iinclude/directives -Idependencies $(foreach lib,$(DEPENDENCIES),-I$(DEPENDENCIES_DIR)/$(lib)/include)
 
-# 							src/RouteHandler.cpp								\
-							\
-# 							src/routes/DefualtRoute.cpp							\
-# 							src/routes/ReturnRoute.cpp							\
-# 							src/routes/ExceedsMaxBodySize.cpp					\
-# 							src/routes/AccessDenied.cpp							\
-# 							src/routes/CGIRoute.cpp								\
-# 							src/routes/MethodAllod.cpp							
 SRCS		    		=   src/main.cpp 										\
 							src/Socket.cpp 										\
 							src/ClientSocket.cpp 								\
