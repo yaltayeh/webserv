@@ -474,6 +474,14 @@ bool CGI::createSocketpairs(int socketToChild[2], int socketFromChild[2]) {
         return false;
     }
 
+    // Set FD_CLOEXEC on all socketpair file descriptors
+    // This prevents CGI child processes from inheriting other clients' file descriptors
+    // Critical for concurrent CGI execution where multiple children run simultaneously
+    fcntl(socketToChild[0], F_SETFD, FD_CLOEXEC);
+    fcntl(socketToChild[1], F_SETFD, FD_CLOEXEC);
+    fcntl(socketFromChild[0], F_SETFD, FD_CLOEXEC);
+    fcntl(socketFromChild[1], F_SETFD, FD_CLOEXEC);
+
     return true;
 }
 
