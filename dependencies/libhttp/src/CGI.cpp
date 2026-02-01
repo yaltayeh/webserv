@@ -333,6 +333,8 @@ void CGI::buildEnvironment(const libhttp::Request &request,
     // PHP compatibility
     addEnvironmentVariable("REDIRECT_STATUS", "200");
 
+    addEnvironmentVariable("HTTP_COOKIE", request.getHeader("Cookie"));
+
     // HTTP headers -> HTTP_* environment variables
     // Per RFC 3875, multiple headers with the same name should be combined with commas
     std::multimap<std::string, std::string> headers = request.getHeaders();
