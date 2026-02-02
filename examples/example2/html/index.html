@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Home - Authentication Example</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			max-width: 900px;
+			margin: 50px auto;
+			padding: 20px;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+		}
+		.container {
+			background-color: white;
+			padding: 40px;
+			border-radius: 10px;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+		}
+		h1 {
+			color: #333;
+			margin-bottom: 10px;
+		}
+		.nav {
+			background-color: #f8f9fa;
+			padding: 15px;
+			border-radius: 5px;
+			margin: 20px 0;
+		}
+		.nav a {
+			color: #667eea;
+			text-decoration: none;
+			margin: 0 15px;
+			font-weight: bold;
+		}
+		.nav a:hover {
+			text-decoration: underline;
+		}
+		.user-info {
+			background-color: #e3f2fd;
+			padding: 15px;
+			border-radius: 5px;
+			margin: 20px 0;
+		}
+		.content {
+			margin: 30px 0;
+			line-height: 1.6;
+		}
+		button, .button {
+			background-color: #667eea;
+			color: white;
+			padding: 10px 25px;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 16px;
+			text-decoration: none;
+			display: inline-block;
+			margin: 5px;
+		}
+		button:hover, .button:hover {
+			background-color: #5568d3;
+		}
+		.logout-btn {
+			background-color: #dc3545;
+		}
+		.logout-btn:hover {
+			background-color: #c82333;
+		}
+		.feature-box {
+			background-color: #f8f9fa;
+			padding: 20px;
+			margin: 10px 0;
+			border-left: 4px solid #667eea;
+			border-radius: 4px;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>Welcome to the Authentication Example</h1>
+		
+		<div class="nav">
+			<a href="/">Home</a>
+			<a href="/protected.html">Protected Page</a>
+			<a href="/login.html">Login</a>
+			<a href="/register.html">Register</a>
+		</div>
+		
+		<div id="userInfo" class="user-info" style="display:none;">
+			<strong>Logged in as:</strong> <span id="username"></span>
+			<button onclick="logout()" class="logout-btn">Logout</button>
+		</div>
+		
+		<div class="content">
+			<h2>Cookie-Based Authentication Demo</h2>
+			<p>This example demonstrates a simple authentication system using cookies and Python CGI scripts.</p>
+			
+			<div class="feature-box">
+				<h3>Features:</h3>
+				<ul>
+					<li>User registration with JSON storage</li>
+					<li>Login/logout functionality</li>
+					<li>Cookie-based session management</li>
+					<li>Protected pages accessible only when logged in</li>
+					<li>All data stored in JSON files</li>
+				</ul>
+			</div>
+			
+			<div class="feature-box">
+				<h3>How to use:</h3>
+				<ol>
+					<li><strong>Register:</strong> Create a new account on the <a href="/register.html">register page</a></li>
+					<li><strong>Login:</strong> Sign in with your credentials on the <a href="/login.html">login page</a></li>
+					<li><strong>Access Protected Content:</strong> Visit the <a href="/protected.html">protected page</a></li>
+					<li><strong>Logout:</strong> Click the logout button to end your session</li>
+				</ol>
+			</div>
+		</div>
+	</div>
+	
+	<script>
+		async function checkAuth() {
+			try {
+				const response = await fetch('/cgi-bin/check_auth.py');
+				const data = await response.json();
+				
+				if (data.authenticated) {
+					document.getElementById('userInfo').style.display = 'block';
+					document.getElementById('username').textContent = data.username;
+				}
+			} catch (error) {
+				console.error('Auth check failed:', error);
+			}
+		}
+		
+		async function logout() {
+			try {
+				const response = await fetch('/cgi-bin/logout.py', {
+					method: 'POST'
+				});
+				const data = await response.json();
+				
+				if (data.success) {
+					alert('Logged out successfully!');
+					location.reload();
+				}
+			} catch (error) {
+				console.error('Logout failed:', error);
+				alert('Logout failed');
+			}
+		}
+		
+		// Check authentication on page load
+		checkAuth();
+	</script>
+</body>
+</html>

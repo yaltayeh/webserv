@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>File Upload Example</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			max-width: 800px;
+			margin: 50px auto;
+			padding: 20px;
+			background-color: #f5f5f5;
+		}
+		.container {
+			background-color: white;
+			padding: 30px;
+			border-radius: 8px;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+		}
+		h1 {
+			color: #333;
+		}
+		.upload-form {
+			margin-top: 20px;
+		}
+		input[type="file"] {
+			display: block;
+			margin: 20px 0;
+			padding: 10px;
+			border: 2px dashed #ccc;
+			border-radius: 4px;
+			width: 100%;
+		}
+		input[type="text"] {
+			width: 100%;
+			padding: 10px;
+			margin: 10px 0;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			box-sizing: border-box;
+		}
+		button {
+			background-color: #4CAF50;
+			color: white;
+			padding: 12px 30px;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 16px;
+		}
+		button:hover {
+			background-color: #45a049;
+		}
+		.message {
+			padding: 10px;
+			margin: 10px 0;
+			border-radius: 4px;
+		}
+		.success {
+			background-color: #d4edda;
+			color: #155724;
+			border: 1px solid #c3e6cb;
+		}
+		.error {
+			background-color: #f8d7da;
+			color: #721c24;
+			border: 1px solid #f5c6cb;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>CGI File Upload Example</h1>
+		<p>Upload files through a Python CGI script. The uploaded files will be stored on the server.</p>
+		
+		<form class="upload-form" action="/cgi-bin/upload.py" method="POST" enctype="multipart/form-data">
+			<label for="description">File Description (optional):</label>
+			<input type="text" id="description" name="description" placeholder="Enter a description for your file">
+			
+			<label for="file">Choose a file to upload:</label>
+			<input type="file" id="file" name="file" required>
+			
+			<button type="submit">Upload File</button>
+		</form>
+		
+		<hr style="margin: 30px 0;">
+		
+		<h2>View Uploaded Files</h2>
+		<p><a href="/uploads/">View all uploaded files</a></p>
+	</div>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Protected Page - Authentication Example</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			max-width: 800px;
+			margin: 50px auto;
+			padding: 20px;
+			background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+			min-height: 100vh;
+		}
+		.container {
+			background-color: white;
+			padding: 40px;
+			border-radius: 10px;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+		}
+		h1 {
+			color: #333;
+			margin-bottom: 10px;
+		}
+		.nav {
+			background-color: #f8f9fa;
+			padding: 15px;
+			border-radius: 5px;
+			margin: 20px 0;
+		}
+		.nav a {
+			color: #11998e;
+			text-decoration: none;
+			margin: 0 15px;
+			font-weight: bold;
+		}
+		.nav a:hover {
+			text-decoration: underline;
+		}
+		.user-info {
+			background-color: #d1f2eb;
+			padding: 20px;
+			border-radius: 5px;
+			margin: 20px 0;
+			border-left: 4px solid #11998e;
+		}
+		.content {
+			margin: 30px 0;
+			line-height: 1.6;
+		}
+		button {
+			background-color: #dc3545;
+			color: white;
+			padding: 10px 25px;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 16px;
+		}
+		button:hover {
+			background-color: #c82333;
+		}
+		.secret-box {
+			background-color: #fff3cd;
+			padding: 20px;
+			margin: 20px 0;
+			border-left: 4px solid #ffc107;
+			border-radius: 4px;
+		}
+		.loading {
+			text-align: center;
+			padding: 40px;
+			color: #666;
+		}
+		#protectedContent {
+			display: none;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="loading" id="loading">
+			<h2>Checking authentication...</h2>
+		</div>
+		
+		<div id="protectedContent">
+			<h1>🔒 Protected Page</h1>
+			
+			<div class="nav">
+				<a href="/">Home</a>
+				<a href="/protected.html">Protected Page</a>
+				<a href="/login.html">Login</a>
+				<a href="/register.html">Register</a>
+			</div>
+			
+			<div class="user-info">
+				<h3>Welcome back, <span id="username"></span>!</h3>
+				<p><strong>Email:</strong> <span id="email"></span></p>
+				<p><strong>Member since:</strong> <span id="registered"></span></p>
+				<button onclick="logout()">Logout</button>
+			</div>
+			
+			<div class="content">
+				<h2>This is a Protected Page</h2>
+				<p>Congratulations! You have successfully accessed this protected page. This page can only be viewed by authenticated users.</p>
+				
+				<div class="secret-box">
+					<h3>🎉 Secret Content</h3>
+					<p>Only logged-in users can see this content. Your authentication is managed through cookies, which are validated by the server on each request.</p>
+					<p><strong>Your session token:</strong> <code id="sessionToken">Loading...</code></p>
+				</div>
+				
+				<h3>How it works:</h3>
+				<ul>
+					<li>When you log in, the server creates a unique session token</li>
+					<li>This token is stored in a cookie in your browser</li>
+					<li>On each request, the server validates your session token</li>
+					<li>If valid, you can access protected resources</li>
+					<li>When you logout, the session is destroyed</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	
+	<script>
+		async function checkAuth() {
+			try {
+				const response = await fetch('/cgi-bin/check_auth.py');
+				const data = await response.json();
+				
+				if (data.authenticated) {
+					// User is authenticated, show protected content
+					document.getElementById('loading').style.display = 'none';
+					document.getElementById('protectedContent').style.display = 'block';
+					document.getElementById('username').textContent = data.username;
+					document.getElementById('email').textContent = data.email || 'N/A';
+					document.getElementById('registered').textContent = data.registered || 'N/A';
+					
+					// Extract session token from cookies
+					const cookies = document.cookie.split(';');
+					const sessionCookie = cookies.find(c => c.trim().startsWith('session_token='));
+					if (sessionCookie) {
+						const token = sessionCookie.split('=')[1];
+						document.getElementById('sessionToken').textContent = token.substring(0, 32) + '...';
+					}
+				} else {
+					// Not authenticated, redirect to login
+					alert('You must be logged in to access this page!');
+					window.location.href = '/login.html';
+				}
+			} catch (error) {
+				console.error('Auth check failed:', error);
+				alert('Authentication check failed. Please try logging in.');
+				window.location.href = '/login.html';
+			}
+		}
+		
+		async function logout() {
+			try {
+				const response = await fetch('/cgi-bin/logout.py', {
+					method: 'POST'
+				});
+				const data = await response.json();
+				
+				if (data.success) {
+					alert('Logged out successfully!');
+					window.location.href = '/';
+				}
+			} catch (error) {
+				console.error('Logout failed:', error);
+				alert('Logout failed');
+			}
+		}
+		
+		// Check authentication on page load
+		checkAuth();
+	</script>
+</body>
+</html>
