@@ -3,7 +3,7 @@
 *This project has been created as part of the 42 curriculum by ataher, mkurkar, yaltayeh.*
 
 
-## Preview
+## Authors
 
 <div align="center">
     <div style="display: inline-block; text-align: center; margin: 0 20px;">
@@ -179,20 +179,20 @@ python3 luka/extract_test.py <test_name>
 - [nginx Configuration Documentation](https://nginx.org/en/docs/) - Inspiration for configuration syntax
 - [nginx Architecture](https://www.aosabook.org/en/nginx.html) - Understanding nginx's event-driven model
 
+---
+
 ### AI Usage
 
 AI tools were used in this project for:
-
-    Research and Learning: Understanding HTTP/1.0 protocol specifications and CGI implementation
-    Configuration Guidance: Reviewing nginx configuration syntax and directive patterns
-    Documentation: Structuring and organizing project documentation and code comments
-    Troubleshooting: Debugging non-blocking I/O issues, memory leaks, and socket management problems
+- Research and Learning: Understanding HTTP/1.0 protocol specifications and CGI implementation
+- Configuration Guidance: Reviewing nginx configuration syntax and directive patterns
+- Documentation: Structuring and organizing project documentation and code comments
+- Troubleshooting: Debugging non-blocking I/O issues, memory leaks, and socket management problems
 
 AI was NOT used for:
-
-    Direct code generation without understanding
-    Core event loop implementation
-    Bypassing the learning process and fundamental architecture decisions
+- Direct code generation without understanding
+- Core event loop implementation
+- Bypassing the learning process and fundamental architecture decisions
 
 All implementations were reviewed, understood, and customized for this specific project's requirements.
 
