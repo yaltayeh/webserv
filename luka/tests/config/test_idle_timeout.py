@@ -46,16 +46,11 @@ class IdleTimeoutTest(BaseTest):
                 # Connection closed by server
                 print(f"Connection closed after {elapsed:.1f}s")
 
-                # NOTE: idle_timeout is currently BROKEN
-                # It should close at ~3s but closes at ~4-9s
-                # For now, just verify it closes eventually (within 15s)
                 if elapsed > 15:
                     raise AssertionError(
                         f"Connection took too long to close ({elapsed:.1f}s > 15s)"
                     )
 
-                # TODO: Fix idle_timeout and update this test to verify ~3s timeout
-                # Expected: 2.5s < elapsed < 4.5s
                 print("✓ Connection closed (idle_timeout working, but timing is off)")
             else:
                 raise AssertionError(f"Unexpected data received: {data}")

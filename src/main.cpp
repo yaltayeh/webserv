@@ -75,24 +75,3 @@ int main(int argc, const char *argv[], const char *envp[])
 	}
 	return 0;
 }
-
-
-// TODO: However, you are allowed to use fcntl() only with the following flags:
-// 	F_SETFL, O_NONBLOCK and, FD_CLOEXEC.
-// 	Any other flag is forbidden.
-
-/*
-	yacob
-	[x] worker_connections
-	[x] idle_timeout
-	[x] the queue system.
-	[x] the level trigger/trigger mode.
-	[x] the handleDistroy for IOEventHandler.
-
-	ahmed
-	[x] getChunk implementation
-	[x] checkChunk implementation
-	[x] HEAD method implementation
-	[x] fix luka extract test case
-	[ ] signal to stop the server gracefully 
-*/

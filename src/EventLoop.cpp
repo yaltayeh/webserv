@@ -490,7 +490,6 @@ int EventLoop::deleteEvent(int fd, int event, IOEventHandler *udata)
  */
 void EventLoop::run()
 {
-	// TODO: add keepalive_timeout from config. and a simple queue to manage it
 #if defined(__linux__)
 	// Linux: Create epoll instance (event notification facility)
 	_eventFd = epoll_create(1);

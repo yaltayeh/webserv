@@ -1,6 +1,6 @@
 #include "../include/Parser.hpp"
 #include "../include/Utils.hpp"
-#include <StringUtils.hpp>  // from libutils (utils:: namespace)
+#include <StringUtils.hpp>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-// TODO: Your server must be compatible with standard web browsers of your choice.
+
 namespace libhttp {
 	
 	Parser::Parser(size_t maxBodySize, const std::string& tempPath) :

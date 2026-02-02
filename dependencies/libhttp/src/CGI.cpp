@@ -306,15 +306,6 @@ void CGI::buildEnvironment(const libhttp::Request &request,
     // RFC 3875 section 4.1.16: SERVER_SOFTWARE = product-name/version
     addEnvironmentVariable("SERVER_SOFTWARE", "Webserv/1.0");
     addEnvironmentVariable("GATEWAY_INTERFACE", "CGI/1.1");
-    
-    // TODO: When authentication is implemented, add the following meta-variables:
-    // - AUTH_TYPE (RFC 3875 section 4.1.18)
-    // - REMOTE_USER (RFC 3875 section 4.1.11)
-    // - REMOTE_IDENT (RFC 3875 section 4.1.10)
-    
-    // TODO: Add client connection information:
-    // - REMOTE_ADDR (client IP address, RFC 3875 section 4.1.8)
-    // - REMOTE_HOST (client hostname if available, RFC 3875 section 4.1.9)
 
     // Content headers (special handling per CGI spec)
     std::string contentType = request.getHeader("Content-Type");

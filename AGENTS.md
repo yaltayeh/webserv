@@ -282,7 +282,6 @@ typedef Response* (*MiddlewareFunc)(
 
 - **Header files**: Use detailed block comments explaining class purpose
 - **Complex functions**: Document parameters, return values, and behavior
-- **TODO comments**: Use `TODO:` prefix (see main.cpp for examples)
 
 ```cpp
 /**
