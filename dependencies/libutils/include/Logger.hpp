@@ -37,7 +37,6 @@ namespace Logger {
     extern int g_logLevel;          // Bit mask for enabled log levels
     extern bool g_logShowLocation;  // Show file:line information
     extern bool g_logColored;       // Use ANSI color codes
-    extern bool g_logShowTimestamp; // Show timestamp in logs
     extern std::string g_logFile;   // Log file path (empty = stdout/stderr only)
 
     // Lightweight inline helper functions
@@ -54,7 +53,6 @@ namespace Logger {
     }
 
     // Helper functions implemented in Logger.cpp
-    std::string getTimestamp();
     const char* getLevelColor(int level);
     std::string getErrorString();
     std::string getErrorString(int errnum);
@@ -77,9 +75,6 @@ namespace Logger {
     do { \
         if (Logger::g_logLevel & (level)) { \
             std::ostream& stream = Logger::getLogStream(level); \
-            if (Logger::g_logShowTimestamp) { \
-                stream << Logger::getTimestamp() << " "; \
-            } \
             if (Logger::g_logColored) { \
                 stream << Logger::getLevelColor(level); \
             } \
@@ -163,9 +158,6 @@ namespace Logger {
         if (Logger::g_logLevel & Logger::ERROR) { \
             int saved_errno = errno; \
             std::ostream& stream = Logger::getLogStream(Logger::ERROR); \
-            if (Logger::g_logShowTimestamp) { \
-                stream << Logger::getTimestamp() << " "; \
-            } \
             if (Logger::g_logColored) stream << "\033[31m"; \
             stream << "[ERROR]"; \
             if (Logger::g_logColored) stream << "\033[0m"; \
@@ -188,9 +180,6 @@ namespace Logger {
         if (Logger::g_logLevel & Logger::CRITICAL) { \
             int saved_errno = errno; \
             std::ostream& stream = Logger::getLogStream(Logger::CRITICAL); \
-            if (Logger::g_logShowTimestamp) { \
-                stream << Logger::getTimestamp() << " "; \
-            } \
             if (Logger::g_logColored) stream << "\033[31;1m"; \
             stream << "[CRITICAL]"; \
             if (Logger::g_logColored) stream << "\033[0m"; \
@@ -215,9 +204,6 @@ namespace Logger {
     do { \
         if (Logger::g_logLevel & Logger::ERROR) { \
             std::ostream& stream = Logger::getLogStream(Logger::ERROR); \
-            if (Logger::g_logShowTimestamp) { \
-                stream << Logger::getTimestamp() << " "; \
-            } \
             if (Logger::g_logColored) stream << "\033[31m"; \
             stream << "[ERROR]"; \
             if (Logger::g_logColored) stream << "\033[0m"; \

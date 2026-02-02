@@ -17,9 +17,6 @@ namespace Logger {
     // Use colored output by default (can be disabled for log files)
     bool g_logColored = true;
     
-    // Show timestamp by default
-    bool g_logShowTimestamp = false;
-    
     // Log file path (empty = stdout/stderr only)
     std::string g_logFile = "";
     
@@ -29,21 +26,6 @@ namespace Logger {
     // ============================================================================
     // Helper function implementations
     // ============================================================================
-
-    /**
-     * @brief Get current timestamp in format: YYYY-MM-DD HH:MM:SS
-     * @return Formatted timestamp string
-     */
-    std::string getTimestamp() {
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        time_t now = tv.tv_sec;
-        struct tm* tm_info = localtime(&now);
-        
-        char buffer[32];
-        strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", tm_info);
-        return std::string(buffer);
-    }
 
     /**
      * @brief Get ANSI color code for log level
