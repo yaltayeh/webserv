@@ -3,8 +3,6 @@ webserve
 .vscode
 *.a
 server_log.txt
-framework/coverage/
-framework/generated.conf
 __pycache__/
 *.pyc
 .coverage
