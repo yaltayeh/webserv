@@ -128,7 +128,7 @@ libhttp::Response *cgiHandler(const libhttp::Request &request,
 		server_name = "localhost";
 
 	std::string server_port_str = context.get("server_port");
-	int server_port = server_port_str.empty() ? 8080 : atoi(server_port_str.c_str());
+	int server_port = server_port_str.empty() ? 8080 : std::atoi(server_port_str.c_str());
 
 	CGI::SetupResult setup_result = cgi.setup(request, script_path, interpreter,
 	                                          server_name, server_port);
