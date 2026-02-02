@@ -25,18 +25,25 @@ void signalHandler(int signum)
 
 int main(int argc, const char *argv[], const char *envp[])
 {
-	if (argc != 2)
+	const char* configPath;
+	
+	if (argc > 2)
 	{
-		LOG_INFO("Usage: " << argv[0] << " <config-file>");
+		LOG_ERROR("Usage: " << argv[0] << " [config-file]");
+		LOG_INFO("If no config file is specified, defaults to 'webserv.conf'");
 		return 1;
 	}
-	// TODO: You need at least the GET, POST, and DELETE methods.
-	// TODO: Your server must have default error pages if none are provided.
-	// TODO: Your program must use a configuration file, provided as an argument on the command line, or available in a default path.
+	
+	// Use provided config file or default to 'webserv.conf'
+	if (argc == 2)
+		configPath = argv[1];
+	else
+		configPath = "webserv.conf";
+	
 	GlobalConfig config = GlobalConfig();
 	try
 	{
-		Directive::Parser::loadConfigFile(argv[1], config, envp);
+		Directive::Parser::loadConfigFile(configPath, config, envp);
 
 		// Validate configuration
 		if (!config.init_http)
