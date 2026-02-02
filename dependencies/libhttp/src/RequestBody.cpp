@@ -3,33 +3,52 @@
 #include <fcntl.h>
 #include <cstring>
 #include <stdlib.h>
+#include <sstream>
 
 namespace libhttp
 {
 	int RequestBody::CreateTempFile()
 	{
 		if (is_temp_file)
-			return 0; // Already a temp file
-		
-		std::string temp_filename = tempDirectory + "/libhttp_body_XXXXXX";
-		_fd = mkostemp(&temp_filename[0], O_RDWR | O_CLOEXEC | O_NONBLOCK);
-		if (_fd == -1)
-			return -1; // Failed to create temp file
-		temp_file_path = std::string(temp_filename);
-		is_temp_file = true;
+			return 0;
 
-		// Write existing inline data to temp file
+		static int counter = 0;
+
+		while (true)
+		{
+			std::stringstream ss;
+			ss << tempDirectory << "/libhttp_body_" << counter++;
+
+			std::string temp_filename = ss.str();
+
+			_fd = open(temp_filename.c_str(),
+					O_CREAT | O_EXCL | O_RDWR,
+					0600);
+
+			if (_fd == -1)
+				continue; // try next name
+
+			temp_file_path = temp_filename;
+			is_temp_file = true;
+			break;
+		}
+
+		// Write existing inline data
 		if (!inline_body.empty())
 		{
-			if (write(_fd, inline_body.c_str(), inline_body.size()) != (ssize_t)inline_body.size())
+			ssize_t written = write(_fd, inline_body.c_str(), inline_body.size());
+			if (written != (ssize_t)inline_body.size())
 			{
 				close(_fd);
+				is_temp_file = false;
 				return -1;
 			}
 			inline_body.clear();
 		}
+
 		return 0;
 	}
+
 
 	RequestBody::RequestBody()
 		: is_temp_file(false),
