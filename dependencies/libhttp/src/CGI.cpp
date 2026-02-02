@@ -376,7 +376,7 @@ std::string CGI::headerToEnvVar(const std::string &headerName) const {
         if (c == '-') {
             envVar += '_';
         } else {
-            envVar += static_cast<char>(toupper(static_cast<unsigned char>(c)));
+            envVar += static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
         }
     }
     return envVar;

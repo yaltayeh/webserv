@@ -70,7 +70,6 @@ SRCS		    		=   src/main.cpp 										\
 							src/directives/LogLevelDirective.cpp				\
 							src/directives/LogShowLocationDirective.cpp			\
 							src/directives/LogColoredDirective.cpp				\
-							src/directives/LogShowTimestampDirective.cpp		\
 							src/directives/LogFileDirective.cpp					\
 							src/directives/WorkerConnectionsDirective.cpp		\
 

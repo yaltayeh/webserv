@@ -71,7 +71,7 @@ namespace libhttp {
 		// Send header data first
 		if (_offset < header_size) {
 			to_copy = std::min(max_size, header_size - _offset);
-			memcpy(buffer, _headerData.data() + _offset, to_copy);
+			std::memcpy(buffer, _headerData.data() + _offset, to_copy);
 			_offset += to_copy;
 			max_size -= to_copy;
 			if (max_size == 0 || _offset < header_size)

@@ -170,7 +170,7 @@ namespace libhttp
 		{
 			// Read from inline body
 			size_t bytes_to_read = std::min(size, inline_body.size());
-			memcpy(buffer, inline_body.c_str(), bytes_to_read);
+			std::memcpy(buffer, inline_body.c_str(), bytes_to_read);
 			inline_body.erase(0, bytes_to_read);
 			if (inline_body.empty())
 				isCompletedRead = true;
