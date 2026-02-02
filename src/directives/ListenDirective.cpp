@@ -44,16 +44,37 @@ ServerConfig::ListenAddr parse_listen(const std::string &input)
 		return out;
 	}
 
-	// IPv4 literal
-	if (inet_pton(AF_INET, host.c_str(), &out.ip) == 1)
-		return out;
-
-	// Hostname
-	struct hostent *he = gethostbyname(host.c_str());
-	if (!he || he->h_addrtype != AF_INET)
+	// Use getaddrinfo() which IS in the allowed list (replaces inet_pton and gethostbyname)
+	struct addrinfo hints;
+	struct addrinfo *result = NULL;
+	
+	std::memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;       // IPv4
+	hints.ai_socktype = SOCK_STREAM; // TCP
+	hints.ai_flags = AI_NUMERICHOST; // Try numeric first
+	
+	// Try to parse as numeric IP address first
+	int ret = getaddrinfo(host.c_str(), NULL, &hints, &result);
+	
+	// If numeric parsing failed, try hostname resolution
+	if (ret != 0)
+	{
+		hints.ai_flags = 0; // Allow hostname resolution
+		ret = getaddrinfo(host.c_str(), NULL, &hints, &result);
+	}
+	
+	if (ret != 0 || !result)
+	{
+		if (result)
+			freeaddrinfo(result);
 		throw Directive::ArgumentException("listen", "Invalid address or hostname: " + host);
-
-	std::memcpy(&out.ip, he->h_addr, sizeof(out.ip));
+	}
+	
+	// Extract the IP address from the result
+	struct sockaddr_in *addr_in = reinterpret_cast<struct sockaddr_in *>(result->ai_addr);
+	out.ip = addr_in->sin_addr.s_addr;
+	
+	freeaddrinfo(result);
 	return out;
 }
 
