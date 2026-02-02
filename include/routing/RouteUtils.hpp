@@ -125,5 +125,21 @@ std::string findIndexFile(const std::string &directory_path,
 const std::string &getMimeType(const std::string &path,
                                 const LocationConfig &location);
 
+/**
+ * normalizePath() - Normalizes URI path and prevents path traversal
+ *
+ * PARAMETERS:
+ * - path: URI path to normalize
+ *
+ * RETURNS:
+ * - Normalized path with '.', '..' resolved, or empty string if path traversal detected
+ *
+ * BEHAVIOR:
+ * - Removes '.' and '..' segments
+ * - Prevents escaping the root directory
+ * - Returns empty string if path traversal is detected (e.g., /../../../etc/passwd)
+ */
+std::string normalizePath(const std::string &path);
+
 } // namespace utils
 } // namespace routing

@@ -73,6 +73,13 @@ libhttp::Response *staticFileHandler(const libhttp::Request &request,
 
 	LOG_DEBUG("Resolving URI '" << uri_path << "' to path: " << file_path);
 
+	// Check if path resolution failed (path traversal detected)
+	if (file_path.empty())
+	{
+		LOG_WARNING("Path traversal attempt detected: " << uri_path);
+		return utils::generateErrorResponse(403, location);
+	}
+
 	// Handle DELETE method
 	if (method == libhttp::DELETE)
 	{

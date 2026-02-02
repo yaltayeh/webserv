@@ -5,6 +5,7 @@
 #include "libhttp/include/Utils.hpp"
 #include <sstream>
 #include <fstream>
+#include <vector>
 #include <sys/stat.h>
 
 namespace routing
@@ -64,6 +65,15 @@ std::string resolvePath(const std::string &uri,
                         const std::string &location_path,
                         const LocationConfig &location)
 {
+	// First, normalize the URI to prevent path traversal attacks
+	std::string normalized_uri = normalizePath(uri);
+	
+	// If normalization returns empty string, it's a path traversal attempt
+	if (normalized_uri.empty() && !uri.empty())
+	{
+		return ""; // Signal path traversal attempt
+	}
+	
 	// Check for alias directive
 	if (!location.alias.empty())
 	{
@@ -71,14 +81,14 @@ std::string resolvePath(const std::string &uri,
 		// Example: location /photos { alias /data/images; }
 		// URI /photos/cat.jpg -> /data/images/cat.jpg
 
-		std::string remaining_path = uri.substr(location_path.length());
+		std::string remaining_path = normalized_uri.substr(location_path.length());
 		return location.alias + remaining_path;
 	}
 
 	// Use root directive (default behavior)
 	// Example: root /var/www;
 	// URI /images/cat.jpg -> /var/www/images/cat.jpg
-	return location.root + uri;
+	return location.root + normalized_uri;
 }
 
 std::string readFile(const std::string &path)
@@ -163,6 +173,78 @@ const std::string &getMimeType(const std::string &path,
 		}
 	}
 	return location.default_type; // Default MIME type
+}
+
+std::string normalizePath(const std::string &path)
+{
+	// Split path into segments
+	std::vector<std::string> segments;
+	std::vector<std::string> result;
+	std::string current;
+	
+	for (size_t i = 0; i < path.length(); ++i)
+	{
+		char c = path[i];
+		if (c == '/')
+		{
+			if (!current.empty())
+			{
+				segments.push_back(current);
+				current.clear();
+			}
+		}
+		else
+		{
+			current += c;
+		}
+	}
+	
+	if (!current.empty())
+	{
+		segments.push_back(current);
+	}
+	
+	// Process segments, handling . and ..
+	for (size_t i = 0; i < segments.size(); ++i)
+	{
+		const std::string &seg = segments[i];
+		
+		if (seg == ".")
+		{
+			// Skip current directory references
+			continue;
+		}
+		else if (seg == "..")
+		{
+			// Parent directory reference
+			if (!result.empty())
+			{
+				result.pop_back();
+			}
+			else
+			{
+				// Trying to go above root - path traversal attempt!
+				return "";
+			}
+		}
+		else
+		{
+			result.push_back(seg);
+		}
+	}
+	
+	// Build normalized path
+	std::string normalized = "/";
+	for (size_t i = 0; i < result.size(); ++i)
+	{
+		if (i > 0)
+		{
+			normalized += "/";
+		}
+		normalized += result[i];
+	}
+	
+	return normalized;
 }
 
 } // namespace utils
