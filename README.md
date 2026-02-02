@@ -117,7 +117,7 @@ See `webserv.conf` and files in `examples/` for configuration examples.
 - **Server context**: `listen`, `server_name`, `root`, `error_page`, `client_max_body_size`
 - **Location context**: `allowed_methods`, `index`, `autoindex`, `return` (redirects), `cgi_pass`, `upload_path`
 
-### Testing
+### Internal Testing Framework (L. U. K. A.)
 
 <div align="center">
     <img src="https://c.files.bbci.co.uk/0c25/live/6f1543a0-3719-11f0-96c3-cf669419a2b0.jpg" alt="Testing" width="600">
