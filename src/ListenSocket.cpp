@@ -34,21 +34,27 @@ ListenSocket::ListenSocket(uint32_t ip, uint16_t port)
 	_addr.sin_port = htons(port);
 	_addr.sin_addr.s_addr = ip;
 
-	if (ListenSocket::_setOptions())
+	if (ListenSocket::_setOptions() < 0)
 	{
 		close();
-		return;
-	} // TODO replace with throw
+		std::ostringstream oss;
+		oss << "Failed to set socket options on " << ipToString(ip) << ":" << port;
+		throw std::runtime_error(oss.str());
+	}
 	if (ListenSocket::_bind() < 0)
 	{
 		close();
-		return;
-	} // TODO replace with throw
+		std::ostringstream oss;
+		oss << "Failed to bind socket to " << ipToString(ip) << ":" << port;
+		throw std::runtime_error(oss.str());
+	}
 	if (ListenSocket::_listen() < 0)
 	{
 		close();
-		return;
-	} // TODO replace with throw
+		std::ostringstream oss;
+		oss << "Failed to listen on " << ipToString(ip) << ":" << port;
+		throw std::runtime_error(oss.str());
+	}
 }
 
 ListenSocket::~ListenSocket() { }
@@ -212,7 +218,6 @@ ClientSocket *ListenSocket::_accept()
 	sockaddr_in client_addr;
 	socklen_t addr_len = sizeof(client_addr);
 
-	// TODO: make this a worker_connections in the config
 	int client_fd = ::accept(_socketfd, (sockaddr *)&client_addr, &addr_len);
 	if (client_fd < 0)
 	{
