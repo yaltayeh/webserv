@@ -337,14 +337,12 @@ int EventLoop::addEvent(int fd, int event, IOEventHandler *udata)
 			if (epoll_ctl(_eventFd, EPOLL_CTL_MOD, fd, &ev) == -1)
 			{
 				LOG_ERROR("epoll_ctl MOD failed: fd=" << fd << " errno=" << errno << " (" << strerror(errno) << ")");
-				perror("epoll_ctl MOD");
 				return -1;
 			}
 		}
 		else
 		{
 			LOG_ERROR("epoll_ctl ADD failed: fd=" << fd << " errno=" << errno << " (" << strerror(errno) << ")");
-			perror("epoll_ctl ADD");
 			return -1;
 		}
 	}
