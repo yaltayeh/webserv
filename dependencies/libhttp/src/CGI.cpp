@@ -86,7 +86,7 @@ pid_t CGI::execute(int &readSocketFd, int &writeSocketFd) {
     if (pid == 0) {
         // Child process - this function does not return
         setupChildProcess(socketToChild, socketFromChild);
-        _exit(1); // Only reached if setupChildProcess fails
+        std::exit(1); // Only reached if setupChildProcess fails
     }
 
     // Parent process
@@ -499,13 +499,13 @@ void CGI::setupChildProcess(int socketToChild[2], int socketFromChild[2]) {
 
     // Redirect stdin
     if (dup2(socketToChild[1], STDIN_FILENO) == -1) {
-        _exit(1);
+        std::exit(1);
     }
     close(socketToChild[1]);
 
     // Redirect stdout
     if (dup2(socketFromChild[1], STDOUT_FILENO) == -1) {
-        _exit(1);
+        std::exit(1);
     }
     close(socketFromChild[1]);
     
@@ -520,7 +520,7 @@ void CGI::setupChildProcess(int socketToChild[2], int socketFromChild[2]) {
     std::string scriptDir = utils::getDirectory(_scriptPath);
     if (!scriptDir.empty() && scriptDir != "/") {
         if (chdir(scriptDir.c_str()) == -1) {
-            _exit(1);
+            std::exit(1);
         }
     }
 
@@ -541,5 +541,5 @@ void CGI::setupChildProcess(int socketToChild[2], int socketFromChild[2]) {
     }
 
     // execve only returns on failure
-    _exit(1);
+    std::exit(1);
 }
